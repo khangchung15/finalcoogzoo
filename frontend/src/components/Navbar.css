@@ -1,0 +1,127 @@
+body {
+  background-color: #FAFAFA; 
+  color: black; 
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  overflow-x: hidden;
+}
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: #CE0018; /* Change to white for a lighter navbar background */
+  font-family: 'Inter', sans-serif;
+  font-size: bold;
+  position: relative; 
+  width: 100%;
+  box-sizing: border-box;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Optional subtle shadow for depth */
+}
+
+.navbar-logo {
+  display: flex;
+  align-items: center;
+  margin-right: 0.5rem;
+}
+
+.navbar-logo a {
+  color: #F1F2F1; /* Red accent color for the logo */
+  text-decoration: none;
+  font-size: 2.5rem;
+  font-family: 'Inter', sans-serif;
+  font-weight: bolder;
+  user-select: none;
+}
+
+.navbar-toggle {
+  display: none;
+  font-size: 2rem;
+  color: black;
+  cursor: pointer;
+  align-items: center;
+}
+
+.navbar-links {
+  list-style: none;
+  display: flex;
+  gap: 1.5rem;
+  font-weight: bold;
+  flex: 1;
+  justify-content: flex-start; /* Keep links on the left for desktop */
+  width: 100%;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+.navbar-links li {
+  display: inline;
+}
+
+.navbar-links a {
+  color: #F1F2F1; /* Change link color to red for better visibility */
+  text-decoration: none;
+  font-size: 1.35rem;
+  font-family: 'Inter', sans-serif;
+  transition: transform 0.3s; /* Smooth transition for scaling */
+}
+
+.navbar-links a:hover {
+  transform: scale(1.5); 
+  color: #CCCCCC; 
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    flex-direction: row;
+    align-items: center;
+    padding: 1rem;
+    position: relative;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .navbar-logo {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .navbar-toggle {
+    display: block;
+  }
+
+  .navbar-links {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    position: absolute;
+    top: calc(100% - 1.35rem); 
+    right: 0;
+    padding: 0.5rem;
+    background: #FFFFFF; /* White background for mobile dropdown */
+    border: 1px solid #CE0018; /* Red border for dropdown */
+    border-radius: 0.5rem;
+    box-sizing: border-box;
+  }
+
+  .navbar-links.open {
+    display: flex;
+  }
+
+  .navbar-links li {
+    width: 100%;
+    text-align: center;
+  }
+
+  .navbar-links a {
+    padding: 1rem;
+    width: 100%;
+    display: block;
+    color: #CE0018; /* Red for mobile links */
+  }
+
+  .navbar-links a:hover {
+    color: #7C000F; /* Darker red for mobile hover */
+  }
+}
