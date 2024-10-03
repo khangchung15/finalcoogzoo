@@ -23,7 +23,6 @@ const Navbar = () => {
       <li><Link to="/tickets" onClick={toggleMenu}>Tickets</Link></li>
       <li><Link to="/membership" onClick={toggleMenu}>Membership</Link></li>
       <li><Link to="/events" onClick={toggleMenu}>Events</Link></li>
-      <li><Link to="/staff" onClick={toggleMenu}>Staff Portal</Link></li>
       <li><Link to="/contact" onClick={toggleMenu}>Contact Us</Link></li>
       </ul>
     </nav>

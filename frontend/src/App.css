@@ -1,19 +1,13 @@
 .App {
   text-align: center;
   position: relative;
-  min-height: 100vh; /* Ensure the footer stays at the bottom */
-  padding-bottom: 3rem; /* Adjust this value based on your footer height */
+  min-height: 100vh; 
+  padding-bottom: 3rem; 
 }
 
 .App-logo {
   height: 40vmin;
   pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
 }
 
 .App-header {
@@ -30,16 +24,6 @@
 .App-link {
   color: #61dafb;
 }
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 .footer {
   background-color: #232323;
   color: white;
@@ -70,11 +54,11 @@
 }
 
 .footer-links img {
-  width: 24px; /* Adjust the size of the icons */
-  height: 24px; /* Adjust the size of the icons */
-  transition: transform 0.3s ease; /* Smooth transition for scaling */
+  width: 24px; 
+  height: 24px; /
+  transition: transform 0.3s ease; 
 }
 
 .footer-links img:hover {
-  transform: scale(1.2); /* Enlarge the icon on hover */
+  transform: scale(1.2); 
 }
