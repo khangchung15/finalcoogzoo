@@ -1,0 +1,46 @@
+/* Import the League Gothic font */
+@import url('https://fonts.googleapis.com/css2?family=League+Gothic&display=swap');
+
+.login-button {
+  font-family: 'League Gothic', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: #FFFFFF;
+  background-color: #CE0018; /* Matches the navbar background */
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.3s;
+  text-transform: uppercase; /* Adds an uppercase style */
+}
+
+/* Login button styles */
+.login-button {
+  font-family: 'League Gothic', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: #FFFFFF;
+  background-color: #CE0018;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.3s;
+  text-transform: uppercase;
+}
+
+.login-button:hover {
+  background-color: #7C000F;
+  transform: scale(1.1);
+}
+
+.login-button:active {
+  background-color: #5A000B;
+  transform: scale(1);
+}
+
+.login-button:focus {
+  outline: none;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
