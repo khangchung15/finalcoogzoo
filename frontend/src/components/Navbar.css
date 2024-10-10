@@ -1,25 +1,27 @@
+/* Import the League Gothic font */
 @import url('https://fonts.googleapis.com/css2?family=League+Gothic&display=swap');
 
+/* Global styles */
 body {
-  background-color: #FAFAFA; 
-  color: black; 
+  background-color: #FAFAFA;
+  color: black;
   font-family: 'Inter', sans-serif;
   margin: 0;
   overflow-x: hidden;
 }
 
+/* Navbar styles */
 .navbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 1rem 2rem;
-  background: #CE0018; /* Change to white for a lighter navbar background */
+  background: #CE0018;
   font-family: 'Inter', sans-serif;
   font-size: bold;
-  position: relative; 
   width: 100%;
   box-sizing: border-box;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Optional subtle shadow for depth */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .navbar-logo {
@@ -29,20 +31,11 @@ body {
 }
 
 .navbar-logo a {
-  color: #F1F2F1; 
+  color: #F1F2F1;
   text-decoration: none;
   font-size: 3rem;
   font-family: 'League Gothic', sans-serif;
   font-weight: bolder;
-  user-select: none;
-}
-
-.navbar-toggle {
-  display: none;
-  font-size: 2rem;
-  color: black;
-  cursor: pointer;
-  align-items: center;
 }
 
 .navbar-links {
@@ -50,11 +43,6 @@ body {
   display: flex;
   gap: 1.5rem;
   font-weight: bold;
-  flex: 1;
-  justify-content: flex-start; /* Keep links on the left for desktop */
-  width: 100%;
-  box-sizing: border-box;
-  user-select: none;
 }
 
 .navbar-links li {
@@ -62,68 +50,91 @@ body {
 }
 
 .navbar-links a {
-  color: #F1F2F1; /* Change link color to red for better visibility */
+  color: #F1F2F1;
   text-decoration: none;
-  font-size: 1.35rem;
-  font-family: 'Inter', sans-serif;
-  transition: transform 0.3s; /* Smooth transition for scaling */
+  font-family: 'League Gothic', sans-serif; /* Same font as login button */
+  font-size: 2rem;
+  font-weight: bolder;
+  padding: 0.75rem 1.5rem; /* Same padding as login button */
+  border-radius: 5px;      /* Adds a slight border-radius */
+  transition: background-color 0.3s, transform 0.3s;
 }
 
 .navbar-links a:hover {
-  transform: scale(1.5); 
-  color: #CCCCCC; 
+  background-color: #7C000F; /* Same hover effect as login button */
+  transform: scale(1.1);     /* Slightly enlarge on hover */
 }
 
+.navbar-links a:active {
+  background-color: #5A000B; /* Same active effect as login button */
+  transform: scale(1);       /* Return to original size on click */
+}
+
+/* Login/Signup Button */
+.navbar-links .auth-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.navbar-links .auth-buttons a {
+  font-size: 1.5rem; /* Slightly smaller than regular nav links */
+  padding: 0.5rem 1rem;
+}
+
+/* Hide the navbar-toggle by default */
+.navbar-toggle {
+  display: none;
+}
+
+/* Responsive Navbar */
 @media (max-width: 768px) {
   .navbar {
     flex-direction: row;
-    align-items: center;
     padding: 1rem;
+    justify-content: center; /* Center the logo */
     position: relative;
-    width: 100%;
-    box-sizing: border-box;
   }
 
   .navbar-logo {
-    flex-direction: column;
-    align-items: flex-start;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%); /* Center the logo exactly */
   }
 
+  /* Show navbar-toggle only in mobile view */
   .navbar-toggle {
     display: block;
+    position: absolute;
+    right: 1rem;
   }
 
   .navbar-links {
     display: none;
     flex-direction: column;
-    width: 100%;
     position: absolute;
-    top: calc(100% - 1.35rem); 
+    top: 100%;
     right: 0;
-    padding: 0.5rem;
-    background: #FFFFFF; /* White background for mobile dropdown */
-    border: 1px solid #CE0018; /* Red border for dropdown */
+    background: #FFFFFF;
+    border: 1px solid #CE0018;
     border-radius: 0.5rem;
-    box-sizing: border-box;
+    width: 100%;
   }
 
   .navbar-links.open {
     display: flex;
   }
 
-  .navbar-links li {
-    width: 100%;
-    text-align: center;
-  }
-
   .navbar-links a {
-    padding: 1rem;
-    width: 100%;
-    display: block;
-    color: #CE0018; /* Red for mobile links */
+    color: #CE0018;
   }
 
   .navbar-links a:hover {
-    color: #7C000F; /* Darker red for mobile hover */
+    color: #7C000F;
+  }
+
+  /* Ensure login/signup is inside the hamburger menu on mobile */
+  .navbar-links .auth-buttons {
+    flex-direction: column;
+    width: 100%;
   }
 }

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom'; 
 import './Navbar.css';
+import LoginButton from './LoginButton';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -25,6 +26,7 @@ const Navbar = () => {
       <li><Link to="/events" onClick={toggleMenu}>Events</Link></li>
       <li><Link to="/contact" onClick={toggleMenu}>Contact Us</Link></li>
       </ul>
+      <LoginButton></LoginButton>
     </nav>
   );
 };
