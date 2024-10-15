@@ -6,9 +6,7 @@ const PrivateRoutes = () => {
   let auth = { token: false }; 
 
   if (!auth.token) {
-    // Show alert message to the user before redirecting
-    alert('You must login first!');
-    return <Navigate to="/" />;
+    return <Navigate to="/login" />;
   }
 
   return <Outlet />;  // Render the protected routes if authenticated
