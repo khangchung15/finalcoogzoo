@@ -1,6 +1,6 @@
 import React from 'react'
 
-function contactus() {
+function Contact() {
   return (
     <div>
         <h1>Leave Us a Message!</h1>
@@ -8,4 +8,4 @@ function contactus() {
   )
 }
 
-export default contactus
+export default Contact

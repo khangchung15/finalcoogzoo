@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import './animals.css';
+import './Animals.css';
 
 const Animals = () => {
   const [animals, setAnimals] = useState([]);
