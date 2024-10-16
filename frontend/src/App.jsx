@@ -1,7 +1,7 @@
 import './App.css';
 import Navbar from './components/Navbar';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
-import LoginPage from './pages/LoginPage';
+import Login from './pages/Login';
 import Animals from './pages/Animals';
 import Exhibits from './pages/Exhibits';
 import Tickets from './pages/Tickets';
@@ -30,7 +30,7 @@ function App() {
         <Route path='/events' element={<Events />} />
         <Route path='/contact' element={<Contact />} />
 
-        <Route path='/login' element={<LoginPage />} />
+        <Route path='/login' element={<Login />} />
 
       </Routes>
     </Router>

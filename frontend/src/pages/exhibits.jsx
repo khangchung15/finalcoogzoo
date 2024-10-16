@@ -8,4 +8,4 @@ function Exhibits() {
   )
 }
 
-export default Exhibits
+export default Exhibits;

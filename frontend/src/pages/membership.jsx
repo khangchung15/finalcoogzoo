@@ -8,4 +8,4 @@ function Membership() {
   )
 }
 
-export default Membership
+export default Membership;
