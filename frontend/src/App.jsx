@@ -15,7 +15,7 @@ function App() {
   return (
     <Router>
       <Navbar />
-      <Routes>
+      <Routes>  
 
         <Route path='/' Component={Home}/>
         <Route path='/animals' Component={Animals}/>
