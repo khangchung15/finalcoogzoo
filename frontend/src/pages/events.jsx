@@ -1,6 +1,6 @@
 import React from 'react'
 
-function events() {
+function Events() {
   return (
     <div>
         <h1>Current Events</h1>
@@ -8,4 +8,4 @@ function events() {
   )
 }
 
-export default events
+export default Events

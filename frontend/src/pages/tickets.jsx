@@ -1,6 +1,6 @@
 import React from 'react'
 
-function tickets() {
+function Tickets() {
   return (
     <div>
         <h1>Purchase Tickets</h1>
@@ -8,4 +8,4 @@ function tickets() {
   )
 }
 
-export default tickets
+export default Tickets
