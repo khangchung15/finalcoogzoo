@@ -6,6 +6,11 @@ const PrivateRoutes = () => {
   let auth = { token: false }; 
 
   if (!auth.token) {
+<<<<<<< HEAD
+=======
+    // Show alert message to the user before redirecting
+   // alert('You must login first!');
+>>>>>>> 1312919196c92138b74eecc07af68be707381564
     return <Navigate to="/login" />;
   }
 
