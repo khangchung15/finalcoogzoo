@@ -1,61 +1,117 @@
-import React, { useState } from 'react';
-import './LoginPage.css'; // Import the styles
+import React, { useState } from "react";
+import "./LoginPage.css";
 
 const LoginPage = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false); // Toggle between Sign In and Sign Up
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState(""); // Only for Sign Up
+  const [error, setError] = useState(""); // Error messages
+  const [loading, setLoading] = useState(false); // Loading state for form submission
 
-  const handleLogin = (e) => {
+  // Handle form submission for both Sign In and Sign Up
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Implement login logic here (e.g., API call)
+    setLoading(true);
 
-    //Change from username to email
-    //Check employee table for matching Email
-    //If employee, get ID associated with email and check if that corresponding id has the same password as user entry
-    //If so, check role of employee and give token permissions based on that
+    const authData = isSignUp
+      ? { username, email, password }
+      : { username, password }; // Collect data based on form type
 
-    //If not employee, Check customers table for email and repeat process
+    try {
+      const url = isSignUp
+        ? "https://yourapi.com/signup" // Replace with Sign Up API
+        : "https://yourapi.com/login"; // Replace with Sign In API
 
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(authData),
+      });
 
-    console.log('Login:', { username, password });
-  };
+      const data = await response.json();
 
-  const handleSignup = () => {
-    // Implement sign-up logic here (e.g., redirect to sign-up page)
-    console.log('Redirecting to signup...');
+      if (response.ok) {
+        console.log(isSignUp ? "Sign Up successful" : "Login successful", data);
+      } else {
+        setError(data.message || "An error occurred. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error during authentication:", error);
+      setError("An error occurred. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="login-container">
-      <div className="login-box">
-        <h2>Have an Existing Account? Login Here</h2>
-        <form onSubmit={handleLogin}>
+      <h2>{isSignUp ? "Sign Up" : "Sign In"}</h2>
+      <form onSubmit={handleSubmit}>
+        <div className="input-group">
+          <label htmlFor="username">Username</label>
+          <input
+            type="text"
+            id="username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+          />
+        </div>
+
+        {isSignUp && (
           <div className="input-group">
-            <label htmlFor="username">Username</label>
+            <label htmlFor="email">Email</label>
             <input
-              type="text"
-              id="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              type="email"
+              id="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
-          <div className="input-group">
-            <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          <button type="submit" className="login-btn">Login</button>
-        </form>
-        <p className="signup-text">
-          Don't have an account? <span onClick={handleSignup}>Sign Up</span>
-        </p>
-      </div>
+        )}
+
+        <div className="input-group">
+          <label htmlFor="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </div>
+
+        {error && <p className="error">{error}</p>}
+
+        <div className="input-group">
+          <button type="submit" className="btn" disabled={loading}>
+            {loading
+              ? isSignUp
+                ? "Signing up..."
+                : "Logging in..."
+              : isSignUp
+              ? "Sign Up"
+              : "Sign In"}
+          </button>
+        </div>
+
+        <div className="toggle-group">
+          <p>
+            {isSignUp ? "Already have an account?" : "Don't have an account?"}
+            <button
+              type="button"
+              className="link-button"
+              onClick={() => setIsSignUp(!isSignUp)}
+            >
+              {isSignUp ? "Sign In" : "Sign Up"}
+            </button>
+          </p>
+        </div>
+      </form>
     </div>
   );
 };
