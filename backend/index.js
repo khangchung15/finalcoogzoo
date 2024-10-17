@@ -33,20 +33,30 @@ const handleDBError = (res, error) => {
 };
 
 // Handle the addition of a new user
+const bcrypt = require('bcrypt');
+
+// Handle the addition of a new user
 const addUser = (jsonData, res) => {
-  const { first_name, last_name, email, phone_number } = jsonData;
+  const { username, password, email } = jsonData;
+  
+  // Hash the password before storing it
+  bcrypt.hash(password, 10, (err, hashedPassword) => {
+    if (err) return handleDBError(res, err);
 
-  const query = `INSERT INTO customers(first_name, last_name, email, phone_number) VALUES (?, ?, ?, ?)`;
-  const values = [first_name, last_name, email, phone_number];
+    const query = `INSERT INTO customers(username, password, email) VALUES (?, ?, ?)`;
+    const values = [username, hashedPassword, email];
 
-  connection.query(query, values, (error, results) => {
-    if (error) return handleDBError(res, error);
+    connection.query(query, values, (error, results) => {
+      if (error) return handleDBError(res, error);
 
-    console.log('User added:', JSON.stringify(results, null, 2));
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ message: 'User added successfully' }));
+      console.log('User added:', JSON.stringify(results, null, 2));
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'User added successfully' }));
+    });
   });
 };
+
+
 
 // Fetch all customers from the database
 const fetchCustomers = (res) => {
@@ -99,8 +109,6 @@ const server = http.createServer((req, res) => {
 server.listen(port, () => {
   console.log(`API server listening at http://localhost:${port}`);
 });
-
-
 
 // Goes in frontend
 

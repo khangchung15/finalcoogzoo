@@ -20,8 +20,8 @@ const LoginPage = () => {
 
     try {
       const url = isSignUp
-        ? "https://yourapi.com/signup" // Replace with Sign Up API
-        : "https://yourapi.com/login"; // Replace with Sign In API
+        ? "http://localhost:3000/api/signup" // Replace with Sign Up API
+        : "http://localhost:3000/api/login"; // Replace with Sign In API
 
       const response = await fetch(url, {
         method: "POST",
