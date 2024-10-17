@@ -4,15 +4,17 @@ import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import animals from './pages/animals';
 import home from './pages/home';
-import exhibits from './pages/exhibits';
-import tickets from './pages/tickets';
-import membership from './pages/membership';
+import exhibits from './pages/Exhibits';
+import tickets from './pages/Tickets';
+import membership from './pages/Membership';
 import events from './pages/events';
 import contactus from './pages/contactus';
 import PrivateRoutes from './components/PrivateRoutes';
+import { AuthProvider } from './components/AuthContext'
 
 function App() {
   return (
+    <AuthProvider>
     <Router>
       <Navbar />
       <Routes>  
@@ -35,6 +37,7 @@ function App() {
 
       </Routes>
     </Router>
+    </AuthProvider>
   );
 }
 

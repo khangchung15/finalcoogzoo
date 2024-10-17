@@ -1,15 +1,14 @@
-import React from 'react';
+import React, { useContext } from 'react'; // Import useContext
 import { Outlet, Navigate } from 'react-router-dom';
+import { AuthContext } from './AuthContext'; // Import the AuthContext
 
 const PrivateRoutes = () => {
-  // Example authentication check (in real case, you'd check for a valid JWT token)
-  let auth = { token: false }; 
+  const { isAuthenticated } = useContext(AuthContext); // Access global authentication state
   
-
-  if (!auth.token) {
-    // Show alert message to the user before redirecting
-   // alert('You must login first!');
-    return <Navigate to="/login" />;
+  if (!isAuthenticated) {
+    // Show alert message to the user before redirecting (optional)
+    // alert('You must login first!');
+    return <Navigate to="/login" />; // Redirect to login if not authenticated
   }
 
   return <Outlet />;  // Render the protected routes if authenticated

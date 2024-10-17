@@ -1,28 +1,28 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; // Import useNavigate
+import React, { useState, useContext } from "react";
+import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../components/AuthContext"; // Import AuthContext for global state
 import "./LoginPage.css";
 
 const LoginPage = () => {
-  const navigate = useNavigate(); // Initialize useNavigate
-  const [isSignUp, setIsSignUp] = useState(false); // Toggle between Sign In and Sign Up
-  const [email, setEmail] = useState(""); // Use email instead of username
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState(""); // Error messages
-  const [loading, setLoading] = useState(false); // Loading state for form submission
+  const navigate = useNavigate();
+  const { login } = useContext(AuthContext); // Use login function from AuthContext
 
-  // Handle form submission for both Sign In and Sign Up
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    const authData = isSignUp
-      ? { email, password } // Use email and password for Sign Up
-      : { email, password }; // Use email and password for Sign In
+    const authData = { email, password };
 
     try {
       const url = isSignUp
-        ? "http://localhost:5000/signup" // Replace with your actual Sign Up API endpoint
-        : "http://localhost:5000/login"; // Replace with your actual Login API endpoint
+        ? "http://localhost:5000/signup"
+        : "http://localhost:5000/login";
 
       const response = await fetch(url, {
         method: "POST",
@@ -36,8 +36,12 @@ const LoginPage = () => {
 
       if (response.ok) {
         console.log(isSignUp ? "Sign Up successful" : "Login successful", data);
-        // Redirect to home page upon successful login
-        navigate("/"); // Adjust this path as necessary
+
+        // Set the login state in AuthContext
+        login(data.user.role); // Pass the user role to login function
+
+        // Redirect to the home page upon successful login
+        navigate("/");
       } else {
         setError(data.message || "An error occurred. Please try again.");
       }
