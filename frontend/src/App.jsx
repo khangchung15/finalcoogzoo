@@ -8,7 +8,6 @@ import Exhibits from './pages/Exhibits';
 import Tickets from './pages/Tickets';
 import Membership from './pages/Membership';
 import Events from './pages/events';
-import Contact from './pages/Contact';
 import Home from './pages/home';
 import PrivateRoutes from './components/PrivateRoutes';
 import { AuthProvider } from './components/AuthContext'
@@ -31,9 +30,13 @@ function App() {
         </Route>
 
         <Route path='/events' element={<Events />} />
+<<<<<<< HEAD
         <Route path='/contact' element={<Contact />} />
 
         <Route path='/login' element={<LoginPage />} />
+=======
+        <Route path='/login' element={<Login />} />
+>>>>>>> daaf172c64ff215f04b8dc6a5e5bef27c7fd8efc
 
       </Routes>
     </Router>
