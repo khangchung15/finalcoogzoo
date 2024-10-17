@@ -74,9 +74,23 @@ const Events = () => {
     fetchEvents();
   }, []);
 
-function Events() {
   return (
     <div className="events-container">
       <h1>Upcoming Events</h1>
+      <ul>
+        {events.map((event) => (
+          <li key={event.id} className="event-item">
+            <h2>{event.name}</h2>
+            <p>{event.description}</p>
+            <p>Date: {event.date}</p>
+            <p>Time: {event.startTime} - {event.endTime}</p>
+            <p>Location: {event.location}</p>
+            <p>Supervisor: {event.supervisor}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
 
-export default Events
+export default Events;
