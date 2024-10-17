@@ -1,0 +1,116 @@
+.exhibits-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: 'Arial', sans-serif;
+    background-color: #f9f9f9;
+    color: #333;
+  }
+  
+  .exhibits-container h1 {
+    text-align: center;
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+    color: #3e8b3e;
+  }
+  
+  /* Filter section*/
+  .filter-section {
+    margin-bottom: 30px;
+    padding: 15px;
+    background-color: #e6f5e6;
+    border-radius: 8px;
+  }
+  
+  .filter-section h3 {
+    font-size: 1.5rem;
+    color: #2f6e2f;
+    margin-bottom: 10px;
+  }
+  
+  .filter-section label {
+    margin-right: 10px;
+    font-weight: bold;
+  }
+  
+  .filter-section select {
+    margin: 5px 15px 15px 0;
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+  }
+  
+  /* Exhibits list container */
+  .exhibits-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+  }
+  
+  .exhibit-card {
+    padding: 20px;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .exhibit-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.15);
+  }
+  
+  /* Exhibit title */
+  .exhibit-card h4 {
+    font-size: 1.5rem;
+    color: #333;
+    margin-bottom: 10px;
+  }
+  
+  /* Exhibit info (location, hours, type) */
+  .exhibit-card p {
+    font-size: 1rem;
+    color: #666;
+    margin: 5px 0;
+  }
+  
+  /* Open status */
+  .exhibit-open {
+    color: #3e8b3e;
+    font-weight: bold;
+  }
+  
+  /* Closed status */
+  .exhibit-closed {
+    background-color: #ffcccc;
+    padding: 10px;
+    border-radius: 5px;
+    color: #d80000;
+    font-weight: bold;
+  }
+  
+  /* Closed reason info */
+  .exhibit-closed p {
+    margin: 5px 0;
+  }
+  
+  @media (max-width: 600px) {
+    .filter-section h3 {
+      font-size: 1.2rem;
+    }
+  
+    .exhibits-container h1 {
+      font-size: 2rem;
+    }
+  
+    .filter-section label, .filter-section select {
+      display: block;
+      margin-bottom: 10px;
+    }
+  
+    .exhibits-list {
+      grid-template-columns: 1fr;
+    }
+  }
+  
