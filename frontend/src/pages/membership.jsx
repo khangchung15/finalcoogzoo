@@ -1,6 +1,6 @@
 import React from 'react'
 
-function membership() {
+function Membership() {
   return (
     <div>
         <h1>Purchase Membership</h1>
@@ -8,4 +8,4 @@ function membership() {
   )
 }
 
-export default membership
+export default Membership;
