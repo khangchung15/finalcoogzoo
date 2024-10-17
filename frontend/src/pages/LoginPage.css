@@ -1,76 +1,70 @@
-body {
-    font-family: Arial, sans-serif;
-    background-color: #f0f0f0;
-    display: flex;
+body{
+    background: linear-gradient(135deg, #1B8AF1, #B58DED);
     height: 100vh;
-    margin: 0;
-  }
-  
-  .login-container {
-    background-color: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    width: 300px;
-    margin: 100px auto;
-  }
-  
-  h2 {
+    width: 100%;
     text-align: center;
-    margin-bottom: 20px;
-  }
-  
-  .input-group {
-    margin-bottom: 15px;
-  }
-  
-  .input-group label {
+}
+
+h4{
+    font-family: 'Segoe UI', bold;
+    font-size: 35px;
+    margin-top: 4rem;
+    margin-bottom: 2rem;
+}
+
+form{
+    display: inline-block;
+    align-items: center;
+    height: 270px;
+    width: 350px;
+    margin-bottom: 170px;
+}
+.text_area{
+    align-content: center;
+    border-radius: 22px;
+    margin-bottom: 35px;
+    width: 100%;
+    height: 64px;
+    box-shadow: 0 0 8px 0 rgba(0, 0, 0, 0.2), 0 0 20px 0 rgba(0, 0, 0, 0.19);
+}
+
+.text_input{
+    margin-top: 1.2rem;
+    font-family: 'Montserrat regular';
+    font-size: 20px;
+    border: none;
+    width: 80%;
+}
+
+.btn{
+    margin-top: 28px;
+    width: 165px;
+    height: 60px;
+    border-radius: 30px;
+    background: #B58DED;
+    border: none;
+    font-family: 'Montserrat';
+    font-size: 20px;
+    color: #FFFFFF;
+    box-shadow: 0 4px 8px 0 rgba(181, 141, 237, 0.7), 0 6px 20px 0 rgba(181, 141, 237, 0.9);
+    cursor: pointer;
+}
+
+.login{
+    display: inline-block;
+    background: #FFFFFF;
+    width: 434px;
+    height: 700px;
+    margin-top: 10%;
+    border-radius: 22px;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
+
+.link{
+    color: #0E4579;
+    font-family: 'Montserrat light';
+    font-size: 18px;
+    cursor: pointer;
     display: block;
-    margin-bottom: 5px;
-  }
-  
-  .input-group input {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-  }
-  
-  .btn {
-    width: 100%;
-    padding: 10px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-  
-  .btn:hover {
-    background-color: #0056b3;
-  }
-  
-  .error {
-    color: red;
-    margin-bottom: 15px;
-    text-align: center;
-  }
-  
-  .toggle-group {
-    text-align: center;
-    margin-top: 15px;
-  }
-  
-  .link-button {
-    background: none;
-    border: none;
-    color: #007bff;
-    cursor: pointer;
-    text-decoration: underline;
-    margin-left: 5px;
-  }
-  
-  .link-button:hover {
-    color: #0056b3;
-  }
-  
+    text-decoration: none;
+}

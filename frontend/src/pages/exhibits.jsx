@@ -1,6 +1,6 @@
 import React from 'react'
 
-function exhibits() {
+function Exhibits() {
   return (
     <div>
         <h1>Our Exhibits</h1>
@@ -8,4 +8,4 @@ function exhibits() {
   )
 }
 
-export default exhibits
+export default Exhibits;
