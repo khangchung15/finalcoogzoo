@@ -1,14 +1,14 @@
 import './App.css';
 import Navbar from './components/Navbar';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import Home from './pages/Home';
 import LoginPage from './pages/LoginPage';
-import animals from './pages/animals';
-import home from './pages/home';
-import exhibits from './pages/Exhibits';
-import tickets from './pages/Tickets';
-import membership from './pages/Membership';
-import events from './pages/events';
-import contactus from './pages/contactus';
+import Animals from './pages/Animals';
+import Exhibits from './pages/Exhibits';
+import Tickets from './pages/Tickets';
+import Membership from './pages/Membership';
+import Events from './pages/Membership';
+import Contact from './pages/Contact';
 import PrivateRoutes from './components/PrivateRoutes';
 import { AuthProvider } from './components/AuthContext'
 
@@ -19,21 +19,21 @@ function App() {
       <Navbar />
       <Routes>  
 
-        <Route path='/' Component={home}/>
-        <Route path='/animals' Component={animals}/>
-        <Route path='/exhibits' Component={exhibits}/>
+        {/* Define the content for the homepage inline here */}
+      
+        <Route path='/' element={<Home />} />
+        <Route path='/animals' element={<Animals />} />
+        <Route path='/exhibits' element={<Exhibits />} />
 
-        <Route element={<PrivateRoutes/>}>
-
-          <Route path='/tickets' Component={tickets}/>
-          <Route path='/membership' Component={membership}/>
-
+        <Route element={<PrivateRoutes />}>
+          <Route path='/tickets' element={<Tickets />} />
+          <Route path='/membership' element={<Membership />} />
         </Route>
 
-        <Route path='/events' Component={events}/>
-        <Route path='/contact' Component={contactus}/>
+        <Route path='/events' element={<Events />} />
+        <Route path='/contact' element={<Contact />} />
 
-        <Route path='/login' Component={LoginPage}/>
+        <Route path='/login' element={<LoginPage />} />
 
       </Routes>
     </Router>
