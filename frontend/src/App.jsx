@@ -7,8 +7,9 @@ import Animals from './pages/Animals';
 import Exhibits from './pages/Exhibits';
 import Tickets from './pages/Tickets';
 import Membership from './pages/Membership';
-import Events from './pages/Membership';
+import Events from './pages/events';
 import Contact from './pages/Contact';
+import Home from './pages/home';
 import PrivateRoutes from './components/PrivateRoutes';
 import { AuthProvider } from './components/AuthContext'
 
@@ -19,9 +20,8 @@ function App() {
       <Navbar />
       <Routes>  
 
-        {/* Define the content for the homepage inline here */}
-      
         <Route path='/' element={<Home />} />
+
         <Route path='/animals' element={<Animals />} />
         <Route path='/exhibits' element={<Exhibits />} />
 
