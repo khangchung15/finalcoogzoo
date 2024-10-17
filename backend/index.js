@@ -1,4 +1,4 @@
-const http = require('http');
+/*const http = require('http');
 const mysql = require('mysql2');
 const port = 3000;
 
@@ -120,3 +120,103 @@ server.listen(port, () => {
 //     )
 //   });
 // }, []);
+
+*/
+
+const mysql = require('mysql2');
+const http = require('http');
+
+// MySQL connection setup
+const connection = mysql.createConnection({
+  host: 'database-1.cpia0w4c2ec6.us-east-2.rds.amazonaws.com',
+  user: 'admin',
+  password: 'zoodatabase1',
+  database: 'ZooManagement'
+});
+
+// Function to check user credentials
+const checkUser = (email, password, callback) => {
+  // Check if the email exists in the Employee table
+  connection.query('SELECT * FROM Employee WHERE Email = ?', [email], (err, employeeResults) => {
+    if (err) return callback(err);
+
+    if (employeeResults.length > 0) {
+      // User is an employee
+      const employee = employeeResults[0];
+      
+      // Check password from passwords table
+      connection.query('SELECT password FROM Passwords WHERE email = ?', [email], (err, passwordResults) => {
+        if (err) return callback(err);
+
+        if (passwordResults.length > 0 && passwordResults[0].password === password) {
+          // Password matches, check role
+          const role = employee.role; // Assuming role is a field in Employee table
+          callback(null, { email, role, type: 'employee' });
+        } else {
+          callback('Invalid password');
+        }
+      });
+    } else {
+      // Check if the email exists in the Customer table
+      connection.query('SELECT * FROM Customer WHERE email = ?', [email], (err, customerResults) => {
+        if (err) return callback(err);
+
+        if (customerResults.length > 0) {
+          // User is a customer
+          // Check password from passwords table
+          connection.query('SELECT password FROM Passwords WHERE email = ?', [email], (err, passwordResults) => {
+            if (err) return callback(err);
+
+            if (passwordResults.length > 0 && passwordResults[0].password === password) {
+              callback(null, { email, type: 'customer' });
+            } else {
+              callback('Invalid password');
+            }
+          });
+        } else {
+          callback('User not found');
+        }
+      });
+    }
+  });
+};
+
+// Start a simple HTTP server to handle login requests
+http.createServer((req, res) => {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*'); // Allow requests from any origin
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS'); // Allow specific methods
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type'); // Allow specific headers
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204); // No content for preflight requests
+    return res.end();
+  }
+
+  if (req.method === 'POST' && req.url === '/login') {
+    let body = '';
+
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+
+    req.on('end', () => {
+      const { email, password } = JSON.parse(body);
+      checkUser(email, password, (err, user) => {
+        if (err) {
+          res.writeHead(401, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ message: err }));
+        } else {
+          // You could return the user's role and other info
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ message: 'Login successful', user }));
+        }
+      });
+    });
+  } else {
+    res.writeHead(404);
+    res.end();
+  }
+}).listen(5000, () => {
+  console.log('Server listening on port 5000');
+});

@@ -1,11 +1,12 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 import "./LoginPage.css";
 
 const LoginPage = () => {
+  const navigate = useNavigate(); // Initialize useNavigate
   const [isSignUp, setIsSignUp] = useState(false); // Toggle between Sign In and Sign Up
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState(""); // Use email instead of username
   const [password, setPassword] = useState("");
-  const [email, setEmail] = useState(""); // Only for Sign Up
   const [error, setError] = useState(""); // Error messages
   const [loading, setLoading] = useState(false); // Loading state for form submission
 
@@ -15,13 +16,13 @@ const LoginPage = () => {
     setLoading(true);
 
     const authData = isSignUp
-      ? { username, email, password }
-      : { username, password }; // Collect data based on form type
+      ? { email, password } // Use email and password for Sign Up
+      : { email, password }; // Use email and password for Sign In
 
     try {
       const url = isSignUp
-        ? "https://yourapi.com/signup" // Replace with Sign Up API
-        : "https://yourapi.com/login"; // Replace with Sign In API
+        ? "http://localhost:5000/signup" // Replace with your actual Sign Up API endpoint
+        : "http://localhost:5000/login"; // Replace with your actual Login API endpoint
 
       const response = await fetch(url, {
         method: "POST",
@@ -35,6 +36,8 @@ const LoginPage = () => {
 
       if (response.ok) {
         console.log(isSignUp ? "Sign Up successful" : "Login successful", data);
+        // Redirect to home page upon successful login
+        navigate("/"); // Adjust this path as necessary
       } else {
         setError(data.message || "An error occurred. Please try again.");
       }
@@ -51,28 +54,15 @@ const LoginPage = () => {
       <h2>{isSignUp ? "Sign Up" : "Sign In"}</h2>
       <form onSubmit={handleSubmit}>
         <div className="input-group">
-          <label htmlFor="username">Username</label>
+          <label htmlFor="email">Email</label>
           <input
-            type="text"
-            id="username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            type="email"
+            id="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             required
           />
         </div>
-
-        {isSignUp && (
-          <div className="input-group">
-            <label htmlFor="email">Email</label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-        )}
 
         <div className="input-group">
           <label htmlFor="password">Password</label>

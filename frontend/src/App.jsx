@@ -10,7 +10,6 @@ import membership from './pages/membership';
 import events from './pages/events';
 import contactus from './pages/contactus';
 import PrivateRoutes from './components/PrivateRoutes';
-import LoginPage from './pages/LoginPage';
 
 function App() {
   return (
