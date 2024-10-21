@@ -3,7 +3,7 @@ import { Outlet, Navigate } from 'react-router-dom';
 
 const PrivateRoutes = () => {
   // Example authentication check (in real case, you'd check for a valid JWT token)
-  let auth = { token: false }; 
+  let auth = { token: true }; 
 
   if (!auth.token) {
 <<<<<<< HEAD
@@ -16,5 +16,4 @@ const PrivateRoutes = () => {
 
   return <Outlet />;  // Render the protected routes if authenticated
 };
-
 export default PrivateRoutes;
