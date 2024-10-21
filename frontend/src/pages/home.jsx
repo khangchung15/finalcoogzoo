@@ -5,6 +5,10 @@ const Home = () => {
   return (
     <div className="home-container">
       <header className="hero-section">
+        <video className="background-video" autoPlay muted loop playsInline>
+          <source src="/gorilla_hd.mp4" type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
         <div className="hero-content">
           <h1>Welcome to the Zoo!</h1>
           <p>Explore the wonders of wildlife, learn about fascinating animals, and enjoy a fun-filled day with family and friends.</p>
