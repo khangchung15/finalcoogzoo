@@ -7,7 +7,6 @@ import Exhibits from './pages/Exhibits';
 import Tickets from './pages/Tickets';
 import Membership from './pages/Membership';
 import Events from './pages/events';
-import Contact from './pages/Contact';
 import Home from './pages/home';
 import PrivateRoutes from './components/PrivateRoutes';
 
@@ -28,8 +27,6 @@ function App() {
         </Route>
 
         <Route path='/events' element={<Events />} />
-        <Route path='/contact' element={<Contact />} />
-
         <Route path='/login' element={<Login />} />
 
       </Routes>
