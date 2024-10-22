@@ -13,6 +13,7 @@ const Exhibits = () => {
       closure_reason: '',
       closure_start: '',
       closure_end: '',
+      //link:https://img.freepik.com/premium-photo/tropical-rainforest-aviary-with-exotic-birds-is-immersive-journey-into-heart-tropical-paradise-generated-by-ai_727385-1970.jpg
     },
     {
       id: 2,
@@ -24,6 +25,7 @@ const Exhibits = () => {
       closure_reason: 'Renovation',
       closure_start: '2024-10-01',
       closure_end: '2024-12-01',
+      //link:
     },
     {
       id: 3,
