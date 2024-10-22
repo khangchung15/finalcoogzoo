@@ -1,15 +1,18 @@
 import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import { AuthContext } from "../components/AuthContext"; // Import AuthContext for global state
+import { AuthContext } from "../components/AuthContext";
 import "./LoginPage.css";
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { login } = useContext(AuthContext); // Use login function from AuthContext
+  const { login } = useContext(AuthContext);
 
   const [isSignUp, setIsSignUp] = useState(false);
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -17,7 +20,9 @@ const LoginPage = () => {
     e.preventDefault();
     setLoading(true);
 
-    const authData = { email, password };
+    const authData = isSignUp
+      ? { name, email, phone, password, dateOfBirth }
+      : { email, password };
 
     try {
       const url = isSignUp
@@ -37,10 +42,12 @@ const LoginPage = () => {
       if (response.ok) {
         console.log(isSignUp ? "Sign Up successful" : "Login successful", data);
 
-        // Set the login state in AuthContext
-        login(data.user.role); // Pass the user role to login function
+        // Assign the 'Customer' role if it's a signup
+        const role = isSignUp ? 'Customer' : data.user.role;
 
-        // Redirect to the home page upon successful login
+        // Pass the role and email to the login function
+        login(role, email); // Updated to include email
+
         navigate("/");
       } else {
         setError(data.message || "An error occurred. Please try again.");
@@ -54,35 +61,73 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="login-container">
-      <h2>{isSignUp ? "Sign Up" : "Sign In"}</h2>
-      <form onSubmit={handleSubmit}>
-        <div className="input-group">
-          <label htmlFor="email">Email</label>
-          <input
-            type="email"
-            id="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
+    <div className="page-container">
+      <div className="auth-container">
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <h2>{isSignUp ? "Sign Up" : "Sign In"}</h2>
 
-        <div className="input-group">
-          <label htmlFor="password">Password</label>
-          <input
-            type="password"
-            id="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
+          {isSignUp && (
+            <>
+              <div className="form-group">
+                <label htmlFor="name">Name</label>
+                <input
+                  type="text"
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
+              </div>
 
-        {error && <p className="error">{error}</p>}
+              <div className="form-group">
+                <label htmlFor="phone">Phone Number</label>
+                <input
+                  type="tel"
+                  id="phone"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  required
+                />
+              </div>
 
-        <div className="input-group">
-          <button type="submit" className="btn" disabled={loading}>
+              <div className="form-group">
+                <label htmlFor="dateOfBirth">Date of Birth</label>
+                <input
+                  type="date"
+                  id="dateOfBirth"
+                  value={dateOfBirth}
+                  onChange={(e) => setDateOfBirth(e.target.value)}
+                  required
+                />
+              </div>
+            </>
+          )}
+
+          <div className="form-group">
+            <label htmlFor="email">Email</label>
+            <input
+              type="email"
+              id="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="password">Password</label>
+            <input
+              type="password"
+              id="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          {error && <p className="error">{error}</p>}
+
+          <button type="submit" className="submit-btn" disabled={loading}>
             {loading
               ? isSignUp
                 ? "Signing up..."
@@ -91,21 +136,19 @@ const LoginPage = () => {
               ? "Sign Up"
               : "Sign In"}
           </button>
-        </div>
 
-        <div className="toggle-group">
-          <p>
-            {isSignUp ? "Already have an account?" : "Don't have an account?"}
+          <p className="mode-toggle">
+            {isSignUp ? "Already have an account? " : "Don't have an account? "}
             <button
               type="button"
-              className="link-button"
+              className="toggle-btn"
               onClick={() => setIsSignUp(!isSignUp)}
             >
               {isSignUp ? "Sign In" : "Sign Up"}
             </button>
           </p>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 };

@@ -1,16 +1,3 @@
-<<<<<<< HEAD
-import React from 'react'
-
-function home() {
-  return (
-    <div>
-        <h1>Welcome to CoogZoo!</h1>
-    </div>
-  )
-}
-
-export default home
-=======
 import React from 'react';
 import './home.css';
 
@@ -57,4 +44,3 @@ const Home = () => {
 }
 
 export default Home;
->>>>>>> e93028ebdbd00e1b208fa80fd4e317029cfd5d8f

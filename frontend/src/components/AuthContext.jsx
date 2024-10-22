@@ -10,20 +10,24 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userRole, setUserRole] = useState(null);
+  const [userEmail, setUserEmail] = useState(null); // Add userEmail state
 
-  // Function to update login status and role
-  const login = (role) => {
+  // Function to update login status, role, and email
+  const login = (role, email) => {
     setIsAuthenticated(true);
-    setUserRole(role);
+    // Set default role to 'Customer' if role is not provided
+    setUserRole(role ? role : 'Customer'); // Default to 'Customer' if role is null or undefined
+    setUserEmail(email); // Store the user's email
   };
 
   const logout = () => {
     setIsAuthenticated(false);
     setUserRole(null);
+    setUserEmail(null); // Clear the user's email on logout
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, userRole, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, userRole, userEmail, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

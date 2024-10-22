@@ -31,36 +31,60 @@ const handleDBError = (res, error) => {
   res.end(JSON.stringify({ error: 'Error processing the request' }));
 };
 
-// Function to check user credentials for login
-const checkUser = (email, password, callback) => {
-  // Check if the email exists in the Employee table
-  connection.query('SELECT * FROM Employee WHERE Email = ?', [email], (err, employeeResults) => {
+// Function to check for existing email in all tables
+const checkEmailExists = (email, callback) => {
+  connection.query('SELECT * FROM Employee WHERE email = ?', [email], (err, employeeResults) => {
     if (err) return callback(err);
 
     if (employeeResults.length > 0) {
-      // User is an employee
-      const employee = employeeResults[0];
-      
-      // Check password from Passwords table
-      connection.query('SELECT password FROM Passwords WHERE email = ?', [email], (err, passwordResults) => {
-        if (err) return callback(err);
-
-        if (passwordResults.length > 0 && passwordResults[0].password === password) {
-          // Password matches, check role
-          const role = employee.role; // Assuming role is a field in Employee table
-          callback(null, { email, role, type: 'employee' });
-        } else {
-          callback('Invalid password');
-        }
-      });
+      return callback(null, true); // Email exists in Employee table
     } else {
-      // Check if the email exists in the Customer table
       connection.query('SELECT * FROM Customer WHERE email = ?', [email], (err, customerResults) => {
         if (err) return callback(err);
 
         if (customerResults.length > 0) {
-          // User is a customer
-          // Check password from Passwords table
+          return callback(null, true); // Email exists in Customer table
+        } else {
+          connection.query('SELECT * FROM Passwords WHERE email = ?', [email], (err, passwordResults) => {
+            if (err) return callback(err);
+            callback(null, passwordResults.length > 0); // Email exists in Passwords table
+          });
+        }
+      });
+    }
+  });
+};
+
+// Function to check user credentials for login
+const checkUser = (email, password, callback) => {
+  connection.query('SELECT * FROM Employee WHERE Email = ?', [email], (err, employeeResults) => {
+    if (err) return callback(err);
+
+    if (employeeResults.length > 0) {
+      const employee = employeeResults[0];
+      connection.query('SELECT role FROM Employee WHERE Email = ?', [email], (err, roleResults) => {
+        if (err) return callback(err);
+
+        if (roleResults.length > 0) {
+          const role = roleResults[0].role;
+          connection.query('SELECT password FROM Passwords WHERE email = ?', [email], (err, passwordResults) => {
+            if (err) return callback(err);
+
+            if (passwordResults.length > 0 && passwordResults[0].password === password) {
+              callback(null, { email, role, type: 'employee' });
+            } else {
+              callback('Invalid password');
+            }
+          });
+        } else {
+          callback('Role not found');
+        }
+      });
+    } else {
+      connection.query('SELECT * FROM Customer WHERE email = ?', [email], (err, customerResults) => {
+        if (err) return callback(err);
+
+        if (customerResults.length > 0) {
           connection.query('SELECT password FROM Passwords WHERE email = ?', [email], (err, passwordResults) => {
             if (err) return callback(err);
 
@@ -78,24 +102,34 @@ const checkUser = (email, password, callback) => {
   });
 };
 
-// Function to add a new user during signup
-const addUser = (jsonData, res) => {
-  const { username, password, email } = jsonData;
-  
-  // No password hashing for signup, storing raw password (can be replaced with hashing logic)
-  const query = 'INSERT INTO customers(username, password, email) VALUES (?, ?, ?)';
-  const values = [username, password, email];
-
-  connection.query(query, values, (error, results) => {
-    if (error) return handleDBError(res, error);
-
-    console.log('User added:', JSON.stringify(results, null, 2));
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ message: 'User added successfully' }));
-  });
+// Function to fetch profile data based on user type
+const fetchProfileData = (user, res) => {
+  if (user.type.toLowerCase() === 'customer') {
+    connection.query('SELECT ID, Name, phone, email, DateOfBirth FROM Customer WHERE email = ?', [user.email], (err, results) => {
+      if (err) return handleDBError(res, err);
+      if (results.length > 0) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ profile: results[0] }));
+      } else {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Profile not found' }));
+      }
+    });
+  } else if (user.type.toLowerCase() === 'employee') {
+    connection.query('SELECT ID, Name, phone, email FROM Employee WHERE email = ?', [user.email], (err, results) => {
+      if (err) return handleDBError(res, err);
+      if (results.length > 0) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ profile: results[0] }));
+      } else {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Profile not found' }));
+      }
+    });
+  }
 };
 
-// HTTP Server to handle both login and signup requests
+// HTTP Server to handle both login, signup, and profile requests
 http.createServer((req, res) => {
   setCORSHeaders(res);
 
@@ -118,7 +152,6 @@ http.createServer((req, res) => {
           res.writeHead(401, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ message: err }));
         } else {
-          // Return the user's role and other info
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ message: 'Login successful', user }));
         }
@@ -138,13 +171,24 @@ http.createServer((req, res) => {
       } catch (error) {
         console.error('Error parsing JSON:', error);
         res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Invalid JSON format' }));
+        res.end(JSON.stringify({ message: 'Invalid JSON' }));
       }
     });
+  } else if (req.method === 'GET' && req.url.startsWith('/profile')) {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const email = url.searchParams.get('email');
+    const type = url.searchParams.get('type');
+
+    if (email && type) {
+      fetchProfileData({ email, type }, res);
+    } else {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Email and type are required' }));
+    }
   } else {
-    res.writeHead(404, { 'Content-Type': 'text/plain' });
-    res.end('Not Found');
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ message: 'Route not found' }));
   }
 }).listen(5000, () => {
-  console.log('Server listening on port 5000');
+  console.log('Server is listening on port 5000');
 });
