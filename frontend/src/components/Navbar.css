@@ -52,22 +52,22 @@ body {
 .navbar-links a {
   color: #F1F2F1;
   text-decoration: none;
-  font-family: 'League Gothic', sans-serif; /* Same font as login button */
+  font-family: 'League Gothic', sans-serif; 
   font-size: 2rem;
   font-weight: bolder;
-  padding: 0.75rem 1.5rem; /* Same padding as login button */
-  border-radius: 5px;      /* Adds a slight border-radius */
+  padding: 0.75rem 1.5rem; 
+  border-radius: 5px;      
   transition: background-color 0.3s, transform 0.3s;
 }
 
 .navbar-links a:hover {
-  background-color: #2E7D32; /* Same hover effect as login button */
-  transform: scale(1.1);     /* Slightly enlarge on hover */
+  background-color: #2E7D32; 
+  transform: scale(1.1);     
 }
 
 .navbar-links a:active {
-  background-color: #1B5E20; /* Same active effect as login button */
-  transform: scale(1);       /* Return to original size on click */
+  background-color: #1B5E20; 
+  transform: scale(1);       
 }
 
 /* Login/Signup Button */
