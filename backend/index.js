@@ -7,7 +7,7 @@ const connection = mysql.createConnection({
   host: 'database-1.cpia0w4c2ec6.us-east-2.rds.amazonaws.com',
   user: 'admin',
   password: 'zoodatabase1',
-  database: 'SampleDB',
+  database: 'ZooManagement',
 });
 
 connection.connect((err) => {
@@ -15,7 +15,7 @@ connection.connect((err) => {
     console.error('Error connecting to the database:', err);
     return;
   }
-  console.log('Connected to the SampleDB database.');
+  console.log('Connected to the ZooManagement database.');
 });
 
 // Set common CORS headers
@@ -32,28 +32,44 @@ const handleDBError = (res, error) => {
   res.end(JSON.stringify({ error: 'Error processing the request' }));
 };
 
-// Handle the addition of a new user
+// Handle the addition of a new user without password hashing
 const addUser = (jsonData, res) => {
-  const { first_name, last_name, email, phone_number } = jsonData;
+  const { email, password } = jsonData;
 
-  const query = `INSERT INTO customers(first_name, last_name, email, phone_number) VALUES (?, ?, ?, ?)`;
-  const values = [first_name, last_name, email, phone_number];
-
-  connection.query(query, values, (error, results) => {
+  // Insert into the Customer table
+  const customerQuery = `INSERT INTO Customer(email) VALUES (?)`;
+  connection.query(customerQuery, [email], (error, customerResults) => {
     if (error) return handleDBError(res, error);
 
-    console.log('User added:', JSON.stringify(results, null, 2));
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ message: 'User added successfully' }));
+    // Insert into the Passwords table
+    const passwordQuery = `INSERT INTO Passwords(email, password) VALUES (?, ?)`;
+    connection.query(passwordQuery, [email, password], (error, passwordResults) => {
+      if (error) return handleDBError(res, error);
+
+      console.log('User added:', JSON.stringify({ customerResults, passwordResults }, null, 2));
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'User added successfully' }));
+    });
   });
 };
 
 // Fetch all customers from the database
 const fetchCustomers = (res) => {
-  connection.query('SELECT * FROM customers', (error, results) => {
+  connection.query('SELECT * FROM Customer', (error, results) => {
     if (error) return handleDBError(res, error);
 
     console.log('Fetched customers:', JSON.stringify(results, null, 2));
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(results));
+  });
+};
+
+// Fetch all animals from the database
+const fetchAnimals = (res) => {
+  connection.query('SELECT * FROM Animal', (error, results) => {
+    if (error) return handleDBError(res, error);
+
+    console.log('Fetched animals:', JSON.stringify(results, null, 2));
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(results));
   });
@@ -89,6 +105,8 @@ const server = http.createServer((req, res) => {
         res.end(JSON.stringify({ error: 'Invalid JSON format' }));
       }
     });
+  } else if (req.method === 'GET' && req.url === '/api/animals') {
+    fetchAnimals(res); // Add this line to fetch animals
   } else {
     res.writeHead(404, { 'Content-Type': 'text/plain' });
     res.end('Not Found');
@@ -99,24 +117,3 @@ const server = http.createServer((req, res) => {
 server.listen(port, () => {
   console.log(`API server listening at http://localhost:${port}`);
 });
-
-
-
-// Goes in frontend
-
-// useEffect(() => {
-//   fetch('http://localhost:3000/api/signup', {
-//     method: "POST",
-//     headers: {
-//       'Content-Type': 'application/json',
-//     },
-//     body: JSON.stringify(
-//       {
-//         first_name: "Someone",
-//         last_name: "else",
-//         email: "test3524234234@email.com",
-//         phone_number: "35223523523",
-//       }
-//     )
-//   });
-// }, []);
