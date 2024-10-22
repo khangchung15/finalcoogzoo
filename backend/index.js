@@ -64,6 +64,17 @@ const fetchCustomers = (res) => {
   });
 };
 
+// Fetch all animals from the database
+const fetchAnimals = (res) => {
+  connection.query('SELECT * FROM Animal', (error, results) => {
+    if (error) return handleDBError(res, error);
+
+    console.log('Fetched animals:', JSON.stringify(results, null, 2));
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(results));
+  });
+};
+
 // Create the server
 const server = http.createServer((req, res) => {
   console.log(`Received request: ${req.method} ${req.url}`);
@@ -94,6 +105,8 @@ const server = http.createServer((req, res) => {
         res.end(JSON.stringify({ error: 'Invalid JSON format' }));
       }
     });
+  } else if (req.method === 'GET' && req.url === '/api/animals') {
+    fetchAnimals(res); // Add this line to fetch animals
   } else {
     res.writeHead(404, { 'Content-Type': 'text/plain' });
     res.end('Not Found');
