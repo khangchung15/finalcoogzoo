@@ -13,6 +13,10 @@ const Account = () => {
   const displayRole = userRole === 'Customer' ? 'Customer' : 'Employee';
 
   useEffect(() => {
+    console.log(userEmail);
+    console.log(userRole);
+    console.log(displayRole);
+
     const fetchProfileData = async () => {
       try {
         const response = await fetch(`http://localhost:5000/profile?email=${encodeURIComponent(userEmail)}&type=${encodeURIComponent(displayRole)}`, {
