@@ -4,18 +4,18 @@ import { useAuth } from '../components/AuthContext';
 import './Account.css';
 
 const Account = () => {
-  const { userRole, userEmail } = useAuth();
+  const { userRole, userEmail } = useAuth(); // Get userRole for display
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    console.log('User Email:', userEmail); // Log userEmail
-    console.log('User Role:', userRole); // Log userRole
+  // Use displayRole derived from userRole
+  const displayRole = userRole === 'Customer' ? 'Customer' : 'Employee';
 
+  useEffect(() => {
     const fetchProfileData = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/profile?email=${encodeURIComponent(userEmail)}&type=${encodeURIComponent(userRole)}`, {
+        const response = await fetch(`http://localhost:5000/profile?email=${encodeURIComponent(userEmail)}&type=${encodeURIComponent(displayRole)}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -23,14 +23,12 @@ const Account = () => {
         });
 
         if (!response.ok) {
-          const errorText = await response.text(); // Get the error message from the response
-          throw new Error(`Failed to fetch profile data: ${errorText}`);
+          throw new Error('Failed to fetch profile data');
         }
 
         const data = await response.json();
         setProfileData(data.profile); // Access the profile data from the response
       } catch (err) {
-        console.error('Fetch error:', err); // Log the error for debugging
         setError(err.message);
       } finally {
         setLoading(false);
@@ -40,21 +38,21 @@ const Account = () => {
     if (userEmail) {
       fetchProfileData();
     }
-  }, [userEmail, userRole]);
+  }, [userEmail, displayRole]);
 
   return (
     <div className="account-container">
       <div className="role-display">
-        <h2>User Role: {userRole ? userRole : "No role assigned"}</h2>
+        <h2>User Role: {userRole ? userRole : "No role assigned"}</h2> {/* Display userRole here */}
       </div>
 
       <div className="account-header">
-        {userRole && userRole !== 'Customer' && (
+        {displayRole === 'Employee' && (
           <Link to="/employee-dashboard" className="dashboard-btn">
             Employee Dashboard
           </Link>
         )}
-        {userRole === 'Manager' && (
+        {userRole === 'Manager' && ( // Check userRole for Manager
           <Link to="/manager-dashboard" className="dashboard-btn">
             Manager Dashboard
           </Link>

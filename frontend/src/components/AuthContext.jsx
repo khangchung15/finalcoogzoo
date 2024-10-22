@@ -15,8 +15,7 @@ export const AuthProvider = ({ children }) => {
   // Function to update login status, role, and email
   const login = (role, email) => {
     setIsAuthenticated(true);
-    // Set default role to 'Customer' if role is not provided
-    setUserRole(role ? role : 'Customer'); // Default to 'Customer' if role is null or undefined
+    setUserRole(role); // Set the userRole directly
     setUserEmail(email); // Store the user's email
   };
 
@@ -26,8 +25,11 @@ export const AuthProvider = ({ children }) => {
     setUserEmail(null); // Clear the user's email on logout
   };
 
+  // Create a displayRole based on userRole
+  const displayRole = userRole === 'Customer' ? 'Customer' : 'Employee';
+
   return (
-    <AuthContext.Provider value={{ isAuthenticated, userRole, userEmail, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, userRole, userEmail, login, logout, displayRole }}>
       {children}
     </AuthContext.Provider>
   );
