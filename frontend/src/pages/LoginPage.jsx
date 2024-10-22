@@ -42,11 +42,11 @@ const LoginPage = () => {
       if (response.ok) {
         console.log(isSignUp ? "Sign Up successful" : "Login successful", data);
 
-        // Assign the 'Customer' role if it's a signup
-        const role = isSignUp ? 'Customer' : data.user.role;
+        // Determine role for login and assign 'Customer' for signup
+        const role = isSignUp ? 'Customer' : data.user?.role;
 
-        // Pass the role and email to the login function
-        login(role, email); // Updated to include email
+        // Call the login function with the role and email
+        login(role, email);
 
         navigate("/");
       } else {

@@ -23,7 +23,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setIsAuthenticated(false);
     setUserRole('Customer'); // Reset to default role on logout
-    setUserEmail(null); // Clear the user's email on logout
+    setUserEmail(null); // Clear the user's email on logocut
   };
 
   return (
