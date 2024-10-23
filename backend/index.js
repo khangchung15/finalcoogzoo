@@ -32,33 +32,12 @@ const handleDBError = (res, error) => {
   res.end(JSON.stringify({ error: 'Error processing the request' }));
 };
 
-// Handle the addition of a new user without password hashing
-const addUser = (jsonData, res) => {
-  const { email, password } = jsonData;
-
-  // Insert into the Customer table
-  const customerQuery = `INSERT INTO Customer(email) VALUES (?)`;
-  connection.query(customerQuery, [email], (error, customerResults) => {
+// Fetch all exhibits from the database
+const fetchExhibits = (res) => {
+  connection.query('SELECT * FROM Exhibit', (error, results) => {
     if (error) return handleDBError(res, error);
 
-    // Insert into the Passwords table
-    const passwordQuery = `INSERT INTO Passwords(email, password) VALUES (?, ?)`;
-    connection.query(passwordQuery, [email, password], (error, passwordResults) => {
-      if (error) return handleDBError(res, error);
-
-      console.log('User added:', JSON.stringify({ customerResults, passwordResults }, null, 2));
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ message: 'User added successfully' }));
-    });
-  });
-};
-
-// Fetch all customers from the database
-const fetchCustomers = (res) => {
-  connection.query('SELECT * FROM Customer', (error, results) => {
-    if (error) return handleDBError(res, error);
-
-    console.log('Fetched customers:', JSON.stringify(results, null, 2));
+    console.log('Fetched exhibits:', JSON.stringify(results, null, 2));
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(results));
   });
@@ -106,7 +85,9 @@ const server = http.createServer((req, res) => {
       }
     });
   } else if (req.method === 'GET' && req.url === '/api/animals') {
-    fetchAnimals(res); // Add this line to fetch animals
+    fetchAnimals(res); // Handle fetching animals
+  } else if (req.method === 'GET' && req.url === '/api/exhibits') {
+    fetchExhibits(res); // Handle fetching exhibits
   } else {
     res.writeHead(404, { 'Content-Type': 'text/plain' });
     res.end('Not Found');

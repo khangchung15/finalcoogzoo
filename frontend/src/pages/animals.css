@@ -21,10 +21,6 @@
   transition: transform 0.2s; /* Smooth hover effect */
 }
 
-.animal-card:hover {
-  transform: scale(1.05); /* Scale effect on hover */
-}
-
 .animal-image {
   width: 100%; /* Make the image responsive */
   height: auto; /* Maintain aspect ratio */
