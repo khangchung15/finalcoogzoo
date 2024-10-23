@@ -6,7 +6,7 @@ const Home = () => {
     <div className="home-container">
       <header className="hero-section">
         <video className="background-video" autoPlay muted loop playsInline>
-          <source src="/gorilla_hd.mp4" type="video/mp4" />
+        <source src="/coog-zoo/gorilla_hd.mp4" type="video/mp4" />
           Your browser does not support the video tag.
         </video>
         <div className="hero-content">
@@ -15,7 +15,7 @@ const Home = () => {
           <a href="/tickets" className="cta-button">Get Tickets Now</a>
         </div>
       </header>
-
+                                              
       <section className="about-section">
         <h2>About Our Zoo</h2>
         <p>Our zoo is home to a wide variety of animals from around the world. We are committed to animal conservation and providing a safe and enriching environment for all our wildlife.</p>
