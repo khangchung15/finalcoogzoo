@@ -47,3 +47,21 @@
   object-fit: cover;
   border-radius: 5px;
 }
+
+.exhibit-filter {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.exhibit-filter label {
+  margin-right: 10px;
+  font-weight: bold;
+}
+
+.exhibit-filter select {
+  padding: 5px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}

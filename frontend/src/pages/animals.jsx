@@ -5,16 +5,27 @@ const Animal = () => {
   const [animals, setAnimals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [exhibits, setExhibits] = useState([]); // State for holding available exhibits
+  const [selectedExhibit, setSelectedExhibit] = useState(''); // State for selected exhibit
 
   useEffect(() => {
-    const fetchAnimals = async () => {
+    // Fetch animals and exhibits when component mounts
+    const fetchAnimalsAndExhibits = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/animals');
-        if (!response.ok) {
+        const animalResponse = await fetch('http://localhost:3000/api/animals');
+        if (!animalResponse.ok) {
           throw new Error('Failed to fetch animals');
         }
-        const data = await response.json();
-        setAnimals(data);
+        const animalData = await animalResponse.json();
+
+        // Sort animals alphabetically by name
+        const sortedAnimals = animalData.sort((a, b) => a.Name.localeCompare(b.Name));
+        setAnimals(sortedAnimals);
+
+        // Get the unique exhibit names from the sorted animal data
+        const uniqueExhibits = Array.from(new Set(sortedAnimals.map(animal => animal.Exhibit_Name)));
+        setExhibits(uniqueExhibits);
+
       } catch (err) {
         setError(err.message);
       } finally {
@@ -22,8 +33,18 @@ const Animal = () => {
       }
     };
 
-    fetchAnimals();
+    fetchAnimalsAndExhibits();
   }, []);
+
+  // Handle exhibit filter change
+  const handleExhibitChange = (event) => {
+    setSelectedExhibit(event.target.value);
+  };
+
+  // Filter animals by selected exhibit
+  const filteredAnimals = selectedExhibit
+    ? animals.filter(animal => animal.Exhibit_Name === selectedExhibit)
+    : animals;
 
   if (loading) {
     return <div>Loading...</div>;
@@ -35,22 +56,39 @@ const Animal = () => {
 
   return (
     <div className="animals-container">
-      <h1>Animals List</h1>
+      <h1>browse through our pages of animals to see who you can visit!</h1>
+
+      {/* Dropdown for selecting an exhibit */}
+      <div className="exhibit-filter">
+        <label htmlFor="exhibit">filter by exhibit: </label>
+        <select id="exhibit" onChange={handleExhibitChange}>
+          <option value="">all Exhibits</option>
+          {exhibits.map(exhibitName => (
+            <option key={exhibitName} value={exhibitName}>
+              {exhibitName}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <div className="animals-list">
-        {animals.map((animal) => (
-          <div className="animal-card" key={animal.ID}>
-            {/* Add an image tag for displaying animal images */}
-            <img src={animal.Image_Link} alt={animal.Name} className="animal-image" />
-            <h4>{animal.Name}</h4>
-            <p><strong>Scientific Name:</strong> {animal.Scientific_Name}</p>
-            <p><strong>Habitat:</strong> {animal.Habitat}</p>
-            <p><strong>Species:</strong> {animal.Species}</p>
-            <p><strong>Date of Birth:</strong> {new Date(animal.Date_Of_Birth).toLocaleDateString()}</p>
-            <p><strong>Height:</strong> {animal.Height} m</p>
-            <p><strong>Weight:</strong> {animal.Weight} kg</p>
-            <p><strong>Fun Fact:</strong> {animal.Fun_Fact}</p>
-          </div>
-        ))}
+        {filteredAnimals.length > 0 ? (
+          filteredAnimals.map((animal) => (
+            <div className="animal-card" key={animal.ID}>
+              <img src={animal.Image_Link} alt={animal.Name} className="animal-image" />
+              <h4>{animal.Name}</h4>
+              <p><strong>Scientific Name:</strong> {animal.Scientific_Name}</p>
+              <p><strong>Habitat:</strong> {animal.Habitat}</p>
+              <p><strong>Species:</strong> {animal.Species}</p>
+              <p><strong>Date of Birth:</strong> {new Date(animal.Date_Of_Birth).toLocaleDateString()}</p>
+              <p><strong>Height:</strong> {animal.Height} m</p>
+              <p><strong>Weight:</strong> {animal.Weight} kg</p>
+              <p><strong>Fun Fact:</strong> {animal.Fun_Fact}</p>
+            </div>
+          ))
+        ) : (
+          <div>No animals found for the selected exhibit.</div>
+        )}
       </div>
     </div>
   );
