@@ -1,114 +1,58 @@
 .exhibits-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-    font-family: 'Arial', sans-serif;
-    background-color: #f9f9f9;
-    color: #333;
-  }
-  
-  .exhibits-container h1 {
-    text-align: center;
-    font-size: 2.5rem;
-    margin-bottom: 20px;
-    color: #3e8b3e;
-  }
-  .filter-section {
-    margin-bottom: 30px;
-    padding: 15px;
-    background-color: #e6f5e6;
-    border-radius: 8px;
-  }
-  
-  .filter-section h3 {
-    font-size: 1.5rem;
-    color: #2f6e2f;
-    margin-bottom: 10px;
-  }
-  
-  .filter-section label {
-    margin-right: 10px;
-    font-weight: bold;
-  }
-  
-  .filter-section select {
-    margin: 5px 15px 15px 0;
-    padding: 8px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-  }
-  
-  /* Exhibits list container */
-  .exhibits-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 20px;
-  }
-  
+  padding: 20px;
+  background-color: #f8f9fa; /* Light background color */
+}
+
+.exhibits-list {
+  display: flex;
+  flex-wrap: wrap; /* Allow items to wrap */
+  justify-content: center; /* Center items */
+  gap: 20px; /* Space between cards */
+  width: 100%;
+}
+
+.exhibit-card {
+  background-color: #ffffff; /* White background for each card */
+  border: 1px solid #dee2e6; /* Light border */
+  border-radius: 8px; /* Rounded corners */
+  padding: 15px; /* Inner spacing */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+  width: calc(30% - 20px); /* Adjust card width and account for gap (3 per row) */
+  transition: transform 0.2s; /* Smooth hover effect */
+}
+
+.exhibit-image {
+  width: 100%; /* Make the image responsive */
+  height: auto; /* Maintain aspect ratio */
+  border-radius: 8px; /* Optional: adds rounded corners to the image */
+}
+
+.exhibit-card h4 {
+  margin: 10px 0; /* Spacing for the heading */
+  font-size: 1.2em; /* Slightly larger font for the name */
+}
+
+.exhibit-card p {
+  margin: 5px 0; /* Consistent spacing for paragraphs */
+  color: #6c757d; /* Text color for description */
+}
+
+.exhibit-card img {
+  width: 100%;
+  height: 400px; /* Fixed height for exhibit images */
+  object-fit: cover; /* Maintain aspect ratio */
+  border-radius: 5px; /* Rounded corners for the image */
+}
+
+/* Responsive adjustments */
+@media (max-width: 800px) {
   .exhibit-card {
-    padding: 20px;
-    background-color: white;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+      width: calc(45% - 20px); /* 2 per row on smaller screens */
   }
-  
-  .exhibit-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+@media (max-width: 300px) {
+  .exhibit-card {
+      width: calc(100% - 10px); /* 1 per row on very small screens */
   }
-  
-  /* Exhibit title */
-  .exhibit-card h4 {
-    font-size: 1.5rem;
-    color: #333;
-    margin-bottom: 10px;
-  }
-  
-  /* Exhibit info (location, hours, type) */
-  .exhibit-card p {
-    font-size: 1rem;
-    color: #666;
-    margin: 5px 0;
-  }
-  
-  /* Open status */
-  .exhibit-open {
-    color: #3e8b3e;
-    font-weight: bold;
-  }
-  
-  /* Closed status */
-  .exhibit-closed {
-    background-color: #ffcccc;
-    padding: 10px;
-    border-radius: 5px;
-    color: #d80000;
-    font-weight: bold;
-  }
-  
-  /* Closed reason info */
-  .exhibit-closed p {
-    margin: 5px 0;
-  }
-  
-  @media (max-width: 600px) {
-    .filter-section h3 {
-      font-size: 1.2rem;
-    }
-  
-    .exhibits-container h1 {
-      font-size: 2rem;
-    }
-  
-    .filter-section label, .filter-section select {
-      display: block;
-      margin-bottom: 10px;
-    }
-  
-    .exhibits-list {
-      grid-template-columns: 1fr;
-    }
-  }
-  
+}
