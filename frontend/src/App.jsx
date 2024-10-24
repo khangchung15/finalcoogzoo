@@ -2,7 +2,7 @@ import './App.css';
 import Navbar from './components/Navbar';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import Login from './pages/Login';
-import Animals from './pages/Animals';
+import Animal from './pages/animals';
 import Exhibits from './pages/Exhibits';
 import Tickets from './pages/Tickets';
 import Membership from './pages/Membership';
@@ -18,7 +18,7 @@ function App() {
 
         <Route path='/' element={<Home />} />
 
-        <Route path='/animals' element={<Animals />} />
+        <Route path='/animals' element={<Animal />} />
         <Route path='/exhibits' element={<Exhibits />} />
 
         <Route element={<PrivateRoutes />}>

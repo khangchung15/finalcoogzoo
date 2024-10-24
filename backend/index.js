@@ -45,12 +45,28 @@ const fetchExhibits = (res) => {
 
 // Fetch all animals from the database
 const fetchAnimals = (res) => {
-  connection.query('SELECT * FROM Animal', (error, results) => {
+  connection.query('SELECT * FROM AnimalShowcase', (error, results) => {
     if (error) return handleDBError(res, error);
 
     console.log('Fetched animals:', JSON.stringify(results, null, 2));
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(results));
+  });
+};
+
+// Fetch all events from the database
+const fetchEvents = (res) => {
+  connection.query('SELECT * FROM Event', (error, results) => {
+    if (error) return handleDBError(res, error);
+
+    if (results.length === 0) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify([])); // Return empty array if no events
+    } else {
+      console.log('Fetched events:', JSON.stringify(results, null, 2));
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(results));
+    }
   });
 };
 
@@ -65,25 +81,8 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  if (req.method === 'GET' && req.url === '/api/customers') {
-    fetchCustomers(res);
-  } else if (req.method === 'POST' && req.url === '/api/signup') {
-    let body = '';
-
-    req.on('data', (chunk) => {
-      body += chunk.toString();
-    });
-
-    req.on('end', () => {
-      try {
-        const jsonData = JSON.parse(body);
-        addUser(jsonData, res);
-      } catch (error) {
-        console.error('Error parsing JSON:', error);
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Invalid JSON format' }));
-      }
-    });
+  if (req.method === 'GET' && req.url === '/api/events') {
+    fetchEvents(res); // Handle fetching events
   } else if (req.method === 'GET' && req.url === '/api/animals') {
     fetchAnimals(res); // Handle fetching animals
   } else if (req.method === 'GET' && req.url === '/api/exhibits') {
@@ -93,6 +92,7 @@ const server = http.createServer((req, res) => {
     res.end('Not Found');
   }
 });
+
 
 // Start the server
 server.listen(port, () => {
