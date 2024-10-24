@@ -8,7 +8,7 @@ const connection = mysql.createConnection({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
+  database: 'ZooManagement',
 });
 
 connection.connect((err) => {
@@ -76,7 +76,27 @@ const fetchAnimals = (res) => {
   });
 };
 
-// Create the server
+// Fetch all exhibits from the database
+const fetchExhibits = (res) => {
+  console.log('Fetching exhibits from database...');
+  connection.query('SELECT * FROM Exhibit', (error, results) => {
+    if (error) {
+      console.error('Error fetching exhibits:', error);
+      return handleDBError(res, error);
+    }
+
+    if (!results.length) {
+      console.log('No exhibits found.');
+    } else {
+      console.log('Fetched exhibits:', JSON.stringify(results, null, 2));
+    }
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(results));
+  });
+};
+
+/// Create the server
 const server = http.createServer((req, res) => {
   console.log(`Received request: ${req.method} ${req.url}`);
   setCORSHeaders(res);
@@ -107,7 +127,9 @@ const server = http.createServer((req, res) => {
       }
     });
   } else if (req.method === 'GET' && req.url === '/api/animals') {
-    fetchAnimals(res); // Add this line to fetch animals
+    fetchAnimals(res); 
+  } else if (req.method === 'GET' && req.url === '/api/exhibits') { // Added route for fetching exhibits
+    fetchExhibits(res);
   } else {
     res.writeHead(404, { 'Content-Type': 'text/plain' });
     res.end('Not Found');
