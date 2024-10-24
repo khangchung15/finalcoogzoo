@@ -14,6 +14,7 @@ const Exhibits = () => {
           throw new Error('Failed to fetch exhibits');
         }
         const data = await response.json();
+        console.log(data); // Log the fetched data
         setExhibits(data);
       } catch (err) {
         setError(err.message);
@@ -21,10 +22,10 @@ const Exhibits = () => {
         setLoading(false);
       }
     };
-
+  
     fetchExhibits();
   }, []);
-
+  
   if (loading) {
     return <div>Loading...</div>;
   }
