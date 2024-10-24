@@ -55,6 +55,44 @@ const checkEmailExists = (email, callback) => {
   });
 };
 
+const fetchExhibits = (res) => {
+  connection.query('SELECT * FROM Exhibit', (error, results) => {
+    if (error) return handleDBError(res, error);
+
+    console.log('Fetched exhibits:', JSON.stringify(results, null, 2));
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(results));
+  });
+};
+
+// Fetch all animals from the database
+const fetchAnimals = (res) => {
+  connection.query('SELECT * FROM AnimalShowcase', (error, results) => {
+    if (error) return handleDBError(res, error);
+
+    console.log('Fetched animals:', JSON.stringify(results, null, 2));
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(results));
+  });
+};
+
+// Fetch all events from the database
+const fetchEvents = (res) => {
+  connection.query('SELECT * FROM Event', (error, results) => {
+    if (error) return handleDBError(res, error);
+
+    if (results.length === 0) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify([])); // Return empty array if no events
+    } else {
+      console.log('Fetched events:', JSON.stringify(results, null, 2));
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(results));
+    }
+  });
+};
+
+
 // Function to add a user to the database during signup
 const addUser = (userData, res) => {
   const { name, email, phone, password, dateOfBirth } = userData;
@@ -220,7 +258,13 @@ http.createServer((req, res) => {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ message: 'Email and type are required' }));
     }
-  } else {
+  } else if (req.method === 'GET' && req.url === '/animals'){
+      fetchAnimals(res);
+    }else if (req.method === 'GET' && req.url === '/exhibits'){
+      fetchExhibits(res);
+    }else if (req.method === 'GET' && req.url === '/events'){
+      fetchEvents(res);
+    }else {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ message: 'Route not found' }));
   }
