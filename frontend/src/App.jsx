@@ -2,7 +2,7 @@ import './App.css';
 import Navbar from './components/Navbar';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import Login from './pages/Login';
-import Animals from './pages/Animals';
+import Animals from './pages/animals';
 import Exhibits from './pages/Exhibits';
 import Tickets from './pages/Tickets';
 import Membership from './pages/Membership';

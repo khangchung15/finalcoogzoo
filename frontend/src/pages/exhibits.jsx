@@ -9,7 +9,7 @@ const Exhibits = () => {
   useEffect(() => {
     const fetchExhibits = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/exhibits');
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/animals`);
         if (!response.ok) {
           throw new Error('Failed to fetch exhibits');
         }

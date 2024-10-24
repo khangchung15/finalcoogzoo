@@ -12,7 +12,7 @@ const Animal = () => {
     // Fetch animals and exhibits when component mounts
     const fetchAnimalsAndExhibits = async () => {
       try {
-        const animalResponse = await fetch('http://localhost:3000/api/animals');
+        const animalResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/animals`);
         if (!animalResponse.ok) {
           throw new Error('Failed to fetch animals');
         }
