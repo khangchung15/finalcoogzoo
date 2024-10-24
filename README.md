@@ -1,2 +1,2 @@
-# cougar-zoo
+# CoogZoo
 Database Project for Uma

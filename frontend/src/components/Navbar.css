@@ -52,22 +52,22 @@ body {
 .navbar-links a {
   color: #F1F2F1;
   text-decoration: none;
-  font-family: 'League Gothic', sans-serif; /* Same font as login button */
+  font-family: 'League Gothic', sans-serif; 
   font-size: 2rem;
   font-weight: bolder;
-  padding: 0.75rem 1.5rem; /* Same padding as login button */
-  border-radius: 5px;      /* Adds a slight border-radius */
+  padding: 0.75rem 1.5rem; 
+  border-radius: 5px;      
   transition: background-color 0.3s, transform 0.3s;
 }
 
 .navbar-links a:hover {
-  background-color: #7C000F; /* Same hover effect as login button */
-  transform: scale(1.1);     /* Slightly enlarge on hover */
+  background-color: #2E7D32; 
+  transform: scale(1.1);     
 }
 
 .navbar-links a:active {
-  background-color: #5A000B; /* Same active effect as login button */
-  transform: scale(1);       /* Return to original size on click */
+  background-color: #1B5E20; 
+  transform: scale(1);       
 }
 
 /* Login/Signup Button */
@@ -132,7 +132,132 @@ body {
     color: #7C000F;
   }
 
-  /* Ensure login/signup is inside the hamburger menu on mobile */
+  /* Ensure login/signup is inside the hamburger men/* Navbar styles */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: #3A9D23;
+  font-family: 'Inter', sans-serif;
+  font-size: bold;
+  width: 100%;
+  box-sizing: border-box;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-logo {
+  display: flex;
+  align-items: center;
+  margin-right: 0.5rem;
+}
+
+.navbar-logo a {
+  color: #F1F2F1;
+  text-decoration: none;
+  font-size: 3rem;
+  font-family: 'League Gothic', sans-serif;
+  font-weight: bolder;
+}
+
+.navbar-links {
+  list-style: none;
+  display: flex;
+  gap: 1.5rem;
+  font-weight: bold;
+}
+
+.navbar-links li {
+  display: inline;
+}
+
+.navbar-links a {
+  color: #F1F2F1;
+  text-decoration: none;
+  font-family: 'League Gothic', sans-serif;
+  font-size: 2rem;
+  font-weight: bolder;
+  padding: 0.75rem 1.5rem;
+  border-radius: 5px;
+  transition: background-color 0.3s, transform 0.3s;
+}
+
+.navbar-links a:hover {
+  background-color: #A5242D; /* Adjusted hover effect */
+  transform: scale(1.1);
+}
+
+.navbar-links a:active {
+  background-color: #802021; /* Adjusted active effect */
+  transform: scale(1);
+}
+
+/* Login/Signup Button */
+.navbar-links .auth-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.navbar-links .auth-buttons a {
+  font-size: 1.5rem;
+  padding: 0.5rem 1rem;
+}
+
+/* Hide the navbar-toggle by default */
+.navbar-toggle {
+  display: none;
+}
+
+/* Responsive Navbar */
+@media (max-width: 768px) {
+  .navbar {
+    flex-direction: row;
+    padding: 1rem;
+    justify-content: center;
+    position: relative;
+  }
+
+  .navbar-logo {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .navbar-toggle {
+    display: block;
+    position: absolute;
+    right: 1rem;
+  }
+
+  .navbar-links {
+    display: none;
+    flex-direction: column;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: #FFFFFF;
+    border: 1px solid #9D2E33; /* Adjusted border color */
+    border-radius: 0.5rem;
+    width: 100%;
+  }
+
+  .navbar-links.open {
+    display: flex;
+  }
+
+  .navbar-links a {
+    color: #9D2E33; /* Adjusted mobile text color */
+  }
+
+  .navbar-links a:hover {
+    color: #A5242D; /* Adjusted mobile hover color */
+  }
+
+  .navbar-links .auth-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+} on mobile */
   .navbar-links .auth-buttons {
     flex-direction: column;
     width: 100%;
