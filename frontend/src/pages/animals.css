@@ -1,0 +1,45 @@
+.animals-container {
+  padding: 20px;
+  background-color: #f8f9fa; /* Light background color */
+}
+
+.animals-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+  width: 100%;
+}
+
+.animal-card {
+  background-color: #ffffff; /* White background for each card */
+  border: 1px solid #dee2e6; /* Light border */
+  border-radius: 8px; /* Rounded corners */
+  padding: 15px; /* Inner spacing */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+  width: calc(25% - 20px); /* Adjust card width and account for gap */
+  transition: transform 0.2s; /* Smooth hover effect */
+}
+
+.animal-image {
+  width: 100%; /* Make the image responsive */
+  height: auto; /* Maintain aspect ratio */
+  border-radius: 8px; /* Optional: adds rounded corners to the image */
+}
+
+.animal-card h4 {
+  margin: 10px 0; /* Spacing for the heading */
+  font-size: 1.2em; /* Slightly larger font for the name */
+}
+
+.animal-card p {
+  margin: 5px 0; /* Consistent spacing for paragraphs */
+  color: #6c757d; /* Text color for description */
+}
+
+.animal-card img {
+  width: 100%;
+  height: 400px;
+  object-fit: cover;
+  border-radius: 5px;
+}
