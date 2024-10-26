@@ -21,6 +21,10 @@
   transition: transform 0.2s; /* Smooth hover effect */
 }
 
+.animal-card:hover {
+  transform: scale(1.05); /* Scale effect on hover */
+}
+
 .animal-image {
   width: 100%; /* Make the image responsive */
   height: auto; /* Maintain aspect ratio */
@@ -42,4 +46,22 @@
   height: 400px;
   object-fit: cover;
   border-radius: 5px;
+}
+
+.exhibit-filter {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.exhibit-filter label {
+  margin-right: 10px;
+  font-weight: bold;
+}
+
+.exhibit-filter select {
+  padding: 5px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
 }
