@@ -1,23 +1,23 @@
 import React, { useContext } from 'react';
 import { Link } from 'react-router-dom';
 import './LoginButton.css';
-import { AuthContext } from './AuthContext'; // Ensure the correct import
+import { AuthContext } from './AuthContext';
 
 const LoginButton = () => {
-  const { isAuthenticated } = useContext(AuthContext); // Access global auth state
-
+  const { isAuthenticated } = useContext(AuthContext);
+  
   return (
-    <li>
+    <>
       {isAuthenticated ? (
-       <Link to="/account">
-         <button className="login-button">My Account</button>
-       </Link>
+        <Link to="/account">
+          <button className="login-button">My Account</button>
+        </Link>
       ) : (
         <Link to="/login">
           <button className="login-button">Login / Signup</button>
         </Link>
       )}
-    </li>
+    </>
   );
 };
 

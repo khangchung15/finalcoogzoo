@@ -7,21 +7,21 @@ import image3 from '../images/3.jpg';
 const Membership = () => {
   const memberships = [
     {
-      tier: 'Beta Maggot',
-      description: 'Most boring & basic membership tier',
-      benefits: ['Ticket Discount', 'Monthly newsletters', 'Discounts on gift shop', 'Brain will slowly turn into a bicycle'],
+      tier: 'Basic',
+      description: 'Free membership available to everyone',
+      benefits: ['No benefits'],
       image: image1,
     },
     {
-      tier: 'Alpha John',
-      description: 'All Maggot benefits. Mid at best',
-      benefits: ['All Maggot benefits', 'Daily newsletters', 'Free parking','Employee will call you 24/7'],
+      tier: 'VIP',
+      description: '\$20/month',
+      benefits: ['Free Parking'],
       image: image2, 
     },
     {
-      tier: 'Sigma Werewolf',
-      description: 'Best membership tier with all the benefits you could think of',
-      benefits: ['All Alpha John benefits', 'Discount on food and drink', 'Priority entry','Employee will rip their shirt & start howling occasionally'],
+      tier: 'Premium',
+      description: '\$70/month',
+      benefits: ['Entry to exclusive exhibits'],
       image: image3
     },
   ];

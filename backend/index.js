@@ -92,6 +92,49 @@ const fetchEvents = (res) => {
   });
 };
 
+const purchaseTicket = (ticketData, res) => {
+  const { customerId, ticketType, price } = ticketData;
+  const purchaseDate = new Date().toISOString().split('T')[0];
+
+  // Insert into Receipt table
+  const insertReceiptQuery = 'INSERT INTO Receipt (Customer_ID, Item_IDs, Total_Amount, Purchase_Date) VALUES (?, ?, ?, ?)';
+  const itemIDs = '1'; // Specify item IDs if needed
+  const totalAmount = price;
+
+  connection.query(insertReceiptQuery, [customerId, itemIDs, totalAmount, purchaseDate], (err, receiptResult) => {
+    if (err) return handleDBError(res, err);
+
+    const receiptId = receiptResult.insertId;
+
+    // Insert into Ticket table using the new Receipt ID
+    const insertTicketQuery = 'INSERT INTO Ticket (Customer_ID, Ticket_Type, Price, Purchase_Date, Receipt_ID) VALUES (?, ?, ?, ?, ?)';
+    
+    connection.query(insertTicketQuery, [customerId, ticketType, price, purchaseDate, receiptId], (err) => {
+      if (err) return handleDBError(res, err);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Ticket purchased successfully', receiptId }));
+    });
+  });
+};
+
+const purchaseTicketHandler = (req, res) => {
+  let body = '';
+  req.on('data', (chunk) => {
+    body += chunk.toString();
+  });
+
+  req.on('end', () => {
+    try {
+      const ticketData = JSON.parse(body);
+      purchaseTicket(ticketData, res); // Call your purchaseTicket function
+    } catch (error) {
+      console.error('Error parsing ticket data:', error);
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Invalid ticket data' }));
+    }
+  });
+};
+
 
 // Function to add a user to the database during signup
 const addUser = (userData, res) => {
@@ -264,10 +307,12 @@ http.createServer((req, res) => {
       fetchExhibits(res);
     }else if (req.method === 'GET' && req.url === '/events'){
       fetchEvents(res);
-    }else {
-    res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ message: 'Route not found' }));
-  }
+    }else if (req.method === 'POST' && req.url === '/tickets') {
+      purchaseTicketHandler(req,res); // Call the new ticket purchase handler
+    } else {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Route not found' }));
+    }
 }).listen(5000, () => {
   console.log('Server is listening on port 5000');
 });

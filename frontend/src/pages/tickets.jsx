@@ -1,113 +1,87 @@
 import React, { useState } from 'react';
 import './tickets.css';
 
-const TicketsPage = () => {
-  const [selectedTicket, setSelectedTicket] = useState(null);
-  const [customerInfo, setCustomerInfo] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    ticketType: '',
-  });
-  const [purchaseSuccess, setPurchaseSuccess] = useState(false);
+const TicketPurchase = () => {
+  const [customerId, setCustomerId] = useState('');
+  const [ticketType, setTicketType] = useState('adult'); // Default ticket type
+  const [price, setPrice] = useState(20); // Default price for adult ticket
+  const [message, setMessage] = useState('');
 
-  const ticketOptions = [
-    { type: 'Child', price: 10 },
-    { type: 'Adult', price: 20 },
-    { type: 'Senior', price: 15 }
-  ];
-
-  const handleTicketSelection = (ticketType) => {
-    setSelectedTicket(ticketType);
-    setCustomerInfo({ ...customerInfo, ticketType });
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setCustomerInfo({ ...customerInfo, [name]: value });
-  };
-
-  const handlePurchase = (e) => {
+  const handlePurchase = async (e) => {
     e.preventDefault();
     
-    if (!customerInfo.name || !customerInfo.email || !customerInfo.phone || !selectedTicket) {
-      alert("Please fill out all fields and select a ticket.");
-      return;
+    const ticketData = {
+      customerId,
+      ticketType,
+      price,
+    };
+
+    try {
+      const response = await fetch('http://localhost:5000/tickets', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(ticketData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage(`Ticket purchased successfully! Receipt ID: ${data.receiptId}`);
+      } else {
+        setMessage(`Error: ${data.message}`);
+      }
+    } catch (error) {
+      console.error('Error during ticket purchase:', error);
+      setMessage('An error occurred while purchasing the ticket.');
     }
-    console.log('Ticket purchased: ', customerInfo);
-
-    setCustomerInfo({
-      name: '',
-      email: '',
-      phone: '',
-      ticketType: '',
-    });
-    setSelectedTicket(null);
-    setPurchaseSuccess(true);
-
-    setTimeout(() => setPurchaseSuccess(false), 5000);
   };
 
   return (
-    <div className="tickets-container">
-      <h1>Purchase Tickets</h1>
-
-      <div className="ticket-selection">
-        {ticketOptions.map((ticket) => (
-          <div key={ticket.type} className="ticket-card">
-            <h3>{ticket.type} Ticket</h3>
-            <p>Price: <span>${ticket.price}</span></p>
-            <button
-              className="purchase-button"
-              onClick={() => handleTicketSelection(ticket.type)}
-            >
-              Select {ticket.type} Ticket
-            </button>
-          </div>
-        ))}
-      </div>
-
-      {selectedTicket && (
-        <form className="customer-info-form" onSubmit={handlePurchase}>
-          <h3>Enter Your Information</h3>
-          <label>Name:</label>
-          <input
-            type="text"
-            name="name"
-            value={customerInfo.name}
-            onChange={handleInputChange}
-            required
-          />
-          <label>Email:</label>
-          <input
-            type="email"
-            name="email"
-            value={customerInfo.email}
-            onChange={handleInputChange}
-            required
-          />
-          <label>Phone:</label>
-          <input
-            type="tel"
-            name="phone"
-            value={customerInfo.phone}
-            onChange={handleInputChange}
-            required
-          />
-          <label>Selected Ticket Type: {selectedTicket}</label>
-          <button type="submit" className="purchase-button">
-            Purchase {selectedTicket} Ticket
-          </button>
-        </form>
-      )}
-
-      {purchaseSuccess && (
-        <div className="purchase-success">
-          Ticket purchased successfully!
+    <div>
+      <h2>Purchase Ticket</h2>
+      <form onSubmit={handlePurchase}>
+        <div>
+          <label>
+            Customer ID:
+            <input
+              type="text"
+              value={customerId}
+              onChange={(e) => setCustomerId(e.target.value)}
+              required
+            />
+          </label>
         </div>
-      )}
+        <div>
+          <label>
+            Ticket Type:
+            <select
+              value={ticketType}
+              onChange={(e) => setTicketType(e.target.value)}
+            >
+              <option value="adult">Adult</option>
+              <option value="child">Child</option>
+              <option value="senior">Senior</option>
+            </select>
+          </label>
+        </div>
+        <div>
+          <label>
+            Price:
+            <input
+              type="number"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              required
+            />
+          </label>
+        </div>
+        <button type="submit">Purchase Ticket</button>
+      </form>
+      {message && <p>{message}</p>}
     </div>
   );
 };
 
-export default TicketsPage;
+export default TicketPurchase;
