@@ -6,6 +6,7 @@ import Animal from './pages/animals';
 import Exhibits from './pages/Exhibits';
 import Tickets from './pages/Tickets';
 import Account from './pages/account';
+import EmployeeDash from './pages/employeedash';
 import Membership from './pages/Membership';
 import Events from './pages/events';
 import PrivateRoutes from './components/PrivateRoutes';
@@ -33,6 +34,8 @@ function App() {
         <Route path='/events' element={<Events />} />
 
         <Route path='/login' element={<LoginPage />} />
+
+        <Route path='/employee-dashboard' element={<EmployeeDash/>} />
 
       </Routes>
     </Router>
