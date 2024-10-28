@@ -206,7 +206,9 @@ const fetchEvents = (res) => {
 
 // Function to add a user to the database during signup
 const addUser = (userData, res) => {
-  const { name, email, phone, password, dateOfBirth } = userData;
+  const { firstName, lastName, email, phone, password, dateOfBirth } = userData;
+
+  // Combine first and last name for the Name field
 
   checkEmailExists(email, (err, exists) => {
     if (err) return handleDBError(res, err);
@@ -215,10 +217,10 @@ const addUser = (userData, res) => {
       return res.end(JSON.stringify({ message: 'Email already exists' }));
     }
 
-    // Proceed to insert the new user into the Customer and Passwords tables
+    // Insert into Customer table with the combined name
     connection.query(
-      'INSERT INTO Customer (Name, email, phone, DateOfBirth) VALUES (?, ?, ?, ?)',
-      [name, email, phone, dateOfBirth],
+      'INSERT INTO Customer (First_name, Last_name, email, phone, DateOfBirth) VALUES (?, ?, ?, ?, ?)',
+      [firstName, lastName, email, phone, dateOfBirth],
       (err, result) => {
         if (err) return handleDBError(res, err);
 
@@ -237,7 +239,6 @@ const addUser = (userData, res) => {
     );
   });
 };
-
 // Function to check user credentials for login
 const checkUser = (email, password, callback) => {
   connection.query('SELECT * FROM Employee WHERE Email = ?', [email], (err, employeeResults) => {
@@ -288,7 +289,7 @@ const checkUser = (email, password, callback) => {
 // Function to fetch profile data based on user type
 const fetchProfileData = (user, res) => {
   if (user.type.toLowerCase() === 'customer') {
-    connection.query('SELECT ID, Name, phone, email, DateOfBirth FROM Customer WHERE email = ?', [user.email], (err, results) => {
+    connection.query('SELECT ID, First_name, Last_name, phone, email, DateOfBirth FROM Customer WHERE email = ?', [user.email], (err, results) => {
       if (err) return handleDBError(res, err);
       if (results.length > 0) {
         res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -362,7 +363,8 @@ http.createServer((req, res) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const email = url.searchParams.get('email');
     const type = url.searchParams.get('type');
-
+    console.log(email);
+    console.log(type);
     if (email && type) {
       fetchProfileData({ email, type }, res);
     } else {

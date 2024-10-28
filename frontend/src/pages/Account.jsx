@@ -72,7 +72,8 @@ const Account = () => {
         ) : profileData ? (
           <>
             <p>ID: {profileData.ID}</p>
-            <p>Name: {profileData.Name}</p>
+            <p>First Name: {profileData.First_name}</p>
+            <p>Last Name: {profileData.Last_name}</p>
             <p>Email: {profileData.email}</p>
             <p>Phone: {profileData.phone}</p>
             <p>Date of Birth: {profileData.DateOfBirth}</p>

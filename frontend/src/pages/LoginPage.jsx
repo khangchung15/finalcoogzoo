@@ -1,3 +1,4 @@
+// LoginPage.jsx
 import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../components/AuthContext";
@@ -8,7 +9,8 @@ const LoginPage = () => {
   const { login } = useContext(AuthContext);
 
   const [isSignUp, setIsSignUp] = useState(false);
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -21,7 +23,14 @@ const LoginPage = () => {
     setLoading(true);
 
     const authData = isSignUp
-      ? { name, email, phone, password, dateOfBirth }
+      ? { 
+          firstName, 
+          lastName,
+          email, 
+          phone, 
+          password, 
+          dateOfBirth 
+        }
       : { email, password };
 
     try {
@@ -41,13 +50,8 @@ const LoginPage = () => {
 
       if (response.ok) {
         console.log(isSignUp ? "Sign Up successful" : "Login successful", data);
-
-        // Determine role for login and assign 'Customer' for signup
         const role = isSignUp ? 'Customer' : data.user?.role;
-
-        // Call the login function with the role and email
         login(role, email);
-
         navigate("/");
       } else {
         setError(data.message || "An error occurred. Please try again.");
@@ -69,12 +73,23 @@ const LoginPage = () => {
           {isSignUp && (
             <>
               <div className="form-group">
-                <label htmlFor="name">Name</label>
+                <label htmlFor="firstName">First Name</label>
                 <input
                   type="text"
-                  id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  id="firstName"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="lastName">Last Name</label>
+                <input
+                  type="text"
+                  id="lastName"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
                   required
                 />
               </div>
