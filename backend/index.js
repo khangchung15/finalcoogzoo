@@ -32,6 +32,122 @@ const handleDBError = (res, error) => {
 };
 
 // Function to check if an email exists in the Employee, Customer, or Passwords table
+const fetchEmployees = (res) => {
+  connection.query('SELECT * FROM Employee', (error, results) => {
+    if (error) {
+      console.error('Database error:', error);
+      return handleDBError(res, error);
+    }
+
+    try {
+      const responseData = JSON.stringify(results);
+      console.log('Fetched employees:', responseData);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(responseData);
+    } catch (jsonError) {
+      console.error('Error serializing JSON:', jsonError);
+      res.writeHead(500, { 'Content-Type': 'text/plain' });
+      res.end('Internal Server Error: Unable to process response.');
+    }
+  });
+};
+
+const addEmployee = (employeeData, res) => {
+  const { name, department, exhibitId, role, phone, email, startDate, supervisorId, status } = employeeData;
+
+  // check if the email already exists
+  checkEmailExists(email, (err, exists) => {
+    if (err) return handleDBError(res, err);
+    if (exists) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ message: 'Email already exists' }));
+    }
+
+    // insert the employee into the Employee table
+    connection.query(
+      `INSERT INTO Employee (Name, Department, Exhibit_ID, Role, Phone, Email, Start_Date, Supervisor_ID, Status) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [name, department, exhibitId || null, role, phone, email, startDate, supervisorId || null, status],
+      (err) => {
+        if (err) return handleDBError(res, err);
+        res.writeHead(201, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Employee added successfully' }));
+      }
+    );
+  });
+};
+
+// function to remove an employee
+const removeEmployee = (employeeId, res) => {
+  connection.query(
+    'DELETE FROM Employee WHERE ID = ?',
+    [employeeId],
+    (err, result) => {
+      if (err) return handleDBError(res, err);
+      if (result.affectedRows > 0) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Employee removed successfully' }));
+      } else {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Employee not found' }));
+      }
+    }
+  );
+};
+
+const addExhibit = (exhibitData, res) => {
+  const { name, location, hours, type, is_closed, closure_reason, closure_start, closure_end, image_link } = exhibitData;
+
+  connection.query(
+    `INSERT INTO Exhibit (Name, Location, Hours, Type, is_closed, closure_reason, closure_start, closure_end, Image_Link) 
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [name, location, hours, type, is_closed || 0, closure_reason || null, closure_start || null, closure_end || null, image_link || null],
+    (err) => {
+      if (err) return handleDBError(res, err);
+      res.writeHead(201, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Exhibit added successfully' }));
+    }
+  );
+};
+
+// Function to update an exhibit
+const updateExhibit = (exhibitId, exhibitData, res) => {
+  const { name, location, hours, type, is_closed, closure_reason, closure_start, closure_end, image_link } = exhibitData;
+
+  connection.query(
+    `UPDATE Exhibit 
+     SET Name = ?, Location = ?, Hours = ?, Type = ?, is_closed = ?, closure_reason = ?, closure_start = ?, closure_end = ?, Image_Link = ? 
+     WHERE ID = ?`,
+    [name, location, hours, type, is_closed || 0, closure_reason || null, closure_start || null, closure_end || null, image_link || null, exhibitId],
+    (err, result) => {
+      if (err) return handleDBError(res, err);
+
+      if (result.affectedRows > 0) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Exhibit updated successfully' }));
+      } else {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Exhibit not found' }));
+      }
+    }
+  );
+};
+
+// Function to remove an exhibit
+const removeExhibit = (exhibitId, res) => {
+  connection.query('DELETE FROM Exhibit WHERE ID = ?', [exhibitId], (err, result) => {
+    if (err) return handleDBError(res, err);
+
+    if (result.affectedRows > 0) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Exhibit removed successfully' }));
+    } else {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Exhibit not found' }));
+    }
+  });
+};
+
 const checkEmailExists = (email, callback) => {
   connection.query('SELECT * FROM Employee WHERE email = ?', [email], (err, employeeResults) => {
     if (err) return callback(err);
@@ -170,7 +286,7 @@ const fetchExhibits = (res) => {
   connection.query('SELECT * FROM Exhibit', (error, results) => {
     if (error) return handleDBError(res, error);
 
-    console.log('Fetched exhibits:', JSON.stringify(results, null, 2));
+    console.log('Fetched exhibits:', JSON.stringify(results));
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(results));
   });
@@ -199,49 +315,6 @@ const fetchEvents = (res) => {
       console.log('Fetched events:', JSON.stringify(results, null, 2));
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(results));
-    }
-  });
-};
-
-const purchaseTicket = (ticketData, res) => {
-  const { customerId, ticketType, price } = ticketData;
-  const purchaseDate = new Date().toISOString().split('T')[0];
-
-  // Insert into Receipt table
-  const insertReceiptQuery = 'INSERT INTO Receipt (Customer_ID, Item_IDs, Total_Amount, Purchase_Date) VALUES (?, ?, ?, ?)';
-  const itemIDs = '1'; // Specify item IDs if needed
-  const totalAmount = price;
-
-  connection.query(insertReceiptQuery, [customerId, itemIDs, totalAmount, purchaseDate], (err, receiptResult) => {
-    if (err) return handleDBError(res, err);
-
-    const receiptId = receiptResult.insertId;
-
-    // Insert into Ticket table using the new Receipt ID
-    const insertTicketQuery = 'INSERT INTO Ticket (Customer_ID, Ticket_Type, Price, Purchase_Date, Receipt_ID) VALUES (?, ?, ?, ?, ?)';
-    
-    connection.query(insertTicketQuery, [customerId, ticketType, price, purchaseDate, receiptId], (err) => {
-      if (err) return handleDBError(res, err);
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ message: 'Ticket purchased successfully', receiptId }));
-    });
-  });
-};
-
-const purchaseTicketHandler = (req, res) => {
-  let body = '';
-  req.on('data', (chunk) => {
-    body += chunk.toString();
-  });
-
-  req.on('end', () => {
-    try {
-      const ticketData = JSON.parse(body);
-      purchaseTicket(ticketData, res); // Call your purchaseTicket function
-    } catch (error) {
-      console.error('Error parsing ticket data:', error);
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ message: 'Invalid ticket data' }));
     }
   });
 };
@@ -466,7 +539,61 @@ http.createServer((req, res) => {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ message: 'Email is required' }));
       }
+    } else if(req.method === 'POST' && req.url === '/add-employee'){
+      let body = '';
+
+    req.on('data', (chunk) => {
+      body += chunk.toString();
+    });
+
+    req.on('end', () => {
+      try {
+        const employeeData = JSON.parse(body);
+        addEmployee(employeeData, res);
+      } catch (error) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Invalid JSON' }));
+      }
+    });
+    }else if(req.method === 'DELETE' && req.url.startsWith('/remove-employee')){
+      const url = new URL(req.url, `http://${req.headers.host}`);
+    const employeeId = url.searchParams.get('id');
+
+    if (employeeId) {
+      removeEmployee(employeeId, res);
     } else {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Employee ID is required' }));
+    }
+    }else if(req.method === 'POST' && req.url === '/add-exhibit'){
+      let body = '';
+
+      req.on('data', (chunk) => {
+        body += chunk.toString();
+      });
+  
+      req.on('end', () => {
+        try {
+          const exhibitData = JSON.parse(body);
+          addExhibit(exhibitData, res);
+        } catch (error) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ message: 'Invalid JSON' }));
+        }
+      });
+    }else if (req.method === 'DELETE' && req.url.startsWith('/remove-exhibit')){
+      const url = new URL(req.url, `http://${req.headers.host}`);
+    const exhibitId = url.searchParams.get('id');
+
+    if (exhibitId) {
+      removeExhibit(exhibitId, res);
+    } else {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Exhibit ID is required' }));
+    }
+    }else if(req.method === 'GET' && req.url === '/employees'){
+      fetchEmployees(res);
+    }else {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ message: 'Route not found' }));
   }

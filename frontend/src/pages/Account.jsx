@@ -76,7 +76,8 @@ const Account = () => {
             <p>Last Name: {profileData.Last_name}</p>
             <p>Email: {profileData.email}</p>
             <p>Phone: {profileData.phone}</p>
-            <p>Date of Birth: {profileData.DateOfBirth}</p>
+            <p>Date of Birth: {new Date(profileData.DateOfBirth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+
           </>
         ) : (
           <p>No profile data available.</p>

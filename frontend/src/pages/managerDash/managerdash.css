@@ -1,0 +1,81 @@
+/* Import the League Gothic font */
+@import url('https://fonts.googleapis.com/css2?family=League+Gothic&display=swap');
+
+/* Manager Dashboard Container */
+.manager-dash {
+    display: flex;
+    font-family: 'Inter', sans-serif;
+    padding-top: 80px; /* Adjust padding to ensure content starts below navbar */
+}
+
+/* Sidebar Styling */
+.sidebar {
+    width: 250px;
+    background-color:#C8102E;
+    padding: 20px;
+    color: white;
+    height: calc(100vh - 60px); /* Adjust for navbar height */
+    position: fixed;
+    left: 0;
+    top: 117px; /* Start below the navbar */
+    overflow-y: auto;
+    z-index: 500; /* Keep it below the navbar */
+}
+
+.sidebar h2 {
+    margin-top: 0;
+}
+
+.sidebar ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.sidebar li {
+    padding: 10px 0;
+    cursor: pointer;
+    color: #ecf0f1;
+}
+
+.sidebar li:hover {
+    background-color: #7C000F;
+}
+
+/* Content Area */
+.content {
+    margin-left: 380px;
+    flex: 1;
+}
+
+.content h1 {
+    color: #C8102E; /* Set the text color to red */
+}
+
+/* Modal */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1500; /* Ensure modal is on top of everything */
+}
+
+.modal-content {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    position: relative;
+}
+
+.close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    cursor: pointer;
+    font-size: 20px;
+}

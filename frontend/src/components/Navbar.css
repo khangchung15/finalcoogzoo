@@ -16,7 +16,7 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 1rem 2rem;
-  background: #3A9D23;
+  background: #C8102E;
   font-family: 'Inter', sans-serif;
   font-size: bold;
   width: 100%;
@@ -61,12 +61,12 @@ body {
 }
 
 .navbar-links a:hover {
-  background-color: #2E7D32; /* Same hover effect as login button */
+  background-color: #711827; /* Same hover effect as login button */
   transform: scale(1.1);     /* Slightly enlarge on hover */
 }
 
 .navbar-links a:active {
-  background-color: #1B5E20; /* Same active effect as login button */
+  background-color: #761021; /* Same active effect as login button */
   transform: scale(1);       /* Return to original size on click */
 }
 
@@ -138,7 +138,7 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 1rem 2rem;
-  background: #3A9D23;
+  background: #C8102E;
   font-family: 'Inter', sans-serif;
   font-size: bold;
   width: 100%;
@@ -262,4 +262,33 @@ body {
     flex-direction: column;
     width: 100%;
   }
+}
+
+.navbar-links .login-button-wrapper {
+  /* Reset display property if necessary */
+  display: inline-block; /* or 'flex' if you want to keep it inline with other items */
+  /* Remove padding, background, or any other inherited styles */
+  padding: 0; /* Reset padding */
+  margin: 0; /* Reset margin */
+  /* Set specific styles as needed */
+}
+
+.navbar-links .login-button-wrapper button {
+  font-size: 1.5rem; /* Adjust font size for the button */
+  padding: 0.5rem 1rem; /* Adjust padding for the button */
+  background-color: transparent; /* No background to match other links */
+  color: #F1F2F1; /* Match color with navbar links */
+  border: 1px solid #F1F2F1; /* Add border for button */
+  border-radius: 5px; /* Match border radius */
+  transition: background-color 0.3s, transform 0.3s;
+}
+
+.navbar-links .login-button-wrapper button:hover {
+  background-color: #A5242D; /* Hover effect for button */
+  transform: scale(1.05); /* Slightly enlarge on hover */
+}
+
+.navbar-links .login-button-wrapper button:active {
+  background-color: #802021; /* Active effect */
+  transform: scale(1); /* Return to original size on click */
 }

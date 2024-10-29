@@ -2,7 +2,7 @@
   text-align: center;
   position: relative;
   min-height: 100vh; 
-  padding-bottom: 3rem; 
+  padding-bottom: 3rem; /* Keep space for the footer */
 }
 
 .App-logo {
@@ -12,7 +12,6 @@
 
 .App-header {
   background-color: #fff;
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -24,15 +23,16 @@
 .App-link {
   color: #61dafb;
 }
+
 .footer {
   background-color: #232323;
   color: white;
   text-align: center;
   padding: 1rem 0;
   width: 100%;
-  position: absolute;
+  position: relative; /* Change from absolute to relative */
   bottom: 0;
-  font: 'Inter', sans-serif;
+  font-family: 'Inter', sans-serif; /* Changed from font to font-family */
 }
 
 .footer-links {
@@ -40,7 +40,7 @@
   justify-content: center;
   gap: 1rem;
   margin-top: 0.5rem;
-  font: 'Inter', sans-serif;
+  font-family: 'Inter', sans-serif; /* Changed from font to font-family */
 }
 
 .footer-links a {
@@ -62,4 +62,3 @@
 .footer-links img:hover {
   transform: scale(1.2); 
 }
-
