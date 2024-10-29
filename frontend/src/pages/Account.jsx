@@ -72,7 +72,8 @@ const Account = () => {
         ) : profileData ? (
           <>
             <p>ID: {profileData.ID}</p>
-            <p>Name: {profileData.Name}</p>
+            <p>First Name: {profileData.First_name}</p>
+            <p>Last Name: {profileData.Last_name}</p>
             <p>Email: {profileData.email}</p>
             <p>Phone: {profileData.phone}</p>
             <p>Date of Birth: {profileData.DateOfBirth}</p>
@@ -80,14 +81,6 @@ const Account = () => {
         ) : (
           <p>No profile data available.</p>
         )}
-      </div>
-
-      <div className="account-section">
-        <h2>Recent Purchases</h2>
-        <ul>
-          <li>Purchase 1</li>
-          <li>Purchase 2</li>
-        </ul>
       </div>
     </div>
   );
