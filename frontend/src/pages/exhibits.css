@@ -1,6 +1,11 @@
 .exhibits-container {
   padding: 20px;
-  background-color: #f8f9fa; /* Light background color */
+  background-color: #f8f9fa;
+}
+
+.exhibits-container h1{
+  padding: 20px;
+  color: #6e0819;
 }
 
 .exhibits-list {

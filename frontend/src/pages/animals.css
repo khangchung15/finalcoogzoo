@@ -3,6 +3,10 @@
   background-color: #f8f9fa; /* Light background color */
 }
 
+.animals-container h1 {
+  color: #6e0819;
+}
+
 .animals-list {
   display: flex;
   flex-wrap: wrap;

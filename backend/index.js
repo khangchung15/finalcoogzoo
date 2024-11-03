@@ -20,7 +20,7 @@ connection.connect((err) => {
 // Set CORS headers
 const setCORSHeaders = (res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, POST, OPTIONS, DELETE');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 };
 
@@ -33,7 +33,7 @@ const handleDBError = (res, error) => {
 
 // Function to check if an email exists in the Employee, Customer, or Passwords table
 const fetchEmployees = (res) => {
-  connection.query('SELECT * FROM Employee', (error, results) => {
+  connection.query('SELECT * FROM Employee WHERE is_deleted = 0', (error, results) => {
     if (error) {
       console.error('Database error:', error);
       return handleDBError(res, error);
@@ -41,7 +41,6 @@ const fetchEmployees = (res) => {
 
     try {
       const responseData = JSON.stringify(results);
-      console.log('Fetched employees:', responseData);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(responseData);
     } catch (jsonError) {
@@ -149,21 +148,21 @@ const removeExhibit = (exhibitId, res) => {
 };
 
 const checkEmailExists = (email, callback) => {
-  connection.query('SELECT * FROM Employee WHERE email = ?', [email], (err, employeeResults) => {
+  connection.query('SELECT * FROM Employee WHERE email = ? AND is_deleted = 0', [email], (err, employeeResults) => {
     if (err) return callback(err);
 
     if (employeeResults.length > 0) {
-      return callback(null, true); // Email exists in Employee table
+      return callback(null, true);
     } else {
-      connection.query('SELECT * FROM Customer WHERE email = ?', [email], (err, customerResults) => {
+      connection.query('SELECT * FROM Customer WHERE email = ? AND is_deleted = 0', [email], (err, customerResults) => {
         if (err) return callback(err);
 
         if (customerResults.length > 0) {
-          return callback(null, true); // Email exists in Customer table
+          return callback(null, true);
         } else {
-          connection.query('SELECT * FROM Passwords WHERE email = ?', [email], (err, passwordResults) => {
+          connection.query('SELECT * FROM Passwords WHERE email = ? AND is_deleted = 0', [email], (err, passwordResults) => {
             if (err) return callback(err);
-            callback(null, passwordResults.length > 0); // Email exists in Passwords table
+            callback(null, passwordResults.length > 0);
           });
         }
       });
@@ -242,31 +241,29 @@ const fetchPurchasedTickets = (email, res) => {
 const fetchAnimalsByExhibitID = (exhibitId, res) => {
   const query = `
     SELECT 
-      Animal.ID, 
+      Animal.ID AS Animal_ID,
       Animal.Name, 
       Animal.Species, 
       Animal.Cage_ID, 
       Cage.Location, 
-      Cage.Type, 
-      Cage.ID,
-      FeedingSchedule.Feeding_Time
+      Cage.Type
     FROM 
       Animal
     JOIN 
       Cage ON Animal.Cage_ID = Cage.ID
-    JOIN 
-      FeedingSchedule ON FeedingSchedule.Animal_ID = Animal.ID
     WHERE 
       Animal.Exhibit_ID = ?
+      AND Animal.is_deleted = 0
+      AND Cage.is_deleted = 0
   `;
 
   connection.query(query, [exhibitId], (error, results) => {
     if (error) return handleDBError(res, error);
-
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(results));
   });
 };
+
 // Code for Employee Dash
 const fetchExhibitIDByEmail = (email, res) => {
   connection.query('SELECT Exhibit_ID FROM Employee WHERE Email = ?', [email], (error, results) => {
@@ -283,10 +280,8 @@ const fetchExhibitIDByEmail = (email, res) => {
 };
 
 const fetchExhibits = (res) => {
-  connection.query('SELECT * FROM Exhibit', (error, results) => {
+  connection.query('SELECT * FROM Exhibit WHERE is_deleted = 0', (error, results) => {
     if (error) return handleDBError(res, error);
-
-    console.log('Fetched exhibits:', JSON.stringify(results));
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(results));
   });
@@ -296,8 +291,6 @@ const fetchExhibits = (res) => {
 const fetchAnimals = (res) => {
   connection.query('SELECT * FROM AnimalShowcase', (error, results) => {
     if (error) return handleDBError(res, error);
-
-    console.log('Fetched animals:', JSON.stringify(results, null, 2));
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(results));
   });
@@ -312,7 +305,7 @@ const fetchEvents = (res) => {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify([])); // Return empty array if no events
     } else {
-      console.log('Fetched events:', JSON.stringify(results, null, 2));
+      //console.log('Fetched events:', JSON.stringify(results, null, 2));
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(results));
     }
@@ -357,17 +350,17 @@ const addUser = (userData, res) => {
 };
 // Function to check user credentials for login
 const checkUser = (email, password, callback) => {
-  connection.query('SELECT * FROM Employee WHERE Email = ?', [email], (err, employeeResults) => {
+  connection.query('SELECT * FROM Employee WHERE Email = ? AND is_deleted = 0', [email], (err, employeeResults) => {
     if (err) return callback(err);
 
     if (employeeResults.length > 0) {
       const employee = employeeResults[0];
-      connection.query('SELECT role FROM Employee WHERE Email = ?', [email], (err, roleResults) => {
+      connection.query('SELECT role FROM Employee WHERE Email = ? AND is_deleted = 0', [email], (err, roleResults) => {
         if (err) return callback(err);
 
         if (roleResults.length > 0) {
           const role = roleResults[0].role;
-          connection.query('SELECT password FROM Passwords WHERE email = ?', [email], (err, passwordResults) => {
+          connection.query('SELECT password FROM Passwords WHERE email = ? AND is_deleted = 0', [email], (err, passwordResults) => {
             if (err) return callback(err);
 
             if (passwordResults.length > 0 && passwordResults[0].password === password) {
@@ -381,11 +374,11 @@ const checkUser = (email, password, callback) => {
         }
       });
     } else {
-      connection.query('SELECT * FROM Customer WHERE email = ?', [email], (err, customerResults) => {
+      connection.query('SELECT * FROM Customer WHERE email = ? AND is_deleted = 0', [email], (err, customerResults) => {
         if (err) return callback(err);
 
         if (customerResults.length > 0) {
-          connection.query('SELECT password FROM Passwords WHERE email = ?', [email], (err, passwordResults) => {
+          connection.query('SELECT password FROM Passwords WHERE email = ? AND is_deleted = 0', [email], (err, passwordResults) => {
             if (err) return callback(err);
 
             if (passwordResults.length > 0 && passwordResults[0].password === password) {
@@ -402,10 +395,11 @@ const checkUser = (email, password, callback) => {
   });
 };
 
+
 // Function to fetch profile data based on user type
 const fetchProfileData = (user, res) => {
   if (user.type.toLowerCase() === 'customer') {
-    connection.query('SELECT ID, First_name, Last_name, phone, email, DateOfBirth FROM Customer WHERE email = ?', [user.email], (err, results) => {
+    connection.query('SELECT ID, First_name, Last_name, phone, email, DateOfBirth FROM Customer WHERE email = ? AND is_deleted = 0', [user.email], (err, results) => {
       if (err) return handleDBError(res, err);
       if (results.length > 0) {
         res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -416,7 +410,7 @@ const fetchProfileData = (user, res) => {
       }
     });
   } else if (user.type.toLowerCase() === 'employee') {
-    connection.query('SELECT ID, Name, phone, email FROM Employee WHERE email = ?', [user.email], (err, results) => {
+    connection.query('SELECT ID, First_Name, Last_Name, phone, email FROM Employee WHERE email = ? AND is_deleted = 0', [user.email], (err, results) => {
       if (err) return handleDBError(res, err);
       if (results.length > 0) {
         res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -427,6 +421,20 @@ const fetchProfileData = (user, res) => {
       }
     });
   }
+};
+
+const fetchAnniversaries = (res) => {
+  const today = new Date();
+  const todayFormatted = today.toISOString().split('T')[0]; // Format the date to YYYY-MM-DD
+
+  connection.query('SELECT * FROM EmployeeAnniversaries WHERE Anniversary_Date = ?', [todayFormatted], (error, results) => {
+    if (error) {
+      return handleDBError(res, error);
+    }
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(results)); // Send the anniversaries data back
+  });
 };
 
 // HTTP Server to handle both login, signup, and profile requests
@@ -530,7 +538,69 @@ http.createServer((req, res) => {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ message: 'Email is required' }));}
   
-    }else if(req.method === 'GET' && req.url.startsWith('/employee-animals')){
+    }else if(req.method === 'GET' && req.url.startsWith('/employee-id')) {
+      const url = new URL(req.url, `http://${req.headers.host}`);
+      const email = url.searchParams.get('email');
+  
+      const query = 'SELECT ID FROM Employee WHERE Email = ?';
+      connection.query(query, [email], (err, result) => {
+          if (err) {
+              console.error("Error fetching employee ID:", err);
+              res.writeHead(500, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Database query error' }));
+              return;
+          }
+          if (result.length > 0) {
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ employeeId: result[0].ID }));
+          } else {
+              res.writeHead(404, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Employee not found' }));
+          }
+      });
+   }else if (req.method === 'POST' && req.url === '/add-report') {
+    let body = '';
+
+    // Collect request data
+    req.on('data', chunk => {
+        body += chunk.toString();
+    });
+
+    req.on('end', () => {
+        const { animalId, employeeId, diagnosis, treatment, reportDate } = JSON.parse(body);
+        // Step 1: Get the latest Report_ID and increment it
+        const getReportIdQuery = 'SELECT MAX(Report_ID) AS maxReportId FROM AnimalHealthReport';
+        connection.query(getReportIdQuery, (err, result) => {
+            if (err) {
+                console.error("Error fetching the latest Report_ID:", err);
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Database query error' }));
+                return;
+            }
+
+            const newReportId = (result[0].maxReportId || 0) + 1;
+            // Step 2: Insert new report with the incremented Report_ID
+            const insertReportQuery = `
+              INSERT INTO AnimalHealthReport (Report_ID, Animal_ID, Employee_ID, Diagnosis, Treatment, Report_Date)
+              VALUES (?, ?, ?, ?, ?, ?);
+            `;
+            connection.query(
+                insertReportQuery,
+                [newReportId, animalId, employeeId, diagnosis, treatment, reportDate],
+                (err, result) => {
+                    if (err) {
+                        console.error("Error adding report:", err);
+                        res.writeHead(500, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ error: 'Database query error' }));
+                        return;
+                    }
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ message: 'Report submitted successfully', reportId: newReportId }));
+                }
+            );
+        });
+    });
+}else if(req.method === 'GET' && req.url.startsWith('/employee-animals')){
       const url = new URL(req.url, `http://${req.headers.host}`);
       const email = url.searchParams.get('email');
       if (email) {
@@ -548,6 +618,7 @@ http.createServer((req, res) => {
 
     req.on('end', () => {
       try {
+        console.log
         const employeeData = JSON.parse(body);
         addEmployee(employeeData, res);
       } catch (error) {
@@ -557,7 +628,7 @@ http.createServer((req, res) => {
     });
     }else if(req.method === 'DELETE' && req.url.startsWith('/remove-employee')){
       const url = new URL(req.url, `http://${req.headers.host}`);
-    const employeeId = url.searchParams.get('id');
+      const employeeId = url.searchParams.get('id');
 
     if (employeeId) {
       removeEmployee(employeeId, res);
@@ -583,8 +654,8 @@ http.createServer((req, res) => {
       });
     }else if (req.method === 'DELETE' && req.url.startsWith('/remove-exhibit')){
       const url = new URL(req.url, `http://${req.headers.host}`);
-    const exhibitId = url.searchParams.get('id');
-
+      const exhibitId = url.searchParams.get('id');
+      console.log(exhibitId);
     if (exhibitId) {
       removeExhibit(exhibitId, res);
     } else {
@@ -593,7 +664,9 @@ http.createServer((req, res) => {
     }
     }else if(req.method === 'GET' && req.url === '/employees'){
       fetchEmployees(res);
-    }else {
+    }else if (req.method === 'GET' && req.url === '/anniversaries') {
+      fetchAnniversaries(res);
+    } else {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ message: 'Route not found' }));
   }

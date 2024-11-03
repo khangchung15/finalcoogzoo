@@ -30,7 +30,7 @@ p {
 
 h1 {
   font-size: 2.5em;
-  color: #2E7D32;
+  color: #6e0819; /*also changes "Membership Options color in Membership page*/
 }
 
 p {
@@ -70,7 +70,7 @@ p {
 }
 
 .schedule-table th {
-  background-color: #2E7D32;
+  background-color: #C8102E;
   color: white;
 }
 
@@ -91,7 +91,7 @@ p {
 }
 
 .calendar-header button {
-  background-color: #2E7D32;
+  background-color: #C8102E;
   color: white;
   border: none;
   padding: 5px 10px;
@@ -100,7 +100,7 @@ p {
 }
 
 .calendar-header button:hover {
-  background-color: #45a049;
+  background-color: #C8102E;
 }
 
 .basic-calendar {
@@ -115,12 +115,12 @@ p {
 }
 
 .basic-calendar th {
-  background-color: #2E7D32;
+  background-color: #C8102E;
   color: white;
 }
 
 .basic-calendar td.selected {
-  background-color: #4CAF50;
+  background-color: #C8102E;
   color: white;
 }
 

@@ -1,9 +1,37 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import './home.css';
 
 const Home = () => {
+  const [notificationMessage, setNotificationMessage] = useState('');
+  const [showNotification, setShowNotification] = useState(false);
+
+  useEffect(() => {
+    const fetchAnniversaries = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/anniversaries');
+        const data = await response.json();
+        if (data.length > 0) {
+          // Construct the notification message in the new format
+          const messages = data.map(emp => `Employee ID ${emp.Employee_ID} are celebrating their ${emp.Years_Of_Service} year anniversary today!`).join(', ');
+          setNotificationMessage(messages); // Set the message to the notification state
+          setShowNotification(true); // Show the notification
+        }
+      } catch (error) {
+        console.error('Error fetching anniversaries:', error);
+      }
+    };
+    fetchAnniversaries();
+  }, []);
+  
+
   return (
     <div className="home-container">
+      {showNotification && (
+        <div className="notification">
+          {notificationMessage}
+          <button className="close-button" onClick={() => setShowNotification(false)}>✖</button>
+        </div>
+      )}
       <header className="hero-section">
         <video className="background-video" autoPlay muted loop playsInline>
           <source src="/gorilla_hd.mp4" type="video/mp4" />
