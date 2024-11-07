@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import "./managerdash.css";
 import ManageEmployees from './manageEmployees';
-import ManageExhibits from './manageExhibits'; // Import the ManageExhibits component
+import ManageExhibits from './manageExhibits';
 
 function ManagerDash() {
+  const [showSidebar, setShowSidebar] = useState(true); // State to track sidebar visibility
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -47,6 +48,10 @@ function ManagerDash() {
 
   const handleSectionChange = (section) => {
     setActiveSection(section);
+  };
+
+  const toggleSidebar = () => {
+    setShowSidebar(!showSidebar); // Toggle the sidebar visibility
   };
 
   const addEmployee = async () => {
@@ -147,6 +152,11 @@ function ManagerDash() {
 
   return (
     <div className="manager-dash">
+    <button className="toggle-sidebar" onClick={toggleSidebar}>
+      {showSidebar ? 'Close sidebar' : 'Open sidebar'}
+    </button>
+
+    {showSidebar && (
       <div className="sidebar">
         <h2>Manager Dashboard</h2>
         <ul>
@@ -160,11 +170,12 @@ function ManagerDash() {
           <li onClick={() => handleSectionChange('reports')}>Reports</li>
         </ul>
       </div>
-
-      <div className="content">
-        {activeSection === 'dashboard' && (
-          <h1>Manager Dashboard</h1>
-        )}
+    )}
+    <div className="content">
+      {activeSection === 'dashboard' && (
+        <h1>Manager Dashboard</h1>
+      )
+    }
 
         {activeSection === 'employees' && (
           <ManageEmployees
@@ -174,6 +185,7 @@ function ManagerDash() {
             employeeId={employeeId}
             setEmployeeId={setEmployeeId}
             deleteEmployee={deleteEmployee}
+            showSidebar={showSidebar}
           />
         )}
 
@@ -185,6 +197,7 @@ function ManagerDash() {
             exhibitId={exhibitId}
             setExhibitId={setExhibitId}
             deleteExhibit={deleteExhibit}
+            showSidebar={showSidebar}
           />
         )}
 

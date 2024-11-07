@@ -32,6 +32,7 @@ const handleDBError = (res, error) => {
 };
 
 // Function to check if an email exists in the Employee, Customer, or Passwords table
+// function to fetch employees
 const fetchEmployees = (res) => {
   connection.query('SELECT * FROM Employee WHERE is_deleted = 0', (error, results) => {
     if (error) {
@@ -39,8 +40,26 @@ const fetchEmployees = (res) => {
       return handleDBError(res, error);
     }
 
+    // map database fields
+    const employees = results.map(employee => ({
+      id: employee.ID,
+      firstName: employee.First_Name,
+      lastName: employee.Last_Name,
+      birthDate: employee.Birth_Date ? new Date(employee.Birth_Date).toISOString().split('T')[0] : null,
+      email: employee.Email,
+      phone: employee.Phone,
+      department: employee.Department,
+      role: employee.Role,
+      startDate: employee.Start_Date ? new Date(employee.Start_Date).toISOString().split('T')[0] : null,
+      exhibitID: employee.Exhibit_ID,
+      supervisorID: employee.Supervisor_ID,
+      status: employee.Status,
+      endDate: employee.End_Date ? new Date(employee.End_Date).toISOString().split('T')[0] : null,
+    }));
+
     try {
-      const responseData = JSON.stringify(results);
+      const responseData = JSON.stringify(employees);
+      console.log('Fetched employees:', responseData);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(responseData);
     } catch (jsonError) {
@@ -246,15 +265,19 @@ const fetchAnimalsByExhibitID = (exhibitId, res) => {
       Animal.Species, 
       Animal.Cage_ID, 
       Cage.Location, 
-      Cage.Type
+      Cage.Type, 
+      FeedingSchedule.Feeding_Time
     FROM 
       Animal
     JOIN 
       Cage ON Animal.Cage_ID = Cage.ID
+    LEFT JOIN 
+      FeedingSchedule ON FeedingSchedule.Animal_ID = Animal.ID
     WHERE 
       Animal.Exhibit_ID = ?
       AND Animal.is_deleted = 0
       AND Cage.is_deleted = 0
+      AND FeedingSchedule.is_deleted = 0;
   `;
 
   connection.query(query, [exhibitId], (error, results) => {
@@ -263,6 +286,7 @@ const fetchAnimalsByExhibitID = (exhibitId, res) => {
     res.end(JSON.stringify(results));
   });
 };
+
 
 // Code for Employee Dash
 const fetchExhibitIDByEmail = (email, res) => {
@@ -309,6 +333,31 @@ const fetchEvents = (res) => {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(results));
     }
+  });
+};
+
+// Get Animal Health Reports for Employee Dash
+const fetchHealthReports = (animalId, startDate, endDate, res) => {
+  const query = `
+    SELECT 
+      Report_ID,
+      Employee_ID,
+      Diagnosis,
+      Treatment,
+      Report_Date
+    FROM 
+      AnimalHealthReport
+    WHERE 
+      Animal_ID = ?
+      AND Report_Date BETWEEN ? AND ?
+    ORDER BY 
+      Report_Date;
+  `;
+  connection.query(query, [animalId, startDate, endDate], (error, results) => {
+    if (error) return handleDBError(res, error);
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(results));
   });
 };
 
@@ -421,20 +470,6 @@ const fetchProfileData = (user, res) => {
       }
     });
   }
-};
-
-const fetchAnniversaries = (res) => {
-  const today = new Date();
-  const todayFormatted = today.toISOString().split('T')[0]; // Format the date to YYYY-MM-DD
-
-  connection.query('SELECT * FROM EmployeeAnniversaries WHERE Anniversary_Date = ?', [todayFormatted], (error, results) => {
-    if (error) {
-      return handleDBError(res, error);
-    }
-
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(results)); // Send the anniversaries data back
-  });
 };
 
 // HTTP Server to handle both login, signup, and profile requests
@@ -626,6 +661,18 @@ http.createServer((req, res) => {
         res.end(JSON.stringify({ message: 'Invalid JSON' }));
       }
     });
+    }else if(req.method === 'GET' && req.url.startsWith('/health-reports')){
+      const url = new URL(req.url, `http://${req.headers.host}`);
+      const animalId = url.searchParams.get('animalId');
+      const startDate = url.searchParams.get('startDate');
+      const endDate = url.searchParams.get('endDate');
+  
+      if (animalId && startDate && endDate) {
+        fetchHealthReports(animalId, startDate, endDate, res);
+      } else {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'animalId, startDate, and endDate are required' }));
+      }
     }else if(req.method === 'DELETE' && req.url.startsWith('/remove-employee')){
       const url = new URL(req.url, `http://${req.headers.host}`);
       const employeeId = url.searchParams.get('id');
@@ -664,9 +711,7 @@ http.createServer((req, res) => {
     }
     }else if(req.method === 'GET' && req.url === '/employees'){
       fetchEmployees(res);
-    }else if (req.method === 'GET' && req.url === '/anniversaries') {
-      fetchAnniversaries(res);
-    } else {
+    }else {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ message: 'Route not found' }));
   }
