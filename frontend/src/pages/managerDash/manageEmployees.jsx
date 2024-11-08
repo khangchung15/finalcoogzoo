@@ -1,15 +1,17 @@
+// manage employees jsx 
+
 import React, { useState, useEffect } from 'react';
 import './manageEmployees.css';
 import showSidebar from './managerdash';
 
-function ManageEmployees({employeeData, setEmployeeData, addEmployee, employeeId, setEmployeeId, deleteEmployee, showSidebar}) {
+function ManageEmployees({ employeeData, setEmployeeData, addEmployee, employeeId, setEmployeeId,showSidebar }) {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [updateData, setUpdateData] = useState({});
-  const [showUpdateForm, setShowUpdateForm] = useState(false);
-  const [modalMessage, setModalMessage] = useState('');
+  const [updateData, setUpdateData] = useState({}); // State for storing update form data
+  const [showUpdateForm, setShowUpdateForm] = useState(false); // Toggle for showing update form
+  const [modalMessage, setModalMessage] = useState(''); // Modal message for feedback
 
   // fetch employee information from the database
   useEffect(() => {
@@ -35,7 +37,14 @@ function ManageEmployees({employeeData, setEmployeeData, addEmployee, employeeId
     setShowUpdateForm(true);
   };
 
+  // Function to handle the employee update
   const updateEmployee = async () => {
+    const validationError = validateEmployeeData(updateData);
+    if (validationError) {
+      setModalMessage(validationError);
+      return;
+    }
+
     try {
       const response = await fetch(`http://localhost:5000/update-employee?id=${updateData.id}`, {
         method: 'PUT',
@@ -75,7 +84,6 @@ function ManageEmployees({employeeData, setEmployeeData, addEmployee, employeeId
     }
   };
   
-
   // shared validation function for both entry and update forms
   const validateEmployeeData = (data) => {
     const phonePattern = /^\d{3}-\d{3}-\d{4}$/;
@@ -94,12 +102,12 @@ function ManageEmployees({employeeData, setEmployeeData, addEmployee, employeeId
 
   // filter employees based on the search query
   const filteredEmployees = employees.filter((employee) =>
-    employee.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    employee.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    employee.department.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    employee.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    employee.email.toLowerCase().includes(searchQuery.toLowerCase())
-);
+      employee.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      employee.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      employee.department.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      employee.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      employee.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   // close modal
   const closeModal = () => setModalMessage('');
@@ -123,14 +131,14 @@ function ManageEmployees({employeeData, setEmployeeData, addEmployee, employeeId
           <input
             type="text"
             placeholder="First Name (required)"
-            value={employeeData.firstName}
+            value={employeeData.firstName || ""}
             onChange={(e) => setEmployeeData({ ...employeeData, firstName: e.target.value })}
             required
           />
           <input
             type="text"
             placeholder="Last Name (required)"
-            value={employeeData.lastName}
+            value={employeeData.lastName || ""}
             onChange={(e) => setEmployeeData({ ...employeeData, lastName: e.target.value })}
             required
           />
@@ -138,35 +146,35 @@ function ManageEmployees({employeeData, setEmployeeData, addEmployee, employeeId
           <input
             type="date"
             placeholder="Birth Date (required)"
-            value={employeeData.birthDate}
+            value={employeeData.birthDate || ""}
             onChange={(e) => setEmployeeData({ ...employeeData, birthDate: e.target.value })}
             required
           />
           <input
             type="email"
             placeholder="Email (required)"
-            value={employeeData.email}
+            value={employeeData.email || ""}
             onChange={(e) => setEmployeeData({ ...employeeData, email: e.target.value })}
             required
           />
           <input
             type="text"
             placeholder="Phone (required; xxx-xxx-xxxx)"
-            value={employeeData.phone}
+            value={employeeData.phone || ""}
             onChange={(e) => setEmployeeData({ ...employeeData, phone: e.target.value })}
             required
           />
           <input
             type="text"
             placeholder="Department (required)"
-            value={employeeData.department}
+            value={employeeData.department || ""}
             onChange={(e) => setEmployeeData({ ...employeeData, department: e.target.value })}
             required
           />
           <input
             type="text"
             placeholder="Role (required)"
-            value={employeeData.role}
+            value={employeeData.role || ""} 
             onChange={(e) => setEmployeeData({ ...employeeData, role: e.target.value })}
             required
           />
@@ -174,24 +182,24 @@ function ManageEmployees({employeeData, setEmployeeData, addEmployee, employeeId
           <input
             type="date"
             placeholder="Start Date (required)"
-            value={employeeData.startDate}
+            value={employeeData.startDate || ""}
             onChange={(e) => setEmployeeData({ ...employeeData, startDate: e.target.value })}
             required
           />
           <input
             type="number"
             placeholder="Exhibit ID (optional)"
-            value={employeeData.exhibitId}
+            value={employeeData.exhibitId || ""}
             onChange={(e) => setEmployeeData({ ...employeeData, exhibitId: e.target.value ? parseInt(e.target.value, 10) : null })}
           />
           <input
             type="number"
             placeholder="Supervisor ID (optional)"
-            value={employeeData.supervisorId}
+            value={employeeData.supervisorId || ""}
             onChange={(e) => setEmployeeData({ ...employeeData, supervisorId: e.target.value ? parseInt(e.target.value, 10) : null })}
           />
           <select
-            value={employeeData.status}
+            value={employeeData.status || ""}
             onChange={(e) => setEmployeeData({ ...employeeData, status: e.target.value })}
             required
           >
@@ -203,9 +211,8 @@ function ManageEmployees({employeeData, setEmployeeData, addEmployee, employeeId
           <input
             type="date"
             placeholder="End Date (optional)"
-            value={employeeData.endDate}
-            onChange={(e) => setEmployeeData({ ...employeeData, endDate: e.target.value })}
-            required
+            value={employeeData.endDate || ""}
+              onChange={(e) => setEmployeeData({ ...employeeData, endDate: e.target.value })}
           />
           <button onClick={validateAndAddEmployee}>Add Employee</button>
         </div>
@@ -224,6 +231,7 @@ function ManageEmployees({employeeData, setEmployeeData, addEmployee, employeeId
                 placeholder="First Name"
                 value={updateData.firstName}
                 onChange={(e) => setUpdateData({ ...updateData, firstName: e.target.value })}
+                required
               />
               <label>Last Name</label>
               <input

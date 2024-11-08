@@ -72,8 +72,8 @@ const Account = () => {
         ) : profileData ? (
           <>
             <p>ID: {profileData.ID}</p>
-            <p>First Name: {profileData.First_name}</p>
-            <p>Last Name: {profileData.Last_name}</p>
+            <p>First Name: {profileData.First_Name}</p>
+            <p>Last Name: {profileData.Last_Name}</p>
             <p>Email: {profileData.email}</p>
             <p>Phone: {profileData.phone}</p>
             <p>Date of Birth: {new Date(profileData.DateOfBirth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>

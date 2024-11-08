@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './manageExhibits.css';
+import showSidebar from './managerdash';
 
-function ManageExhibits({ exhibitData, setExhibitData, addExhibit, exhibitId, setExhibitId, deleteExhibit }) {
+function ManageExhibits({ exhibitData, setExhibitData, addExhibit, exhibitId, setExhibitId, deleteExhibit,showSidebar }) {
   const [exhibits, setExhibits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -102,7 +103,7 @@ function ManageExhibits({ exhibitData, setExhibitData, addExhibit, exhibitId, se
   };
 
   return (
-    <div className="manage-exhibits-container">
+    <div className={`manage-exhibits-container ${showSidebar ? '' : 'sidebar-collapsed'}`}>
       <div className="form-sections-wrapper">
         {/* Exhibit Entry Form */}
         <div className="manage-exhibits">

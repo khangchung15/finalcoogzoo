@@ -1,48 +1,39 @@
 /* Manage Employees Styles */
 .manage-employees-container {
-    padding: 20px;
+    padding: 2%;
     transition: margin-left 0.3s ease;
-    margin-left: -110px; /* Width of your sidebar */
-    margin-top: -20px;
-    width: 150%;
+    margin-left: -9%;
+    margin-top: -2%;
+    width: 126%;
     display: flex;
-    gap: 20px;
+    gap: 1%;
 }
 
 .manage-employees-container.sidebar-collapsed {
-    margin-left: -390px;
-    gap: 5px;
+    margin-left: -29.5%;
+    gap: 0.5%;
 }
 
 .manage-employees {
     flex: 1;
-    width: 240px;
-    height: 100%; /* Ensure forms stretch to fill the available height */
+    width: 30%;
+    height: 100%;
     background-color: #f9f9f9;
-    padding: 20px;
+    padding: 2%;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px; /* Ensure spacing between different form sections */
+    margin-bottom: 5%;
 }
 
 
 /* Employee list and table styling */
 .employee-list {
     flex: 2;
-    padding: 20px;
+    padding: 1%;
     background-color: #f9f9f9;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    max-width: 500px;
-}
-
-.employee-list {
-    flex: 2;
-    padding: 20px;
-    background-color: #f9f9f9;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    max-width: 500px;
+    max-width: 72%;
 }
 
 /* Arrange forms side by side and ensure equal height */
@@ -138,16 +129,21 @@
     border-collapse: collapse;
 }
 
-.employee-table th, .employee-table td {
+.employee-table td {
     padding: 10px; /* Increased padding for a more spacious feel */
-    text-align: left;
+    text-align: center;
     border-bottom: 1px solid #ddd;
+    font-size: 14px;
 }
 
 /* Table header styling */
 .employee-table th {
     background-color: #C8102E;
     color: white;
+    padding: 10px; /* Increased padding for a more spacious feel */
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+    font-size: 15px;
 }
 
 /* Hover effect for table rows */
@@ -179,13 +175,76 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    z-index: 1000;
 }
 
 .modal-content {
     background: #fff;
     padding: 20px;
+    width: 80%; /* Reduce width to fit better */
+    max-width: 400px; /* Further reduced max-width for better fit */
     border-radius: 8px;
-    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    position: relative;
+    max-height: 90vh; /* Limit height to avoid cutting off */
+    overflow-y: auto; /* Enable vertical scrolling if content overflows */
+    box-sizing: border-box;
+}
+
+.modal-content label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    text-align: left; /* Align labels to the left */
+}
+
+.modal-content .close-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #C8102E; /* Set background color for visibility */
+    color: white;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    border-radius: 50%; /* Circular button */
+    width: 30px; /* Adjust as needed */
+    height: 30px; /* Adjust as needed */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0; /* Remove any padding */
+    line-height: 1;
+}
+
+.modal-content h2 {
+    margin-bottom: 20px;
+}
+
+.modal-content input, 
+.modal-content select {
+    width: 100%;
+    margin-bottom: 15px;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.modal-content button {
+    padding: 10px 20px;
+    background-color: #C8102E;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    width: 100%;
+}
+
+.modal-content button:hover {
+    background-color: #7C000F;
 }
 
 .modal button {
@@ -198,7 +257,7 @@
 }
 
 /* General container height adjustments */
-.manage-employees, .update-form-section {
+.update-form-section {
     display: flex;
     flex-direction: column;
     justify-content: space-between;

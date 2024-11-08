@@ -71,7 +71,7 @@ const fetchEmployees = (res) => {
 };
 
 const addEmployee = (employeeData, res) => {
-  const { name, department, exhibitId, role, phone, email, startDate, supervisorId, status } = employeeData;
+  const { firstName, lastName, birthDate, email, phone, department, role, startDate, exhibitID, status, supervisorID, endDate } = employeeData;
 
   // check if the email already exists
   checkEmailExists(email, (err, exists) => {
@@ -83,9 +83,9 @@ const addEmployee = (employeeData, res) => {
 
     // insert the employee into the Employee table
     connection.query(
-      `INSERT INTO Employee (Name, Department, Exhibit_ID, Role, Phone, Email, Start_Date, Supervisor_ID, Status) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [name, department, exhibitId || null, role, phone, email, startDate, supervisorId || null, status],
+      `INSERT INTO Employee (First_Name, Last_Name, Birth_Date, Email, Phone, Department, Role, Start_Date, Exhibit_ID, Supervisor_ID, Status, End_Date) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [firstName, lastName, birthDate, email, phone, department, role, startDate, exhibitID || null, status, supervisorID || null, endDate || null],
       (err) => {
         if (err) return handleDBError(res, err);
         res.writeHead(201, { 'Content-Type': 'application/json' });
@@ -94,17 +94,34 @@ const addEmployee = (employeeData, res) => {
     );
   });
 };
-
 // function to remove an employee
 const removeEmployee = (employeeId, res) => {
   connection.query(
-    'DELETE FROM Employee WHERE ID = ?',
+    'UPDATE Employee SET is_deleted = 1 WHERE ID = ?',
     [employeeId],
     (err, result) => {
       if (err) return handleDBError(res, err);
       if (result.affectedRows > 0) {
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: 'Employee removed successfully' }));
+        res.end(JSON.stringify({ message: 'Employee removed successfully (soft-deleted).' }));
+      } else {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Employee not found' }));
+      }
+    }
+  );
+};
+
+const restoreEmployee = (employeeId, res) => {
+  connection.query(
+    'UPDATE Employee SET is_deleted = 0 WHERE ID = ?',
+    [employeeId],
+    (err, result) => {
+      if (err) return handleDBError(res, err);
+
+      if (result.affectedRows > 0) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Employee restored succ\essfully' }));
       } else {
         res.writeHead(404, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ message: 'Employee not found' }));
