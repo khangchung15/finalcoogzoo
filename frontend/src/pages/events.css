@@ -30,7 +30,7 @@ p {
 
 h1 {
   font-size: 2.5em;
-  color: #6e0819; /*also changes "Membership Options color in Membership page*/
+  color: #2E7D32;
 }
 
 p {
@@ -99,8 +99,13 @@ p {
   cursor: pointer;
 }
 
+
+.header-section h1 {
+  color: #C8102E;
+}
+
 .calendar-header button:hover {
-  background-color: #C8102E;
+  background-color: #7C000F;
 }
 
 .basic-calendar {
