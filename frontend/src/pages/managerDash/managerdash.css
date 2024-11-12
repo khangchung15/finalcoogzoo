@@ -15,17 +15,18 @@
     padding: 20px;
     color: white;
     border-radius: 10px;
-    height: calc(70vh); /* Adjust for navbar height */
+    height: calc(70vh);
     position: absolute;
     left: -70px;
-    top: 190px; /* Start below the navbar */
+    top: 190px;
     overflow-y: auto;
-    z-index: 500; /* Keep it below the navbar */
-    transition: width 0.3s ease;
+    z-index: 500;
+    transition: margin-left 0.3s ease;
 }
 
 .sidebar.collapsed {
-    width: 50px; /* Narrow sidebar when collapsed */
+    margin-left: -28%;
+    gap: 0.5%;
 }
 
 .toggle-sidebar {
@@ -43,8 +44,8 @@
     border: none;
     cursor: pointer;
     font-size: 25px;
+    transition: margin-left 0.3s ease;
 }
-
 
 .sidebar h2 {
     margin-top: 10px;

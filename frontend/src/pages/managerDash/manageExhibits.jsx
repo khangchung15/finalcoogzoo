@@ -289,21 +289,23 @@ function ManageExhibits({ exhibitData, setExhibitData, addExhibit, exhibitId, se
                 </tr>
               </thead>
               <tbody>
-                {filteredExhibits.map((exhibit) => (
-                  <tr key={exhibit.ID}>
-                    <td>{exhibit.ID}</td>
-                    <td>{exhibit.Name}</td>
-                    <td>{exhibit.Location}</td>
-                    <td>{exhibit.Hours}</td>
-                    <td>{exhibit.Type}</td>
-                    <td>{exhibit.is_closed ? "Yes" : "No"}</td>
-                    <td>{exhibit.closure_reason || "N/A"}</td>
-                    <td>{exhibit.closure_start || "N/A"}</td>
-                    <td>{exhibit.closure_end || "N/A"}</td>
-                    <td>{exhibit.Image_Link || "N/A"}</td>
-                    <td><button onClick={() => handleEditClick(exhibit)}>Edit</button></td>
-                  </tr>
-                ))}
+              {filteredExhibits.map((exhibit) => (
+                <tr key={exhibit.ID}>
+                  <td>{exhibit.ID}</td>
+                  <td>{exhibit.Name}</td>
+                  <td>{exhibit.Location}</td>
+                  <td>{exhibit.Hours}</td>
+                  <td>{exhibit.Type}</td>
+                  <td>{exhibit.is_closed ? "Yes" : "No"}</td>
+                  <td>{exhibit.closure_reason || "N/A"}</td>
+                  <td>{exhibit.closure_start || "N/A"}</td>
+                  <td>{exhibit.closure_end || "N/A"}</td>
+                  <td style={{ whiteSpace: 'normal', wordBreak: 'break-word', maxWidth: '200px' }}>
+                    {exhibit.Image_Link || "N/A"}
+                  </td>
+                  <td><button onClick={() => handleEditClick(exhibit)}>Edit</button></td>
+                </tr>
+              ))}
               </tbody>
             </table>
 

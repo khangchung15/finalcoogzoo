@@ -9,7 +9,7 @@ const Events = () => {
 
   useEffect(() => {
     const fetchEvents = async () => {
-      try {
+      try { 
         const response = await fetch('http://localhost:5000/events');
         if (!response.ok) {
           throw new Error('Failed to fetch events');
@@ -124,11 +124,14 @@ const Events = () => {
             {events.map(event => {
   // Format the time string (assuming the input format is 'HH:MM:SS')
   const formatTime = (timeString) => {
-    const [hours, minutes, seconds] = timeString.split(':'); // Split the time string
-    const date = new Date(); // Create a new date object
-    date.setHours(hours, minutes, seconds); // Set the time on the date object
-    
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }); // 12-hour format with AM/PM
+    if (!timeString) {
+      return "N/A";  // Return "N/A" if timeString is null, empty, or invalid
+    }
+    const [hours, minutes, seconds] = timeString.split(':');
+    const date = new Date();
+    date.setHours(hours, minutes, seconds);
+  
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
   };
 
   return (

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import './manageEmployees.css';
 import showSidebar from './managerdash';
 
-function ManageEmployees({ employeeData, setEmployeeData, addEmployee, employeeId, setEmployeeId,showSidebar }) {
+function ManageEmployees({ employeeData, setEmployeeData, addEmployee, employeeId, setEmployeeId,showSidebar}) {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -13,7 +13,6 @@ function ManageEmployees({ employeeData, setEmployeeData, addEmployee, employeeI
   const [showUpdateForm, setShowUpdateForm] = useState(false); // Toggle for showing update form
   const [modalMessage, setModalMessage] = useState(''); // Modal message for feedback
 
-  // fetch employee information from the database
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
@@ -64,6 +63,7 @@ function ManageEmployees({ employeeData, setEmployeeData, addEmployee, employeeI
       setModalMessage('An error occurred while attempting to update the employee.');
     }
   };
+
 
   const handleDeleteEmployee = async () => {
     try {

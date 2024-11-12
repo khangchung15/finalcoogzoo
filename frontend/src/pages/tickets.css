@@ -12,7 +12,7 @@
   text-align: center;
   font-size: 2.5rem;
   margin-bottom: 20px;
-  color: #6e0819;
+  color: #a60c26;
 }
 
 
@@ -41,7 +41,7 @@
 .ticket-card h3 {
   font-size: 1.8rem;
   margin-bottom: 15px;
-  color: #C8102E;
+  color: #a60c26;
 }
 
 .ticket-card p {
@@ -52,13 +52,13 @@
 
 .ticket-card span {
   font-size: 1.5rem;
-  color: #C8102E;
+  color: #a60c26;
   font-weight: bold;
 }
 
 .purchase-button {
   padding: 10px 20px;
-  background-color: #1e88e5;
+  background-color: #a60c26;
   color: white;
   border: none;
   border-radius: 5px;
@@ -68,7 +68,7 @@
 }
 
 .purchase-button:hover {
-  background-color: #1565c0;
+  background-color: #5b0413;
 }
 
 .customer-info-form {
@@ -81,7 +81,7 @@
 
 .customer-info-form h3 {
   font-size: 1.5rem;
-  color: #0d47a1;
+  color: #7e071b;
   margin-bottom: 15px;
 }
 
@@ -105,7 +105,7 @@
 
 .customer-info-form button {
   padding: 10px 20px;
-  background-color: #2e7d32;
+  background-color: #C8102E;
   color: white;
   border: none;
   border-radius: 5px;
@@ -115,14 +115,14 @@
 }
 
 .customer-info-form button:hover {
-  background-color: #1b5e20;
+  background-color: #5b0413;
 }
 
 .purchase-success {
   margin-top: 20px;
   padding: 15px;
-  background-color: #e8f5e9;
-  color: #2e7d32;
+  background-color: #7e071b;
+  color: #ffffff;
   border-radius: 8px;
   font-size: 1.2rem;
   font-weight: bold;
@@ -149,7 +149,7 @@
 
 .purchased-tickets-section h2 {
   margin-bottom: 1rem;
-  color: #333;
+  color: #7e071b;
 }
 
 .tickets-grid {

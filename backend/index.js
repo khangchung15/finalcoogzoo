@@ -31,16 +31,14 @@ const handleDBError = (res, error) => {
   res.end(JSON.stringify({ error: 'Error processing the request' }));
 };
 
-// Function to check if an email exists in the Employee, Customer, or Passwords table
-// function to fetch employees
+
+//Employee Section
 const fetchEmployees = (res) => {
   connection.query('SELECT * FROM Employee WHERE is_deleted = 0', (error, results) => {
     if (error) {
       console.error('Database error:', error);
       return handleDBError(res, error);
     }
-
-    // map database fields
     const employees = results.map(employee => ({
       id: employee.ID,
       firstName: employee.First_Name,
@@ -69,19 +67,14 @@ const fetchEmployees = (res) => {
     }
   });
 };
-
 const addEmployee = (employeeData, res) => {
   const { firstName, lastName, birthDate, email, phone, department, role, startDate, exhibitID, status, supervisorID, endDate } = employeeData;
-
-  // check if the email already exists
   checkEmailExists(email, (err, exists) => {
     if (err) return handleDBError(res, err);
     if (exists) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ message: 'Email already exists' }));
     }
-
-    // insert the employee into the Employee table
     connection.query(
       `INSERT INTO Employee (First_Name, Last_Name, Birth_Date, Email, Phone, Department, Role, Start_Date, Exhibit_ID, Supervisor_ID, Status, End_Date) 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -94,7 +87,6 @@ const addEmployee = (employeeData, res) => {
     );
   });
 };
-// function to remove an employee
 const removeEmployee = (employeeId, res) => {
   connection.query(
     'UPDATE Employee SET is_deleted = 1 WHERE ID = ?',
@@ -111,17 +103,53 @@ const removeEmployee = (employeeId, res) => {
     }
   );
 };
-
-const restoreEmployee = (employeeId, res) => {
+const updateEmployee = (employeeId, employeeData, res) => {
+  const normalizedData = {
+    First_Name: employeeData.firstName,
+    Last_Name: employeeData.lastName,
+    Birth_Date: employeeData.birthDate,
+    Email: employeeData.email,
+    Phone: employeeData.phone,
+    Department: employeeData.department,
+    Role: employeeData.role,
+    Start_Date: employeeData.startDate,
+    Exhibit_ID: employeeData.exhibitID || null,
+    Supervisor_ID: employeeData.supervisorID || null,
+    Status: employeeData.status,
+    End_Date: employeeData.endDate || null
+  };
   connection.query(
-    'UPDATE Employee SET is_deleted = 0 WHERE ID = ?',
-    [employeeId],
+    `UPDATE Employee 
+     SET First_Name = ?, Last_Name = ?, Birth_Date = ?, Email = ?, Phone = ?, 
+         Department = ?, Role = ?, Start_Date = ?, Exhibit_ID = ?, Supervisor_ID = ?, 
+         Status = ?, End_Date = ? 
+     WHERE ID = ?`,
+    [
+      normalizedData.First_Name,
+      normalizedData.Last_Name,
+      normalizedData.Birth_Date,
+      normalizedData.Email,
+      normalizedData.Phone,
+      normalizedData.Department,
+      normalizedData.Role,
+      normalizedData.Start_Date,
+      normalizedData.Exhibit_ID,
+      normalizedData.Supervisor_ID,
+      normalizedData.Status,
+      normalizedData.End_Date,
+      employeeId
+    ],
     (err, result) => {
-      if (err) return handleDBError(res, err);
-
+      if (err) {
+        console.error("Update error:", err);
+        return handleDBError(res, err);
+      }
       if (result.affectedRows > 0) {
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: 'Employee restored succ\essfully' }));
+        res.end(JSON.stringify({ 
+          message: 'Employee updated successfully',
+          updatedEmployee: normalizedData 
+        }));
       } else {
         res.writeHead(404, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ message: 'Employee not found' }));
@@ -130,6 +158,14 @@ const restoreEmployee = (employeeId, res) => {
   );
 };
 
+//Exhibit Section
+const fetchExhibits = (res) => {
+  connection.query('SELECT * FROM Exhibit WHERE is_deleted = 0', (error, results) => {
+    if (error) return handleDBError(res, error);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(results));
+  });
+};
 const addExhibit = (exhibitData, res) => {
   const { name, location, hours, type, is_closed, closure_reason, closure_start, closure_end, image_link } = exhibitData;
 
@@ -144,8 +180,6 @@ const addExhibit = (exhibitData, res) => {
     }
   );
 };
-
-// Function to update an exhibit
 const updateExhibit = (exhibitId, exhibitData, res) => {
   const { name, location, hours, type, is_closed, closure_reason, closure_start, closure_end, image_link } = exhibitData;
 
@@ -167,8 +201,6 @@ const updateExhibit = (exhibitId, exhibitData, res) => {
     }
   );
 };
-
-// Function to remove an exhibit
 const removeExhibit = (exhibitId, res) => {
   connection.query('DELETE FROM Exhibit WHERE ID = ?', [exhibitId], (err, result) => {
     if (err) return handleDBError(res, err);
@@ -182,6 +214,100 @@ const removeExhibit = (exhibitId, res) => {
     }
   });
 };
+
+//Cage Section
+const fetchCages = (res) => {
+  connection.query('SELECT * FROM Cage WHERE is_deleted = 0', (error, results) => {
+    if (error) {
+      console.error('Database error:', error);
+      return handleDBError(res, error);
+    }
+    const cages = results.map(cage => ({
+      id: cage.ID,
+      size: cage.Size,
+      type: cage.Type,
+      inUse: cage.inUse,
+      exhibitID: cage.Exhibit_ID,
+    }));
+    try {
+      const responseData = JSON.stringify(cages);
+      console.log('Fetched cages:', responseData);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(responseData);
+    } catch (jsonError) {
+      console.error('Error serializing JSON:', jsonError);
+      res.writeHead(500, { 'Content-Type': 'text/plain' });
+      res.end('Internal Server Error: Unable to process response.');
+    }
+  });
+};
+const addCage = (cageData, res) => {
+  const { size, type, inUse, exhibitID } = cageData;
+
+    connection.query(
+      `INSERT INTO Cage (Size, Type, inUse, Exhibit_ID) 
+      VALUES (?, ?, ?, ?)`,
+      [ size, type, inUse ? 1: 0, exhibitID ],
+      (err) => {
+        if (err) return handleDBError(res, err);
+        res.writeHead(201, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Cage added successfully.' }));
+      }
+    );
+};
+const removeCage = (cageId, res) => {
+  connection.query('UPDATE Cage SET is_deleted = 1 WHERE ID = ?',
+    [cageId],
+    (err, result) => {
+      if (err) return handleDBError(res, err);
+      if (result.affectedRows > 0) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Cage removed successfully (soft-deleted).' }));
+      } else {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Cage not found' }));
+      }
+    }
+  );
+};
+const updateCage = (cageId, cageData, res) => {
+  const normalizedData = {
+    Size: cageData.size,
+    Type: cageData.type,
+    inUse: cageData.inUse,
+    Exhibit_ID: cageData.exhibitID,
+  };
+
+  connection.query(
+    `UPDATE Cage 
+     SET Size = ?, Type = ?, inUse = ?, Exhibit_ID = ?
+     WHERE ID = ?`,
+    [
+      normalizedData.Size,
+      normalizedData.Type,
+      normalizedData.inUse,
+      normalizedData.Exhibit_ID,
+      cageId
+    ],
+    (err, result) => {
+      if (err) {
+        console.error("Update error:", err);
+        return handleDBError(res, err);
+      }
+      if (result.affectedRows > 0) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ 
+          message: 'Cage updated successfully',
+          updatedCage: normalizedData 
+        }));
+      } else {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Cage not found' }));
+      }
+    }
+  );
+};
+
 
 const checkEmailExists = (email, callback) => {
   connection.query('SELECT * FROM Employee WHERE email = ? AND is_deleted = 0', [email], (err, employeeResults) => {
@@ -205,9 +331,6 @@ const checkEmailExists = (email, callback) => {
     }
   });
 };
-
-// Ticket System
-
 const purchaseTicket = async (ticketData, res) => {
   try {
     const customerId = await getCustomerIdByEmail(ticketData.email);
@@ -271,9 +394,6 @@ const fetchPurchasedTickets = (email, res) => {
   });
 };
 
-
-// Code for Employee Dash
-
 const fetchAnimalsByExhibitID = (exhibitId, res) => {
   const query = `
     SELECT 
@@ -320,14 +440,6 @@ const fetchExhibitIDByEmail = (email, res) => {
   });
 };
 
-const fetchExhibits = (res) => {
-  connection.query('SELECT * FROM Exhibit WHERE is_deleted = 0', (error, results) => {
-    if (error) return handleDBError(res, error);
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(results));
-  });
-};
-
 // Fetch all animals from the database
 const fetchAnimals = (res) => {
   connection.query('SELECT * FROM AnimalShowcase', (error, results) => {
@@ -346,12 +458,13 @@ const fetchEvents = (res) => {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify([])); // Return empty array if no events
     } else {
-      //console.log('Fetched events:', JSON.stringify(results, null, 2));
+      console.log('Fetched events:', JSON.stringify(results, null, 2));
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(results));
     }
   });
 };
+
 
 // Get Animal Health Reports for Employee Dash
 const fetchHealthReports = (animalId, startDate, endDate, res) => {
@@ -517,7 +630,9 @@ http.createServer((req, res) => {
         }
       });
     });
-  } else if (req.method === 'POST' && req.url === '/signup') {
+  } 
+
+  else if (req.method === 'POST' && req.url === '/signup') {
     let body = '';
 
     req.on('data', (chunk) => {
@@ -535,7 +650,9 @@ http.createServer((req, res) => {
         res.end(JSON.stringify({ message: 'Invalid JSON' }));
       }
     });
-  } else if (req.method === 'GET' && req.url.startsWith('/profile')) {
+  }
+
+  else if (req.method === 'GET' && req.url.startsWith('/profile')) {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const email = url.searchParams.get('email');
     const type = url.searchParams.get('type');
@@ -547,22 +664,21 @@ http.createServer((req, res) => {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ message: 'Email and type are required' }));
     }
-
-
-  } else if (req.method === 'GET' && req.url === '/tickets'){
-      // Return available ticket types and prices
-  const ticketTypes = [
-    { type: 'Child', price: 10, description: 'Ages 3-12' },
-    { type: 'Adult', price: 20, description: 'Ages 13-64' },
-    { type: 'Senior', price: 15, description: 'Ages 65+' }
-  ];
-  res.writeHead(200, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify(ticketTypes));
-  }else if(req.method === 'POST' && req.url === '/tickets'){
+  }
+  else if (req.method === 'GET' && req.url === '/tickets'){
+    const ticketTypes = [
+      { type: 'Child', price: 10, description: 'Ages 3-12' },
+      { type: 'Adult', price: 20, description: 'Ages 13-64' },
+      { type: 'Senior', price: 15, description: 'Ages 65+' }
+    ];
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(ticketTypes));
+  }
+  else if(req.method === 'POST' && req.url === '/tickets'){
     let body = '';
-  req.on('data', chunk => {
-    body += chunk.toString();
-  });
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
   
   req.on('end', () => {
     try {
@@ -574,100 +690,122 @@ http.createServer((req, res) => {
       res.end(JSON.stringify({ message: 'Invalid ticket data' }));
     }
   });
-  }else if (req.method === 'GET' && req.url === '/animals'){
-      fetchAnimals(res);
-    }else if (req.method === 'GET' && req.url === '/exhibits'){
-      fetchExhibits(res);
-    }else if (req.method === 'GET' && req.url === '/events'){
-      fetchEvents(res);
-    }else if (req.method === 'GET' && req.url.startsWith('/purchased-tickets')){
-      const url = new URL(req.url, `http://${req.headers.host}`);
-      const email = url.searchParams.get('email');
+  }
+  else if (req.method === 'GET' && req.url === '/animals'){
+    fetchAnimals(res);
+  }
+  else if (req.method === 'GET' && req.url === '/events'){
+    fetchEvents(res);
+  }
+
+  else if (req.method === 'GET' && req.url.startsWith('/purchased-tickets')){
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const email = url.searchParams.get('email');
   
     if (email) {
     fetchPurchasedTickets(email, res);
-    } else {
+    }
+    else {
       res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ message: 'Email is required' }));}
-  
-    }else if(req.method === 'GET' && req.url.startsWith('/employee-id')) {
-      const url = new URL(req.url, `http://${req.headers.host}`);
-      const email = url.searchParams.get('email');
-  
-      const query = 'SELECT ID FROM Employee WHERE Email = ?';
-      connection.query(query, [email], (err, result) => {
-          if (err) {
-              console.error("Error fetching employee ID:", err);
-              res.writeHead(500, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ error: 'Database query error' }));
-              return;
-          }
-          if (result.length > 0) {
-              res.writeHead(200, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ employeeId: result[0].ID }));
-          } else {
-              res.writeHead(404, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ error: 'Employee not found' }));
-          }
-      });
-   }else if (req.method === 'POST' && req.url === '/add-report') {
-    let body = '';
+      res.end(JSON.stringify({ message: 'Email is required' }));
+    }
+  }
 
-    // Collect request data
+  else if(req.method === 'GET' && req.url.startsWith('/employee-id')) {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const email = url.searchParams.get('email');  
+    const query = 'SELECT ID FROM Employee WHERE Email = ?';
+    connection.query(query, [email], (err, result) => {
+      if (err) {
+        console.error("Error fetching employee ID:", err);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Database query error' }));
+        return;
+      }
+      if (result.length > 0) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ employeeId: result[0].ID }));
+      } 
+      else {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Employee not found' }));
+      }
+    });
+  }
+
+  else if (req.method === 'POST' && req.url === '/add-report') {
+    let body = '';
     req.on('data', chunk => {
         body += chunk.toString();
     });
 
     req.on('end', () => {
-        const { animalId, employeeId, diagnosis, treatment, reportDate } = JSON.parse(body);
-        // Step 1: Get the latest Report_ID and increment it
-        const getReportIdQuery = 'SELECT MAX(Report_ID) AS maxReportId FROM AnimalHealthReport';
-        connection.query(getReportIdQuery, (err, result) => {
-            if (err) {
-                console.error("Error fetching the latest Report_ID:", err);
-                res.writeHead(500, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ error: 'Database query error' }));
-                return;
-            }
-
-            const newReportId = (result[0].maxReportId || 0) + 1;
+      const { animalId, employeeId, diagnosis, treatment, reportDate } = JSON.parse(body);
+      const getReportIdQuery = 'SELECT MAX(Report_ID) AS maxReportId FROM AnimalHealthReport';
+      connection.query(getReportIdQuery, (err, result) => {
+        if (err) {
+          console.error("Error fetching the latest Report_ID:", err);
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Database query error' }));
+          return;
+        }
+        const newReportId = (result[0].maxReportId || 0) + 1;
             // Step 2: Insert new report with the incremented Report_ID
-            const insertReportQuery = `
-              INSERT INTO AnimalHealthReport (Report_ID, Animal_ID, Employee_ID, Diagnosis, Treatment, Report_Date)
-              VALUES (?, ?, ?, ?, ?, ?);
-            `;
-            connection.query(
-                insertReportQuery,
-                [newReportId, animalId, employeeId, diagnosis, treatment, reportDate],
-                (err, result) => {
-                    if (err) {
-                        console.error("Error adding report:", err);
-                        res.writeHead(500, { 'Content-Type': 'application/json' });
-                        res.end(JSON.stringify({ error: 'Database query error' }));
-                        return;
-                    }
-                    res.writeHead(200, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ message: 'Report submitted successfully', reportId: newReportId }));
-                }
-            );
-        });
+        const insertReportQuery = `INSERT INTO AnimalHealthReport (Report_ID, Animal_ID, Employee_ID, Diagnosis, Treatment, Report_Date) VALUES (?, ?, ?, ?, ?, ?);`;
+        connection.query(
+          insertReportQuery,[newReportId, animalId, employeeId, diagnosis, treatment, reportDate],
+          (err, result) => {
+          if (err) {
+            console.error("Error adding report:", err);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Database query error' }));
+            return;
+          }
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ message: 'Report submitted successfully', reportId: newReportId }));
+          }
+        );
+      });
     });
-}else if(req.method === 'GET' && req.url.startsWith('/employee-animals')){
-      const url = new URL(req.url, `http://${req.headers.host}`);
-      const email = url.searchParams.get('email');
-      if (email) {
-        fetchExhibitIDByEmail(email, res);
-      } else {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: 'Email is required' }));
-      }
-    } else if(req.method === 'POST' && req.url === '/add-employee'){
-      let body = '';
+  }
 
+  else if(req.method === 'GET' && req.url.startsWith('/employee-animals')){
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const email = url.searchParams.get('email');
+    if (email) {
+      fetchExhibitIDByEmail(email, res);
+    }
+    else {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Email is required' }));
+    }
+  }
+
+  else if(req.method === 'GET' && req.url.startsWith('/health-reports')){
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const animalId = url.searchParams.get('animalId');
+    const startDate = url.searchParams.get('startDate');
+    const endDate = url.searchParams.get('endDate');  
+    if (animalId && startDate && endDate) {
+      fetchHealthReports(animalId, startDate, endDate, res);
+    } 
+    else {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'animalId, startDate, and endDate are required' }));
+    }
+  }
+
+
+  //Employee Section
+  else if(req.method === 'GET' && req.url === '/employees'){
+    fetchEmployees(res);
+  }
+
+  else if(req.method === 'POST' && req.url === '/add-employee'){
+    let body = '';
     req.on('data', (chunk) => {
       body += chunk.toString();
     });
-
     req.on('end', () => {
       try {
         console.log
@@ -678,57 +816,139 @@ http.createServer((req, res) => {
         res.end(JSON.stringify({ message: 'Invalid JSON' }));
       }
     });
-    }else if(req.method === 'GET' && req.url.startsWith('/health-reports')){
-      const url = new URL(req.url, `http://${req.headers.host}`);
-      const animalId = url.searchParams.get('animalId');
-      const startDate = url.searchParams.get('startDate');
-      const endDate = url.searchParams.get('endDate');
-  
-      if (animalId && startDate && endDate) {
-        fetchHealthReports(animalId, startDate, endDate, res);
-      } else {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: 'animalId, startDate, and endDate are required' }));
-      }
-    }else if(req.method === 'DELETE' && req.url.startsWith('/remove-employee')){
-      const url = new URL(req.url, `http://${req.headers.host}`);
-      const employeeId = url.searchParams.get('id');
+  }
 
+  else if (req.method === 'PUT' && req.url.startsWith('/update-employee')) {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const employeeId = url.searchParams.get('id');
     if (employeeId) {
-      removeEmployee(employeeId, res);
-    } else {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ message: 'Employee ID is required' }));
-    }
-    }else if(req.method === 'POST' && req.url === '/add-exhibit'){
       let body = '';
-
       req.on('data', (chunk) => {
         body += chunk.toString();
       });
-  
       req.on('end', () => {
-        try {
-          const exhibitData = JSON.parse(body);
-          addExhibit(exhibitData, res);
-        } catch (error) {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ message: 'Invalid JSON' }));
-        }
+        const updateData = JSON.parse(body);
+        updateEmployee(employeeId, updateData, res); // Calls the updateEmployee function
       });
-    }else if (req.method === 'DELETE' && req.url.startsWith('/remove-exhibit')){
-      const url = new URL(req.url, `http://${req.headers.host}`);
-      const exhibitId = url.searchParams.get('id');
-      console.log(exhibitId);
+    }
+  }
+
+  else if(req.method === 'DELETE' && req.url.startsWith('/remove-employee')){
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const employeeId = url.searchParams.get('id');
+    if (employeeId) {
+      removeEmployee(employeeId, res);
+    }
+  }
+
+
+  //Exhibit Section
+  else if (req.method === 'GET' && req.url === '/exhibits'){
+    fetchExhibits(res);
+  }
+
+  else if(req.method === 'POST' && req.url === '/add-exhibit'){
+    let body = '';
+    req.on('data', (chunk) => {
+      body += chunk.toString();
+    });
+    req.on('end', () => {
+      try {
+        const exhibitData = JSON.parse(body);
+        addExhibit(exhibitData, res);
+      } catch (error) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Invalid JSON' }));
+      }
+    });
+  }
+
+  else if (req.method === 'DELETE' && req.url.startsWith('/remove-exhibit')){
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const exhibitId = url.searchParams.get('id');
+    console.log(exhibitId);
     if (exhibitId) {
       removeExhibit(exhibitId, res);
-    } else {
+    }
+    else {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ message: 'Exhibit ID is required' }));
     }
-    }else if(req.method === 'GET' && req.url === '/employees'){
-      fetchEmployees(res);
-    }else {
+  }
+
+  else if (req.method === 'PUT' && req.url.startsWith('/update-exhibit')) {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const exhibitId = url.searchParams.get('id');
+    
+    if (exhibitId) {
+      let body = '';
+      req.on('data', (chunk) => {
+          body += chunk.toString();
+      });
+      req.on('end', () => {
+      const updateData = JSON.parse(body);
+      updateExhibit(exhibitId, updateData, res); // Calls the updateExhibits function
+      });
+    } 
+    else {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Exhibit ID is required' }));
+    }
+  }
+
+
+  //Cage Section
+  else if (req.method === 'GET' && req.url === '/cages') {
+    fetchCages(res);
+  }
+  else if (req.method === 'POST' && req.url === '/add-cage') {
+    let body = '';
+    req.on('data', (chunk) => {
+      body += chunk.toString();
+    });
+    req.on('end', () => {
+      try {
+        const cageData = JSON.parse(body);
+        addCage(cageData, res);
+      } catch (error) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Invalid JSON' }));
+      }
+    });
+  }
+
+  else if (req.method === 'DELETE' && req.url.startsWith('/remove-cage')) {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const cageId = url.searchParams.get('id');
+
+    if (cageId) {
+      removeCage(cageId, res);
+    } else {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Cage ID is required' }));
+    }
+  }
+
+  else if (req.method === 'PUT' && req.url.startsWith('/update-cage')) {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const cageId = url.searchParams.get('id');
+    
+    if (cageId) {
+        let body = '';
+        req.on('data', (chunk) => {
+            body += chunk.toString();
+        });
+        req.on('end', () => {
+            const updateData = JSON.parse(body);
+            updateCage(cageId, updateData, res); // Calls the updateCages function
+        });
+    } else {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Cage ID is required' }));
+    }
+  }
+
+  else {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ message: 'Route not found' }));
   }

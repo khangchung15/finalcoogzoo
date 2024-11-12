@@ -1,5 +1,5 @@
-/* Manage Exhibits Styles */
-.manage-exhibits-container {
+/* Manage Cages Styles */
+.manage-cages-container {
     padding: 2%;
     transition: margin-left 0.3s ease;
     margin-left: -10%;
@@ -7,33 +7,35 @@
     width: 126%;
     display: flex;
     gap: 1%;
+    max-width: 80%;
 }
 
-.manage-exhibits-container.sidebar-collapsed {
-    margin-left: -34%;
+.manage-cages-container.sidebar-collapsed {
+    margin-left: -32%;
     gap: 0.5%;
 }
 
-.manage-exhibits {
+.manage-cages {
+    position: relative;
     flex: 1;
-    max-width: 230px;
-    width: 100px;
+    width: 250px;
     height: 100%;
-    max-height: 500px;
+    max-height: 340px;
     background-color: #f9f9f9;
     padding: 2%;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    left: 0%;
 }
 
-.exhibit-list {
+.cage-list {
     flex: 2;
     padding: 1%;
     background-color: #f9f9f9;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    width: 120%;
-    margin-left: -22%;
+    max-width: 125%;
+    margin-left: 3%
 }
 
 /* Arrange forms side by side and ensure equal height */
@@ -41,7 +43,8 @@
     display: flex;
     justify-content: space-between;
     gap: 20px;
-    align-items: stretch;
+    align-items: stretch; /* Ensure both forms have the same height */
+    flex: 1;
 }
 
 /* Ensure consistency for form containers */
@@ -57,8 +60,8 @@
 }
 
 /* Input fields and select dropdown */
-.manage-exhibits input, 
-.manage-exhibits select, 
+.manage-cages input, 
+.manage-cages select, 
 .update-form-section input, 
 .update-form-section select {
     display: block;
@@ -71,18 +74,7 @@
     box-sizing: border-box;
 }
 
-/* Checkbox and label styling */
-.manage-exhibits label, 
-.update-form-section label {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
-    font-size: 16px;
-}
-
-/* Button styling */
-.manage-exhibits button, 
+.manage-cages button, 
 .update-form-section button, 
 .remove-button {
     padding: 10px 20px;
@@ -98,15 +90,27 @@
     margin-top: 10px; /* Add space between buttons */
 }
 
-.manage-exhibits button:hover, 
+.manage-cages label {
+    display: block;
+    margin-top: 10px;
+    font-weight: bold;
+  }
+  
+  .manage-cages input,
+  .manage-cages select,
+  .manage-cages button {
+    margin-top: 5px;
+  }
+
+.manage-cages button:hover, 
 .update-form-section button:hover, 
 .remove-button:hover {
     background-color: #7C000F;
 }
 
 /* Section headers */
-.exhibit-list h2,
-.manage-exhibits h2, 
+.cage-list h2,
+.manage-cages h2, 
 .update-form-section h2 {
     margin-top: 10px;
     margin-bottom: 15px; /* Consistent spacing below headers */
@@ -124,39 +128,39 @@
     box-sizing: border-box;
 }
 
-/* Exhibit table */
-.exhibit-table {
+/* Cage table */
+.cage-table {
     width: 100%;
     border-collapse: collapse;
+    min-width: 800px;
 }
 
-.exhibit-table td {
-    white-space: nowrap;
-    padding: 12px;
+.cage-table td {
+    padding: 20px;
     text-align: center;
     border-bottom: 1px solid #ddd;
     font-size: 14px;
-    border: 1px solid #ddd; 
+    border: 1px solid #ddd;
 }
 
 /* Table header styling */
-.exhibit-table th {
+.cage-table th {
     background-color: #C8102E;
     color: white;
-    padding: 10px; /* Increased padding for a more spacious feel */
+    padding: 20px; /* Increased padding for a more spacious feel */
     text-align: center;
     border-bottom: 1px solid #ddd;
-    font-size: 15px;
+    font-size: 17px;
     border: 1px solid #ddd; 
 }
 
 /* Hover effect for table rows */
-.exhibit-table tr:hover {
+.cage-table tr:hover {
     background-color: #f1f1f1;
 }
 
 /* Error message styling */
-.exhibit-table .error {
+.cage-table .error {
     color: red;
 }
 
@@ -179,13 +183,75 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    z-index: 1000;
 }
 
 .modal-content {
     background: #fff;
     padding: 20px;
+    width: 80%; /* Reduce width to fit better */
+    max-width: 400px; /* Further reduced max-width for better fit */
     border-radius: 8px;
-    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    position: relative;
+    max-height: 90vh; /* Limit height to avoid cutting off */
+    overflow-y: auto; /* Enable vertical scrolling if content overflows */
+    box-sizing: border-box;
+}
+
+.modal-content label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    text-align: left; /* Align labels to the left */
+}
+
+.modal-content .close-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #C8102E; /* Set background color for visibility */
+    color: white;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    border-radius: 50%; /* Circular button */
+    width: 30px; /* Adjust as needed */
+    height: 30px; /* Adjust as needed */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0; /* Remove any padding */
+    line-height: 1;
+}
+
+.modal-content h2 {
+    margin-bottom: 20px;
+}
+
+.modal-content input, 
+.modal-content select {
+    width: 100%;
+    margin-bottom: 15px;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+.modal-content button {
+    padding: 10px 20px;
+    background-color: #C8102E;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    width: 100%;
+}
+
+.modal-content button:hover {
+    background-color: #7C000F;
 }
 
 .modal button {
@@ -195,12 +261,4 @@
     border: none;
     border-radius: 4px;
     cursor: pointer;
-}
-
-/* General container height adjustments */
-.manage-exhibits, .update-form-section {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    height: auto; /* Ensure they adapt to the content */
 }
