@@ -110,6 +110,16 @@ function ManageCages({ cageData, setCageData, addCage, cageId, setCageId, showSi
       setModalMessage('An error occurred while attempting to delete the cage.');
     }
   };
+
+  const validateAndAddCage = () => {
+    const validationError = validateCageData(cageData);
+    if (validationError) {
+      setModalMessage(validationError);
+      return;
+    }
+    addCage(); // Call your function to add the cage.
+  };
+  
   return (
     <div className={`manage-cages-container ${showSidebar ? '' : 'sidebar-collapsed'}`}>
       <div className="form-sections-wrapper">
