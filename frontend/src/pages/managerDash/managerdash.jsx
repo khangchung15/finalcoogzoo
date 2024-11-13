@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import "./managerdash.css";
 import ManageEmployees from './manageEmployees';
 import ManageExhibits from './manageExhibits';
-import ManageCages from './manageCages';
 
 function ManagerDash() {
   const [showSidebar, setShowSidebar] = useState(true); // State to track sidebar visibility
@@ -33,18 +32,9 @@ function ManagerDash() {
     image_link: ''
   });
 
-  const [cageData, setCageData] = useState({
-    size: '',
-    type: '',
-    inUse: false,
-    exhibitID: '',
-  });
-
-
   const [managerEmail] = useState("manager@example.com");
   const [employeeId, setEmployeeId] = useState('');
   const [exhibitId, setExhibitId] = useState('');
-  const [cageID, setCageID] = useState('');
 
   const showModalMessage = (message) => {
     setModalMessage(message);
@@ -160,49 +150,7 @@ function ManagerDash() {
     }
   };
 
-  const addCage = async () => {
-    try {
-      const response = await fetch('https://coogzootestbackend.vercel.app/add-cage', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(cageData),
-      });
-
-      if (response.ok) {
-        showModalMessage('Cage added successfully!');
-        setCageData({
-          size: '',
-          type: '',
-          inUse: false,
-          exhibitID: '',
-        });
-      } else {
-        showModalMessage('Failed to add cage.');
-      }
-    } catch (error) {
-      console.error(error);
-      showModalMessage('Error adding cage.');
-    }
-  };
-
-  const deleteCage = async () => {
-    try {
-      const response = await fetch(`https://coogzootestbackend.vercel.app/remove-cage?id=${cageId}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        showModalMessage('Cage removed successfully!');
-        setCageID('');
-      } else {
-        showModalMessage('Failed to remove cage.');
-      }
-    } catch (error) {
-      console.error(error);
-      showModalMessage('Error removing cage.');
-    }
-  };
-
+  
   return (
     <div className="manager-dash">
     <button className="toggle-sidebar" onClick={toggleSidebar}>
@@ -250,18 +198,6 @@ function ManagerDash() {
             exhibitId={exhibitId}
             setExhibitId={setExhibitId}
             deleteExhibit={deleteExhibit}
-            showSidebar={showSidebar}
-          />
-        )}
-
-        {activeSection === 'cages' && (
-          <ManageCages
-            cageData={cageData}
-            setCageData={setCageData}
-            addCage={addCage}
-            cageID={cageID}
-            setCageID={setCageID}
-            deleteCage={deleteCage}
             showSidebar={showSidebar}
           />
         )}
