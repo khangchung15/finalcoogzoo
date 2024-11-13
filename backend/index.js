@@ -6,10 +6,7 @@ const connection = mysql.createConnection({
   host: 'database-1.cpia0w4c2ec6.us-east-2.rds.amazonaws.com',
   user: 'admin',
   password: 'zoodatabase1',
-  database: 'ZooManagement',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
+  database: 'ZooManagement'
 });
 
 connection.connect((err) => {
@@ -31,26 +28,18 @@ const setCORSHeaders = (res) => {
 const handleDBError = (res, error) => {
   console.error('Error executing query:', error);
   res.writeHead(500, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({ error: 'Error processing the request', details: error.message }));
+  res.end(JSON.stringify({ error: 'Error processing the request' }));
 };
 
-const parseBody = async (req) => {
-  const buffers = [];
-  for await (const chunk of req) {
-    buffers.push(chunk);
-  }
-  const data = Buffer.concat(buffers).toString();
-  return JSON.parse(data);
-};
 
 //Employee Section
-const fetchEmployees = async () => {
-  let conn;
-  try {
-    conn = await pool.getConnection();
-    const [results] = await conn.query('SELECT * FROM Employee WHERE is_deleted = 0');
-    
-    return results.map(employee => ({
+const fetchEmployees = (res) => {
+  connection.query('SELECT * FROM Employee WHERE is_deleted = 0', (error, results) => {
+    if (error) {
+      console.error('Database error:', error);
+      return handleDBError(res, error);
+    }
+    const employees = results.map(employee => ({
       id: employee.ID,
       firstName: employee.First_Name,
       lastName: employee.Last_Name,
@@ -65,11 +54,18 @@ const fetchEmployees = async () => {
       status: employee.Status,
       endDate: employee.End_Date ? new Date(employee.End_Date).toISOString().split('T')[0] : null,
     }));
-  } catch (error) {
-    throw error;
-  } finally {
-    if (conn) conn.release();
-  }
+
+    try {
+      const responseData = JSON.stringify(employees);
+      console.log('Fetched employees:', responseData);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(responseData);
+    } catch (jsonError) {
+      console.error('Error serializing JSON:', jsonError);
+      res.writeHead(500, { 'Content-Type': 'text/plain' });
+      res.end('Internal Server Error: Unable to process response.');
+    }
+  });
 };
 const addEmployee = (employeeData, res) => {
   const { firstName, lastName, birthDate, email, phone, department, role, startDate, exhibitID, status, supervisorID, endDate } = employeeData;
@@ -220,12 +216,12 @@ const removeExhibit = (exhibitId, res) => {
 };
 
 //Cage Section
-const fetchCages = async (res) => {
-  let conn;
-  try {
-    conn = await pool.getConnection();
-    const [results] = await conn.query('SELECT * FROM Cage WHERE is_deleted = 0');
-    
+const fetchCages = (res) => {
+  connection.query('SELECT * FROM Cage WHERE is_deleted = 0', (error, results) => {
+    if (error) {
+      console.error('Database error:', error);
+      return handleDBError(res, error);
+    }
     const cages = results.map(cage => ({
       id: cage.ID,
       size: cage.Size,
@@ -233,15 +229,18 @@ const fetchCages = async (res) => {
       inUse: cage.inUse,
       exhibitID: cage.Exhibit_ID,
     }));
-
-    return cages;
-  } catch (error) {
-    throw error;
-  } finally {
-    if (conn) conn.release();
-  }
+    try {
+      const responseData = JSON.stringify(cages);
+      console.log('Fetched cages:', responseData);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(responseData);
+    } catch (jsonError) {
+      console.error('Error serializing JSON:', jsonError);
+      res.writeHead(500, { 'Content-Type': 'text/plain' });
+      res.end('Internal Server Error: Unable to process response.');
+    }
+  });
 };
-
 const addCage = (cageData, res) => {
   const { size, type, inUse, exhibitID } = cageData;
 
