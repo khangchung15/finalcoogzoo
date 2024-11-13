@@ -171,7 +171,7 @@ function ManagerDash() {
           <li onClick={() => handleSectionChange('reports')}>Reports</li>
         </ul>
       </div>
-    )}
+    )} 
     <div className="content">
       {activeSection === 'dashboard' && (
         <h1>Manager Dashboard</h1>
