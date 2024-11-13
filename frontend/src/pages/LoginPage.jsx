@@ -35,8 +35,8 @@ const LoginPage = () => {
 
     try {
       const url = isSignUp
-        ? "https://coogzootestbackend-phi.vercel.appsignup"
-        : "https://coogzootestbackend-phi.vercel.applogin";
+        ? "https://coogzootestbackend-phi.vercel.app/signup"
+        : "https://coogzootestbackend-phi.vercel.app/login";
 
       const response = await fetch(url, {
         method: "POST",

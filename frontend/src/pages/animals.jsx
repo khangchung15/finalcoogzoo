@@ -12,7 +12,7 @@ const Animal = () => {
     // Fetch animals and exhibits when component mounts
     const fetchAnimalsAndExhibits = async () => {
       try {
-        const animalResponse = await fetch('https://coogzootestbackend-phi.vercel.appanimals');
+        const animalResponse = await fetch('https://coogzootestbackend-phi.vercel.app/animals');
         if (!animalResponse.ok) {
           throw new Error('Failed to fetch animals');
         }
