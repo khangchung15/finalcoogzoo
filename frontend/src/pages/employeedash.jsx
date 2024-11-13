@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { AuthContext } from '../components/AuthContext'; // Assuming AuthContext is already set up
-import './Employeedash.css';
+import './employeedash.css';
 
 function Employeedash() {
   const { userEmail } = useContext(AuthContext);
