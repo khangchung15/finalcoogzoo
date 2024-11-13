@@ -35,7 +35,7 @@ function Employeedash() {
   useEffect(() => {
     const fetchEmployeeId = async () => {
       try {
-        const response = await fetch(`https://coogzootestbackend.vercel.app/employee-id?email=${userEmail}`);
+        const response = await fetch(`http://localhost:5000/employee-id?email=${userEmail}`);
         const data = await response.json();
         setEmployeeId(data.employeeId);
       } catch (error) {
@@ -45,7 +45,7 @@ function Employeedash() {
 
     const fetchAnimals = async () => {
       try {
-        const response = await fetch(`https://coogzootestbackend.vercel.app/employee-animals?email=${userEmail}`);
+        const response = await fetch(`http://localhost:5000/employee-animals?email=${userEmail}`);
         const data = await response.json();
         setAnimals(data);
       } catch (error) {
@@ -63,7 +63,7 @@ function Employeedash() {
     e.preventDefault();
     
     try {
-      const response = await fetch('https://coogzootestbackend.vercel.app/add-report', {
+      const response = await fetch('http://localhost:5000/add-report', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -105,7 +105,7 @@ function Employeedash() {
     setLoading(true);
 
     try {
-      const response = await fetch(`https://coogzootestbackend.vercel.app/health-reports?animalId=${reportQuery.animalId}&startDate=${reportQuery.startDate}&endDate=${reportQuery.endDate}`);
+      const response = await fetch(`http://localhost:5000/health-reports?animalId=${reportQuery.animalId}&startDate=${reportQuery.startDate}&endDate=${reportQuery.endDate}`);
       const data = await response.json();
       setHealthReports(data);
     } catch (error) {
