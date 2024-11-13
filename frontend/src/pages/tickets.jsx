@@ -26,7 +26,7 @@ const TicketsPage = () => {
   const fetchPurchasedTickets = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`https://coogzootestbackend.vercel.app/purchased-tickets?email=${userEmail}`);
+      const response = await fetch(`https://coogzootestbackend-phi.vercel.apppurchased-tickets?email=${userEmail}`);
       if (response.ok) {
         const data = await response.json();
         setPurchasedTickets(data);
@@ -53,7 +53,7 @@ const TicketsPage = () => {
     }
 
     try {
-      const response = await fetch('https://coogzootestbackend.vercel.app/tickets', {
+      const response = await fetch('https://coogzootestbackend-phi.vercel.apptickets', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

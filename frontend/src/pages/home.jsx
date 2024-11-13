@@ -8,7 +8,7 @@ const Home = () => {
   useEffect(() => {
     const fetchAnniversaries = async () => {
       try {
-        const response = await fetch('https://coogzootestbackend.vercel.app/anniversaries');
+        const response = await fetch('https://coogzootestbackend-phi.vercel.appanniversaries');
         const data = await response.json();
         if (data.length > 0) {
           // Construct the notification message in the new format

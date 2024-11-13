@@ -35,7 +35,7 @@ function Employeedash() {
   useEffect(() => {
     const fetchEmployeeId = async () => {
       try {
-        const response = await fetch(`https://coogzootestbackend.vercel.app/employee-id?email=${userEmail}`);
+        const response = await fetch(`https://coogzootestbackend-phi.vercel.appemployee-id?email=${userEmail}`);
         const data = await response.json();
         setEmployeeId(data.employeeId);
       } catch (error) {
@@ -45,7 +45,7 @@ function Employeedash() {
 
     const fetchAnimals = async () => {
       try {
-        const response = await fetch(`https://coogzootestbackend.vercel.app/employee-animals?email=${userEmail}`);
+        const response = await fetch(`https://coogzootestbackend-phi.vercel.appemployee-animals?email=${userEmail}`);
         const data = await response.json();
         setAnimals(data);
       } catch (error) {

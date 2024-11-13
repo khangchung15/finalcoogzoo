@@ -10,7 +10,7 @@ const Events = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try { 
-        const response = await fetch('https://coogzootestbackend.vercel.app/events');
+        const response = await fetch('https://coogzootestbackend-phi.vercel.appevents');
         if (!response.ok) {
           throw new Error('Failed to fetch events');
         }
