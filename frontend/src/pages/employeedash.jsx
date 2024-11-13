@@ -6,7 +6,7 @@ import {
   calculateTrend,
   calculateReportingPeriod,
   calculateAverageReportInterval
-} from './helperFunctions';
+} from './helperfunction';
 import '../pages/employeedash.css';
 
 function Employeedash() {
