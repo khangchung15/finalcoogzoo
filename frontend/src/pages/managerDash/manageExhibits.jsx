@@ -15,7 +15,7 @@ function ManageExhibits({ exhibitData, setExhibitData, addExhibit, exhibitId, se
   useEffect(() => {
     const fetchExhibits = async () => {
       try {
-        const response = await fetch('http://localhost:5000/exhibits');
+        const response = await fetch('https://coogzootestbackend.vercel.app/exhibits');
         if (!response.ok) {
           throw new Error('Failed to fetch exhibits');
         }
@@ -58,7 +58,7 @@ function ManageExhibits({ exhibitData, setExhibitData, addExhibit, exhibitId, se
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/update-exhibit?id=${updateData.ID}`, {
+      const response = await fetch(`https://coogzootestbackend.vercel.app/update-exhibit?id=${updateData.ID}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updateData),

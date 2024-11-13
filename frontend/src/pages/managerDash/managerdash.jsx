@@ -66,7 +66,7 @@ function ManagerDash() {
 
   const addEmployee = async () => {
     try {
-      const response = await fetch('http://localhost:5000/add-employee', {
+      const response = await fetch('https://coogzootestbackend.vercel.app/add-employee', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(employeeData),
@@ -96,7 +96,7 @@ function ManagerDash() {
 
   const deleteEmployee = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/remove-employee?id=${employeeId}&managerEmail=${managerEmail}`, {
+      const response = await fetch(`https://coogzootestbackend.vercel.app/remove-employee?id=${employeeId}&managerEmail=${managerEmail}`, {
         method: 'DELETE',
       });
 
@@ -114,7 +114,7 @@ function ManagerDash() {
 
   const addExhibit = async () => {
     try {
-      const response = await fetch('http://localhost:5000/add-exhibit', {
+      const response = await fetch('https://coogzootestbackend.vercel.app/add-exhibit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(exhibitData),
@@ -144,7 +144,7 @@ function ManagerDash() {
 
   const deleteExhibit = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/remove-exhibit?id=${exhibitId}`, {
+      const response = await fetch(`https://coogzootestbackend.vercel.app/remove-exhibit?id=${exhibitId}`, {
         method: 'DELETE',
       });
 
@@ -162,7 +162,7 @@ function ManagerDash() {
 
   const addCage = async () => {
     try {
-      const response = await fetch('http://localhost:5000/add-cage', {
+      const response = await fetch('https://coogzootestbackend.vercel.app/add-cage', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cageData),
@@ -187,7 +187,7 @@ function ManagerDash() {
 
   const deleteCage = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/remove-cage?id=${cageId}`, {
+      const response = await fetch(`https://coogzootestbackend.vercel.app/remove-cage?id=${cageId}`, {
         method: 'DELETE',
       });
 

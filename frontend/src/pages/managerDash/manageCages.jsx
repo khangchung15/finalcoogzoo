@@ -16,7 +16,7 @@ function ManageCages({ cageData, setCageData, addCage, cageId, setCageId,showSid
   useEffect(() => {
     const fetchCages = async () => {
       try {
-        const response = await fetch('http://localhost:5000/cages');
+        const response = await fetch('https://coogzootestbackend.vercel.app/cages');
         if (!response.ok) {
           throw new Error('Failed to fetch cages');
         }
@@ -35,7 +35,7 @@ function ManageCages({ cageData, setCageData, addCage, cageId, setCageId,showSid
   useEffect(() => {
     const fetchExhibits = async () => {
       try {
-        const response = await fetch('http://localhost:5000/exhibits');
+        const response = await fetch('https://coogzootestbackend.vercel.app/exhibits');
         if (!response.ok) {
           throw new Error('Failed to fetch exhibits');
         }
@@ -63,7 +63,7 @@ function ManageCages({ cageData, setCageData, addCage, cageId, setCageId,showSid
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/update-cage?id=${updateData.id}`, {
+      const response = await fetch(`https://coogzootestbackend.vercel.app/update-cage?id=${updateData.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updateData),
@@ -84,7 +84,7 @@ function ManageCages({ cageData, setCageData, addCage, cageId, setCageId,showSid
 
   const handleDeleteCage = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/remove-cage?id=${cageId}`, {
+      const response = await fetch(`https://coogzootestbackend.vercel.app/remove-cage?id=${cageId}`, {
         method: 'DELETE',
       });
   

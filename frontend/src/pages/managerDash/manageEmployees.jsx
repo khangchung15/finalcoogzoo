@@ -16,7 +16,7 @@ function ManageEmployees({ employeeData, setEmployeeData, addEmployee, employeeI
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        const response = await fetch('http://localhost:5000/employees');
+        const response = await fetch('https://coogzootestbackend.vercel.app/employees');
         if (!response.ok) {
           throw new Error('Failed to fetch employees');
         }
@@ -45,7 +45,7 @@ function ManageEmployees({ employeeData, setEmployeeData, addEmployee, employeeI
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/update-employee?id=${updateData.id}`, {
+      const response = await fetch(`https://coogzootestbackend.vercel.app/update-employee?id=${updateData.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updateData),
@@ -67,7 +67,7 @@ function ManageEmployees({ employeeData, setEmployeeData, addEmployee, employeeI
 
   const handleDeleteEmployee = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/remove-employee?id=${employeeId}`, {
+      const response = await fetch(`https://coogzootestbackend.vercel.app/remove-employee?id=${employeeId}`, {
         method: 'DELETE',
       });
   

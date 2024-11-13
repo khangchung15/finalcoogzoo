@@ -9,7 +9,7 @@ const Exhibits = () => {
   useEffect(() => {
     const fetchExhibits = async () => {
       try {
-        const response = await fetch('http://localhost:5000/exhibits');
+        const response = await fetch('https://coogzootestbackend.vercel.app/exhibits');
         if (!response.ok) {
           throw new Error('Failed to fetch exhibits');
         }
