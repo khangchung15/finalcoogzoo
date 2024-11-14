@@ -3,10 +3,10 @@ const http = require('http');
 
 // MySQL connection setup
 const connection = mysql.createConnection({
-  host: process.env.DB_HOST || 'database-1.cpia0w4c2ec6.us-east-2.rds.amazonaws.com',
-  user: process.env.DB_USER || 'admin',
-  password: process.env.DB_PASSWORD || 'zoodatabase1',
-  database: process.env.DB_NAME || 'ZooManagement'
+  host: 'database-1.cpia0w4c2ec6.us-east-2.rds.amazonaws.com',
+  user: 'admin',
+  password: 'zoodatabase1',
+  database: 'ZooManagement'
 });
 
 connection.connect((err) => {
@@ -18,22 +18,10 @@ connection.connect((err) => {
 });
 
 // Set CORS headers
-const setCORSHeaders = (res, req) => {
-  // Allow specific origins or use a wildcard
-  const allowedOrigins = [
-    'https://coog-zoo-l5z9.vercel.app',
-    'https://coogzootestbackend-phi.vercel.app',
-    'http://localhost:3000'
-  ];
-  
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  }
-  
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Origin');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
+const setCORSHeaders = (res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, POST, OPTIONS, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 };
 
 // Function to handle database errors
@@ -358,15 +346,15 @@ const purchaseTicket = async (ticketData, res) => {
 
       const receiptId = receiptResult.insertId;
 
-      // Insert into Ticket table with the new Exhibit_ID column
-      const insertTicketQuery = 'INSERT INTO Ticket (Customer_ID, Ticket_Type, Price, Purchase_Date, Receipt_ID, Exhibit_ID) VALUES (?, ?, ?, ?, ?, ?)';
-
-      connection.query(insertTicketQuery, [customerId, ticketData.ticketType, ticketData.price, purchaseDate, receiptId, ticketData.exhibitId], (err) => {
+      // Insert into Ticket table using the new Receipt ID
+      const insertTicketQuery = 'INSERT INTO Ticket (Customer_ID, Ticket_Type, Price, Purchase_Date, Receipt_ID) VALUES (?, ?, ?, ?, ?)';
+      
+      connection.query(insertTicketQuery, [customerId, ticketData.ticketType, ticketData.price, purchaseDate, receiptId], (err) => {
         if (err) return handleDBError(res, err);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ message: 'Ticket purchased successfully', receiptId }));
       });
-    }); 
+    });
   } catch (error) {
     handleDBError(res, error);
   }
@@ -387,21 +375,18 @@ const getCustomerIdByEmail = (email) => {
 const fetchPurchasedTickets = (email, res) => {
   const query = `
     SELECT 
-      t.ID AS Ticket_ID,
+      t.ID,
       t.Ticket_Type,
       t.Price,
       t.Purchase_Date,
       t.Receipt_ID,
-      t.is_used,  -- Include the is_used column
-      r.Total_Amount,
-      e.Name AS Exhibit_Name  -- Include exhibit name for better clarity
+      r.Total_Amount
     FROM Ticket t
     JOIN Receipt r ON t.Receipt_ID = r.ID
     JOIN Customer c ON t.Customer_ID = c.ID
-    LEFT JOIN Exhibit e ON t.Exhibit_ID = e.ID  -- Join with Exhibit to get exhibit details
     WHERE c.email = ?
-    ORDER BY t.Purchase_Date DESC;
-  `
+    ORDER BY t.Purchase_Date DESC`;
+
   connection.query(query, [email], (error, results) => {
     if (error) return handleDBError(res, error);
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -618,32 +603,14 @@ const fetchProfileData = (user, res) => {
 };
 
 // HTTP Server to handle both login, signup, and profile requests
-const server = http.createServer((req, res) => {  
+http.createServer((req, res) => {
+  setCORSHeaders(res);
+
   if (req.method === 'OPTIONS') {
-    setCORSHeaders(res, req);
     res.writeHead(204);
-    res.end();
-    return;
+    return res.end();
   }
 
-  setCORSHeaders(res, req);
-
-  req.on('error', (err) => {
-    console.error('Request error:', err);
-    res.writeHead(500, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Internal server error' }));
-  });
-
-  let url;
-  try {
-    url = new URL(req.url, `http://${req.headers.host}`);
-  } catch (error) {
-    console.error('URL parsing error:', error);
-    res.writeHead(400, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Invalid URL' }));
-    return;
-  }
-  
   if (req.method === 'POST' && req.url === '/login') {
     let body = '';
 

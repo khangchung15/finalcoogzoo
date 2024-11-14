@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './tickets.css';
 import { useAuth } from '../components/AuthContext';
-const API_URL = process.env.REACT_APP_API_URL || 'https://coogzootestbackend-phi.vercel.app/api';
 
 const TicketsPage = () => {
   const { userRole, userEmail } = useAuth();
@@ -27,23 +26,15 @@ const TicketsPage = () => {
   const fetchPurchasedTickets = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/purchased-tickets?email=${userEmail}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      const response = await fetch(`https://coogzootestbackend-phi.vercel.app/purchased-tickets?email=${userEmail}`);
+      if (response.ok) {
+        const data = await response.json();
+        setPurchasedTickets(data);
+      } else {
+        console.error('Failed to fetch purchased tickets');
       }
-      
-      const data = await response.json();
-      setPurchasedTickets(data);
     } catch (error) {
       console.error('Error fetching purchased tickets:', error);
-      setError(error.message);
     } finally {
       setLoading(false);
     }
