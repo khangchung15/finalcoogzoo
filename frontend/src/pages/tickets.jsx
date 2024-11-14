@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import './tickets.css';
+import { useAuth } from '../components/AuthContext';
 
-const TicketsPage = ({ userRole = 'Customer', userEmail }) => {
+const TicketsPage = () => {
+  const { userRole, userEmail } = useAuth();
+  const isCustomer = userRole === 'Customer' ? true : false;
+
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
   const [purchasedTickets, setPurchasedTickets] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [exhibits, setExhibits] = useState([]);
-  const [selectedExhibit, setSelectedExhibit] = useState('');
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  const isCustomer = userRole === 'Customer';
   const ticketOptions = [
     { type: 'Child', price: 10, description: 'Ages 3-12' },
     { type: 'Adult', price: 20, description: 'Ages 13-64' },
@@ -17,24 +18,27 @@ const TicketsPage = ({ userRole = 'Customer', userEmail }) => {
   ];
 
   useEffect(() => {
-    const fetchPurchasedTickets = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(`https://coogzootestbackend-phi.vercel.app/purchased-tickets?email=${userEmail}`);
-        if (response.ok) {
-          const data = await response.json();
-          setPurchasedTickets(data);
-        } else {
-          console.error('Failed to fetch purchased tickets');
-        }
-      } catch (error) {
-        console.error('Error fetching purchased tickets:', error);
-      } finally {
-        setLoading(false);
+    if (isCustomer && userEmail) {
+      fetchPurchasedTickets();
+    }
+  }, [isCustomer, userEmail, purchaseSuccess]);
+
+  const fetchPurchasedTickets = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`https://coogzootestbackend-phi.vercel.app/purchased-tickets?email=${userEmail}`);
+      if (response.ok) {
+        const data = await response.json();
+        setPurchasedTickets(data);
+      } else {
+        console.error('Failed to fetch purchased tickets');
       }
-    };
-    fetchPurchasedTickets();
-  }, [isCustomer, userEmail, refreshTrigger]);
+    } catch (error) {
+      console.error('Error fetching purchased tickets:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleTicketSelection = (ticketType) => {
     setSelectedTicket(ticketType);
