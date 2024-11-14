@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../components/AuthContext';
-import './account.css';
+import './Account.css';
 
 const Account = () => {
   const { userRole, userEmail } = useAuth();
