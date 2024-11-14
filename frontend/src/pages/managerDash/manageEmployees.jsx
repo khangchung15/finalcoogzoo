@@ -5,7 +5,7 @@ import './manageEmployees.css';
 import showSidebar from './managerdash';
 
 function ManageEmployees({ employeeData, setEmployeeData, addEmployee, employeeId, setEmployeeId,showSidebar}) {
-  const [employees, setEmployees] = useState([]);
+  const [employees, setEmployees] = useState([]); 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -13,22 +13,45 @@ function ManageEmployees({ employeeData, setEmployeeData, addEmployee, employeeI
   const [showUpdateForm, setShowUpdateForm] = useState(false); // Toggle for showing update form
   const [modalMessage, setModalMessage] = useState(''); // Modal message for feedback
 
+  const fetchWithTimeout = async (url, options = {}, timeout = 8000) => {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeout);
+    
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal
+      });
+      clearTimeout(id);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      clearTimeout(id);
+      if (error.name === 'AbortError') {
+        throw new Error('Request timed out');
+      }
+      throw error;
+    }
+  };
+  
   useEffect(() => {
-    const fetchEmployees = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch('http://localhost:5000/employees');
-        if (!response.ok) {
-          throw new Error('Failed to fetch employees');
-        }
-        const data = await response.json();
+        setLoading(true);
+        const data = await fetchWithTimeout('http://localhost:5000/employees');
         setEmployees(data);
       } catch (err) {
+        console.error('Fetch error:', err);
         setError(err.message);
       } finally {
         setLoading(false);
       }
     };
-    fetchEmployees();
+    
+    fetchData();
   }, []);
 
   const handleEditClick = (employee) => {
