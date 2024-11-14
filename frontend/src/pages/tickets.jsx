@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import './tickets.css';
 import { useAuth } from '../components/AuthContext';
 
@@ -10,7 +10,8 @@ const TicketsPage = () => {
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
   const [purchasedTickets, setPurchasedTickets] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [exhibits, setExhibits] = useState([]);
+  const [selectedExhibit, setSelectedExhibit] = useState('');
 
   const ticketOptions = [
     { type: 'Child', price: 10, description: 'Ages 3-12' },
@@ -18,57 +19,62 @@ const TicketsPage = () => {
     { type: 'Senior', price: 15, description: 'Ages 65+' },
   ];
 
-  // Separate function to fetch tickets that can be called when needed
-  const fetchPurchasedTickets = useCallback(async () => {
-    if (!isCustomer || !userEmail) return;
+  useEffect(() => {
+    if (isCustomer && userEmail) {
+      fetchPurchasedTickets();
+      fetchExhibits();
+    }
+  }, [isCustomer, userEmail, purchaseSuccess]);
 
+  const fetchExhibits = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/exhibits');
+      if (response.ok) {
+        const data = await response.json();
+        setExhibits(data);
+      } else {
+        console.error('Failed to fetch exhibits');
+      }
+    } catch (error) {
+      console.error('Error fetching exhibits:', error);
+    }
+  };
+
+  const fetchPurchasedTickets = async () => {
     try {
       setLoading(true);
-      setError(null);
-      const response = await fetch(
-        `https://coogzootestbackend-phi.vercel.app/purchased-tickets?email=${encodeURIComponent(userEmail)}`,
-        {
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
-          }
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch purchased tickets');
+      const response = await fetch(`http://localhost:5000/purchased-tickets?email=${userEmail}`);
+      if (response.ok) {
+        const data = await response.json();
+        setPurchasedTickets(data);
+      } else {
+        console.error('Failed to fetch purchased tickets');
       }
-
-      const data = await response.json();
-      setPurchasedTickets(data);
     } catch (error) {
       console.error('Error fetching purchased tickets:', error);
-      setError('Failed to load tickets. Please try again.');
     } finally {
       setLoading(false);
     }
-  }, [isCustomer, userEmail]);
-
-  // Initial fetch on component mount
-  useEffect(() => {
-    fetchPurchasedTickets();
-  }, [fetchPurchasedTickets]);
+  };
 
   const handleTicketSelection = (ticketType) => {
     setSelectedTicket(ticketType);
   };
 
+  const handleExhibitSelection = (e) => {
+    setSelectedExhibit(e.target.value);
+  };
+
   const handlePurchase = async (e) => {
     e.preventDefault();
 
-    if (!selectedTicket) {
-      alert('Please select a ticket type.');
+    if (!selectedTicket || !selectedExhibit) {
+      alert('Please select a ticket type and an exhibit.');
       return;
     }
 
     try {
-      setLoading(true);
-      const response = await fetch('https://coogzootestbackend-phi.vercel.app/tickets', {
+      const response = await fetch('http://localhost:5000/tickets', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -76,28 +82,23 @@ const TicketsPage = () => {
         body: JSON.stringify({
           email: userEmail,
           ticketType: selectedTicket.type,
-          price: selectedTicket.price
+          price: selectedTicket.price,
+          exhibitId: selectedExhibit,
         }),
       });
 
-      if (!response.ok) {
+      if (response.ok) {
+        setSelectedTicket(null);
+        setSelectedExhibit('');
+        setPurchaseSuccess(true);
+        await fetchPurchasedTickets();
+        setTimeout(() => setPurchaseSuccess(false), 5000);
+      } else {
         throw new Error('Purchase failed');
       }
-
-      setSelectedTicket(null);
-      setPurchaseSuccess(true);
-      
-      // Wait a brief moment before fetching updated tickets
-      setTimeout(async () => {
-        await fetchPurchasedTickets();
-        setPurchaseSuccess(false);
-      }, 1000);
-      
     } catch (error) {
       console.error('Error purchasing ticket:', error);
       alert('Failed to purchase ticket. Please try again.');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -109,75 +110,89 @@ const TicketsPage = () => {
     });
   };
 
-  if (!isCustomer) {
-    return (
-      <div className="tickets-container">
-        <div className="no-access">
-          Please create a customer account to purchase tickets.
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="tickets-container">
       <h1>Purchase Tickets</h1>
 
-      <div className="ticket-selection">
-        {ticketOptions.map((ticket) => (
-          <div key={ticket.type} className="ticket-card">
-            <h3>{ticket.type} Ticket</h3>
-            <p>Price: <span>${ticket.price}</span></p>
-            <p>{ticket.description}</p>
-            <button
-              className="purchase-button"
-              onClick={() => handleTicketSelection(ticket)}
-            >
-              Select {ticket.type} Ticket
-            </button>
-          </div>
-        ))}
-      </div>
-
-      {selectedTicket && (
-        <form className="customer-info-form" onSubmit={handlePurchase}>
-          <h3>Anyday Access to the Zoo</h3>
-          <p>Selected Ticket: {selectedTicket.type} - ${selectedTicket.price}</p>
-          <button type="submit" className="purchase-button" disabled={loading}>
-            {loading ? 'Processing...' : 'Purchase Ticket'}
-          </button>
-        </form>
-      )}
-
-      {purchaseSuccess && (
-        <div className="purchase-success">
-          Ticket purchased successfully!
-        </div>
-      )}
-
-      {/* Purchased Tickets Section */}
-      <div className="purchased-tickets-section">
-        <h2>Your Purchased Tickets</h2>
-        {error && <div className="error-message">{error}</div>}
-        {loading ? (
-          <p>Loading your tickets...</p>
-        ) : purchasedTickets.length > 0 ? (
-          <div className="tickets-grid">
-            {purchasedTickets.sort((a, b) => new Date(b.Purchase_Date) - new Date(a.Purchase_Date)).map((ticket) => (
-              <div key={ticket.ID} className="purchased-ticket-card">
-                <h3>{ticket.Ticket_Type} Ticket</h3>
-                <div className="ticket-details">
-                  <p><strong>Purchase Date:</strong> {formatDate(ticket.Purchase_Date)}</p>
-                  <p><strong>Price:</strong> ${ticket.Price}</p>
-                  <p><strong>Receipt ID:</strong> {ticket.Receipt_ID}</p>
-                </div>
+      {isCustomer ? (
+        <>
+          <div className="ticket-selection">
+            {ticketOptions.map((ticket) => (
+              <div key={ticket.type} className="ticket-card">
+                <h3>{ticket.type} Ticket</h3>
+                <p>Price: <span>${ticket.price}</span></p>
+                <p>{ticket.description}</p>
+                <button
+                  className="purchase-button"
+                  onClick={() => handleTicketSelection(ticket)}
+                >
+                  Select {ticket.type} Ticket
+                </button>
               </div>
             ))}
           </div>
-        ) : (
-          <p>No tickets purchased yet.</p>
-        )}
-      </div>
+
+          {selectedTicket && (
+            <form className="customer-info-form" onSubmit={handlePurchase}>
+              <h3>Anyday Access to the Zoo</h3>
+              <p>Selected Ticket: {selectedTicket.type} - ${selectedTicket.price}</p>
+
+              <label htmlFor="exhibitSelect">Choose an Exhibit:</label>
+              <select
+                id="exhibitSelect"
+                value={selectedExhibit}
+                onChange={handleExhibitSelection}
+                required
+              >
+                <option value="">Select an Exhibit</option>
+                {exhibits.map((exhibit) => (
+                  <option key={exhibit.ID} value={exhibit.ID}>
+                    {exhibit.Name}
+                  </option>
+                ))}
+              </select>
+
+              <button type="submit" className="purchase-button">
+                Purchase Ticket
+              </button>
+            </form>
+          )}
+
+          {purchaseSuccess && (
+            <div className="purchase-success">
+              Ticket purchased successfully!
+            </div>
+          )}
+
+          <div className="purchased-tickets-section">
+            <h2>Your Purchased Tickets</h2>
+            {loading ? (
+              <p>Loading your tickets...</p>
+            ) : purchasedTickets.length > 0 ? (
+              <div className="tickets-grid">
+                {purchasedTickets.map((ticket) => (
+                  <div key={ticket.Ticket_ID} className="purchased-ticket-card">
+                    <h3>{ticket.Ticket_Type} Ticket</h3>
+                    <div className="ticket-details">
+                      <p><strong>Purchase Date:</strong> {formatDate(ticket.Purchase_Date)}</p>
+                      <p><strong>Price:</strong> ${ticket.Price}</p>
+                      <p><strong>Receipt ID:</strong> {ticket.Receipt_ID}</p>
+                      <p><strong>Exhibit:</strong> {ticket.Exhibit_Name || 'N/A'}</p>
+                      <p><strong>Status:</strong> {ticket.is_used ? "Used" : "Not Used"}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p>No tickets purchased yet.</p>
+            )}
+          </div>
+        </>
+      ) : (
+        <div className="no-access">
+          Please create a customer account to purchase tickets.
+        </div>
+      )}
     </div>
   );
 };
