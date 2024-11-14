@@ -375,15 +375,18 @@ const getCustomerIdByEmail = (email) => {
 const fetchPurchasedTickets = (email, res) => {
   const query = `
     SELECT 
-      t.ID,
+      t.ID AS Ticket_ID,
       t.Ticket_Type,
       t.Price,
       t.Purchase_Date,
       t.Receipt_ID,
-      r.Total_Amount
+      t.is_used,
+      r.Total_Amount,
+      e.Name AS Exhibit_Name
     FROM Ticket t
     JOIN Receipt r ON t.Receipt_ID = r.ID
     JOIN Customer c ON t.Customer_ID = c.ID
+    LEFT JOIN Exhibit e ON t.Exhibit_ID = e.ID  -- Join with Exhibit to get exhibit details
     WHERE c.email = ?
     ORDER BY t.Purchase_Date DESC`;
 
