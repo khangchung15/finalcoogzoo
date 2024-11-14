@@ -1,42 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import './manageCages.css';
+import showSidebar from './managerdash';
 
-function ManageCages({ cageData, setCageData, addCage, cageId, setCageId, showSidebar }) {
+function ManageCages({ cageData, setCageData, addCage, cageId, setCageId,showSidebar}) {
   const [cages, setCages] = useState([]);
   const [exhibits, setExhibits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [updateData, setUpdateData] = useState({});
-  const [showUpdateForm, setShowUpdateForm] = useState(false);
-  const [modalMessage, setModalMessage] = useState('');
+  const [updateData, setUpdateData] = useState({}); // State for storing update form data
+  const [showUpdateForm, setShowUpdateForm] = useState(false); // Toggle for showing update form
+  const [modalMessage, setModalMessage] = useState(''); // Modal message for feedback
 
-  // Add error logging to debug API calls
-  const fetchWithLogging = async (url, options = {}) => {
-    try {
-      console.log(`Fetching from: ${url}`);
-      const response = await fetch(url, options);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-      console.log(`Received data:`, data);
-      return data;
-    } catch (error) {
-      console.error(`Fetch error for ${url}:`, error);
-      throw error;
-    }
-  };
-
-  // Fetch cage information
+  // fetch cage information from the database
   useEffect(() => {
     const fetchCages = async () => {
       try {
-        const data = await fetchWithLogging('https://coogzootestbackend-phi.vercel.app/cages');
+        const response = await fetch('https://coogzootestbackend-phi.vercel.app/cages');
+        if (!response.ok) {
+          throw new Error('Failed to fetch cages');
+        }
+        const data = await response.json();
         setCages(data);
       } catch (err) {
         setError(err.message);
-        console.error('Error fetching cages:', err);
       } finally {
         setLoading(false);
       }
@@ -44,15 +31,18 @@ function ManageCages({ cageData, setCageData, addCage, cageId, setCageId, showSi
     fetchCages();
   }, []);
 
-  // Fetch exhibit information
+  // fetch exhibit information from the database
   useEffect(() => {
     const fetchExhibits = async () => {
       try {
-        const data = await fetchWithLogging('https://coogzootestbackend-phi.vercel.app/exhibits');
+        const response = await fetch('https://coogzootestbackend-phi.vercel.app/exhibits');
+        if (!response.ok) {
+          throw new Error('Failed to fetch exhibits');
+        }
+        const data = await response.json();
         setExhibits(data);
       } catch (err) {
         setError(err.message);
-        console.error('Error fetching exhibits:', err);
       } finally {
         setLoading(false);
       }
@@ -82,7 +72,7 @@ function ManageCages({ cageData, setCageData, addCage, cageId, setCageId, showSi
       if (response.ok) {
         setModalMessage('Cage updated successfully.');
         setCages(cages.map((cage) => (cage.id === updateData.id ? { ...cage, ...updateData } : cage)));
-        setShowUpdateForm(false);
+        setShowUpdateForm(false); // Close the update modal on success
       } else {
         setModalMessage(data.message || 'Error updating cage.');
       }
@@ -94,7 +84,7 @@ function ManageCages({ cageData, setCageData, addCage, cageId, setCageId, showSi
 
   const handleDeleteCage = async () => {
     try {
-      const response = await fetch(`https://coogzootestbackend-phi.vercel.app/remove-cage?id=${cageId}`, {
+      const response = await fetch(`http://localhost:5000/remove-cage?id=${cageId}`, {
         method: 'DELETE',
       });
   
@@ -111,6 +101,24 @@ function ManageCages({ cageData, setCageData, addCage, cageId, setCageId, showSi
     }
   };
 
+// shared validation function for both entry and update forms
+  const validateCageData = (data) => {
+    if (!data.size || !data.type || !data.exhibitID ) {
+      return "Please fill out all required fields.";
+    }
+    return null;
+  };
+
+  // filter cages based on the search query
+  const filteredCages = cages.filter((cage) =>
+    cage.size.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    cage.type.toLowerCase().includes(searchQuery.toLowerCase())
+  );  
+
+  // close modal
+  const closeModal = () => setModalMessage('');
+
+  // validate and add cage
   const validateAndAddCage = () => {
     const validationError = validateCageData(cageData);
     if (validationError) {
@@ -119,7 +127,7 @@ function ManageCages({ cageData, setCageData, addCage, cageId, setCageId, showSi
     }
     addCage(); // Call your function to add the cage.
   };
-  
+
   return (
     <div className={`manage-cages-container ${showSidebar ? '' : 'sidebar-collapsed'}`}>
       <div className="form-sections-wrapper">
