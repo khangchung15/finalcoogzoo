@@ -42,7 +42,7 @@ function ManageEmployees({ employeeData, setEmployeeData, addEmployee, employeeI
       try {
         setLoading(true);
         const data = await fetchWithTimeout('https://coogzootestbackend-phi.vercel.app/employees');
-        setCages(data);
+        setEmployees(data);
       } catch (err) {
         console.error('Fetch error:', err);
         setError(err.message);
