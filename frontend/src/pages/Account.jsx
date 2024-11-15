@@ -1,23 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../components/AuthContext';
+import './account.css';
 
-const Account = ({ userRole = '', userEmail = '' }) => {
+const Account = () => {
+  const { userRole, userEmail } = useAuth();
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
   const displayRole = userRole === 'Customer' ? 'Customer' : 'Employee';
 
   useEffect(() => {
-    const fetchProfileData = async () => {
-      if (!userEmail) {
-        setLoading(false);
-        return;
-      }
+    console.log(userEmail);
+    console.log(userRole);
+    console.log(displayRole);
 
+    const fetchProfileData = async () => {
       try {
         const response = await fetch(
-          `https://coogzootestbackend-phi.vercel.app/profile?email=${encodeURIComponent(userEmail)}&type=${encodeURIComponent(displayRole.toLowerCase())}`,
+          'http://localhost:5000/profile?email=${encodeURIComponent(userEmail)}&type=${encodeURIComponent(displayRole)}',
           {
             method: 'GET',
             headers: {
@@ -31,87 +33,72 @@ const Account = ({ userRole = '', userEmail = '' }) => {
         }
 
         const data = await response.json();
-        if (!data.profile) {
-          throw new Error('No profile data received');
-        }
-        
         setProfileData(data.profile);
       } catch (err) {
-        console.error('Profile fetch error:', err);
         setError(err.message);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProfileData();
+    if (userEmail) {
+      fetchProfileData();
+    }
   }, [userEmail, displayRole]);
 
   const renderNameFields = () => {
     if (!profileData) return null;
 
-    // Normalize the field names to handle both cases
-    const firstName = profileData.First_name || profileData.First_Name || 'N/A';
-    const lastName = profileData.Last_name || profileData.Last_Name || 'N/A';
-
-    return (
-      <>
-        <p className="mb-2"><strong>First Name:</strong> {firstName}</p>
-        <p className="mb-2"><strong>Last Name:</strong> {lastName}</p>
-      </>
-    );
+    if (displayRole === 'Customer') {
+      return (
+        <>
+          <p>First Name: {profileData.First_name}</p>
+          <p>Last Name: {profileData.Last_name}</p>
+        </>
+      );
+    } else {
+      return (
+        <><p>First Name: {profileData.First_Name}</p>
+        <p>Last Name: {profileData.Last_Name}</p> </>
+      )
+    }
   };
 
-  if (!userEmail) {
-    return (
-      <div className="p-4">
-        <p className="text-red-500">Please log in to view your account.</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="p-4 max-w-2xl mx-auto">
-      <div className="mb-6">
-        <h2 className="text-xl font-bold mb-2">User Role: {userRole || "No role assigned"}</h2>
+    <div className="account-container">
+      <div className="role-display">
+        <h2>User Role: {userRole ? userRole : "No role assigned"}</h2>
       </div>
 
-      <div className="mb-6">
+      <div className="account-header">
         {displayRole === 'Employee' && (
-          <Link 
-            to="/employee-dashboard"
-            className="inline-block bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mr-2"
-          >
+          <Link to="/employee-dashboard" className="dashboard-btn">
             Employee Dashboard
           </Link>
         )}
         {userRole === 'Manager' && (
-          <Link 
-            to="/manager-dashboard"
-            className="inline-block bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-          >
+          <Link to="/manager-dashboard" className="dashboard-btn">
             Manager Dashboard
           </Link>
         )}
       </div>
 
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-bold mb-4">Profile Information</h2>
-        
+      <div className="account-section">
+        <h2>Profile Information</h2>
         {loading ? (
           <p>Loading...</p>
         ) : error ? (
-          <p className="text-red-500">{error}</p>
+          <p className="error">{error}</p>
         ) : profileData ? (
-          <div className="space-y-2">
-            <p className="mb-2"><strong>ID:</strong> {profileData.ID}</p>
+          <>
+            <p>ID: {profileData.ID}</p>
             {renderNameFields()}
-            <p className="mb-2"><strong>Email:</strong> {profileData.email}</p>
-            <p className="mb-2"><strong>Phone:</strong> {profileData.phone || 'N/A'}</p>
-            {displayRole === 'Customer' && profileData.DateOfBirth && (
-              <p className="mb-2"><strong>Date of Birth:</strong> {profileData.DateOfBirth}</p>
+            <p>Email: {profileData.email}</p>
+            <p>Phone: {profileData.phone}</p>
+            {displayRole === 'Customer' && (
+              <p>Date of Birth: {profileData.DateOfBirth}</p>
             )}
-          </div>
+          </>
         ) : (
           <p>No profile data available.</p>
         )}
