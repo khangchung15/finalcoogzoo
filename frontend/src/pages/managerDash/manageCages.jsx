@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import './manageCages.css';
-import showSidebar from './managerdash';
 
-function ManageCages({ cageData, setCageData, addCage, cageId, setCageId,showSidebar}) {
+function ManageCages({ cageData, setCageData, addCage, cageID, setCageID, deleteCage, showSidebar }) {
   const [cages, setCages] = useState([]);
   const [exhibits, setExhibits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [updateData, setUpdateData] = useState({}); // State for storing update form data
-  const [showUpdateForm, setShowUpdateForm] = useState(false); // Toggle for showing update form
-  const [modalMessage, setModalMessage] = useState(''); // Modal message for feedback
+  const [updateData, setUpdateData] = useState({});
+  const [showUpdateForm, setShowUpdateForm] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
+
 
   // fetch cage information from the database
   useEffect(() => {
@@ -83,22 +83,14 @@ function ManageCages({ cageData, setCageData, addCage, cageId, setCageId,showSid
   };
 
   const handleDeleteCage = async () => {
-    try {
-      const response = await fetch(`http://localhost:5000/remove-cage?id=${cageId}`, {
-        method: 'DELETE',
-      });
-  
-      const data = await response.json();
-      if (response.ok) {
-        setModalMessage('Cage soft-deleted successfully.');
-        setCages(cages.filter(cage => cage.id !== parseInt(cageId, 10)));
-      } else {
-        setModalMessage(data.message || 'Error deleting cage.');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      setModalMessage('An error occurred while attempting to delete the cage.');
+    if (!cageID) {
+      setModalMessage('Please enter a cage ID');
+      return;
     }
+    await deleteCage();
+    // Refresh the cages list after deletion
+    const updatedCages = cages.filter(cage => cage.id !== parseInt(cageID, 10));
+    setCages(updatedCages);
   };
 
 // shared validation function for both entry and update forms
@@ -174,10 +166,10 @@ function ManageCages({ cageData, setCageData, addCage, cageId, setCageId,showSid
             >
                 <option value="">Select Exhibit</option>
                 {exhibits.map((exhibit) => (
-                    <option key={exhibit.id} value={exhibit.id}>
-                        {exhibit.name}
+                    <option key={exhibit.ID} value={exhibit.ID}>
+                        {exhibit.Name}
                     </option>
-                ))}
+                ))} 
             </select>
 
             <button onClick={validateAndAddCage}>Add Cage</button>
@@ -285,15 +277,15 @@ function ManageCages({ cageData, setCageData, addCage, cageId, setCageId,showSid
 
                 {/* remove cage section */}
                 <div className="remove-cage-section">
-                    <h2>Remove Cage</h2>
-                    <input
-                        type="number"
-                        placeholder="Cage ID (required)"
-                        value={cageId}
-                        onChange={(e) => setCageId(e.target.value)}
-                        required
-                    />
-                    <button onClick={handleDeleteCage}>Remove Cage</button>
+                  <h2>Remove Cage</h2>
+                  <input
+                    type="number"
+                    placeholder="Cage ID (required)"
+                    value={cageID}
+                    onChange={(e) => setCageID(e.target.value)}
+                    required
+                  />
+                  <button onClick={handleDeleteCage}>Remove Cage</button>
                 </div>
             </>
         )}
