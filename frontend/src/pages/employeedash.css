@@ -86,7 +86,7 @@
 
 .emp-nav-item.active {
   background-color: rgba(255, 255, 255, 0.2);
-  border-left: 4px solid #4299e1;
+  border-left: 4px solid #C8102E;
 }
 
 .emp-nav-item i {
@@ -336,7 +336,7 @@
 }
 
 .emp-add-report-btn {
-  background-color: #4299e1;
+  background-color: #C8102E;
   color: white;
   border: none;
   padding: 8px 16px;
@@ -348,7 +348,7 @@
 }
 
 .emp-submit-btn {
-  background-color: #4299e1;
+  background-color: #C8102E;
   color: white;
   border: none;
 }
