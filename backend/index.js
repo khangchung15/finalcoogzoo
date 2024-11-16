@@ -94,8 +94,7 @@ const addEmployee = (employeeData, res) => {
   });
 };
 const removeEmployee = (employeeId, res) => {
-  connection.query(
-    'UPDATE Employee SET is_deleted = 1 WHERE ID = ?',
+  connection.query('UPDATE Employee SET is_deleted = 1 WHERE ID = ?',
     [employeeId],
     (err, result) => {
       if (err) return handleDBError(res, err);
@@ -329,17 +328,47 @@ const addCage = (cageData, res) => {
     );
 };
 const removeCage = (cageId, res) => {
-  connection.query('UPDATE Cage SET is_deleted = 1 WHERE ID = ?',
-    [cageId],
-    (err, result) => {
+  // Parse the ID as an integer
+  const id = parseInt(cageId);
+
+  // Validate the ID
+  if (isNaN(id) || id <= 0) {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ message: 'Invalid cage ID format' }));
+  }
+
+  // First check if the cage exists and isn't already deleted
+  connection.query(
+    'SELECT * FROM Cage WHERE ID = ? AND is_deleted = 0',
+    [id],
+    (err, results) => {
       if (err) return handleDBError(res, err);
-      if (result.affectedRows > 0) {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: 'Cage removed successfully (soft-deleted).' }));
-      } else {
+
+      if (results.length === 0) {
         res.writeHead(404, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: 'Cage not found' }));
+        return res.end(JSON.stringify({ message: 'Cage not found or already deleted' }));
       }
+
+      // If cage exists, proceed with the soft delete
+      connection.query(
+        'UPDATE Cage SET is_deleted = 1 WHERE ID = ?',
+        [id],
+        (updateErr, updateResult) => {
+          if (updateErr) return handleDBError(res, updateErr);
+
+          if (updateResult.affectedRows > 0) {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ 
+              message: 'Cage removed successfully',
+              success: true,
+              id: id
+            }));
+          } else {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ message: 'Failed to remove cage' }));
+          }
+        }
+      );
     }
   );
 };

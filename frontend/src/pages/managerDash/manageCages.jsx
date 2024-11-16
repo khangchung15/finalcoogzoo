@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import './manageCages.css';
 
-function ManageCages({ cageData, setCageData, addCage, cageID, setCageID, deleteCage, showSidebar }) {
+function ManageCages({ cageData, setCageData, addCage, cageId, setCageId, showSidebar }) {
   const [cages, setCages] = useState([]);
   const [exhibits, setExhibits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [updateData, setUpdateData] = useState({});
-  const [showUpdateForm, setShowUpdateForm] = useState(false);
-  const [modalMessage, setModalMessage] = useState('');
-
+  const [updateData, setUpdateData] = useState({}); // State for storing update form data
+  const [showUpdateForm, setShowUpdateForm] = useState(false); // Toggle for showing update form
+  const [modalMessage, setModalMessage] = useState(''); // Modal message for feedback
 
   // fetch cage information from the database
   useEffect(() => {
@@ -83,14 +82,47 @@ function ManageCages({ cageData, setCageData, addCage, cageID, setCageID, delete
   };
 
   const handleDeleteCage = async () => {
-    if (!cageID) {
-      setModalMessage('Please enter a cage ID');
+    // Convert cageId to number and validate
+    const id = parseInt(cageId);
+    
+    // Basic validation
+    if (!cageId || isNaN(id)) {
+      setModalMessage('Please enter a valid cage ID');
       return;
     }
-    await deleteCage();
-    // Refresh the cages list after deletion
-    const updatedCages = cages.filter(cage => cage.id !== parseInt(cageID, 10));
-    setCages(updatedCages);
+
+    try {
+      const response = await fetch(`http://localhost:5000/remove-cage?id=${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        // Successfully deleted
+        setModalMessage(data.message);
+        // Update local state to remove the cage
+        setCages(prevCages => prevCages.filter(cage => cage.id !== id));
+        // Clear input
+        setCageId('');
+        
+        // Optional: Refresh the cage list from server
+        const refreshResponse = await fetch('http://localhost:5000/cages');
+        if (refreshResponse.ok) {
+          const refreshedCages = await refreshResponse.json();
+          setCages(refreshedCages);
+        }
+      } else {
+        // Server returned an error
+        setModalMessage(data.message || 'Error removing cage');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setModalMessage('An error occurred while attempting to remove the cage');
+    }
   };
 
 // shared validation function for both entry and update forms
@@ -166,10 +198,10 @@ function ManageCages({ cageData, setCageData, addCage, cageID, setCageID, delete
             >
                 <option value="">Select Exhibit</option>
                 {exhibits.map((exhibit) => (
-                    <option key={exhibit.ID} value={exhibit.ID}>
-                        {exhibit.Name}
+                    <option key={exhibit.id} value={exhibit.id}>
+                        {exhibit.name}
                     </option>
-                ))} 
+                ))}
             </select>
 
             <button onClick={validateAndAddCage}>Add Cage</button>
@@ -278,25 +310,42 @@ function ManageCages({ cageData, setCageData, addCage, cageID, setCageID, delete
                 {/* remove cage section */}
                 <div className="remove-cage-section">
                   <h2>Remove Cage</h2>
-                  <input
-                    type="number"
-                    placeholder="Cage ID (required)"
-                    value={cageID}
-                    onChange={(e) => setCageID(e.target.value)}
-                    required
-                  />
-                  <button onClick={handleDeleteCage}>Remove Cage</button>
+                  <div className="input-group">
+                    <input
+                      type="number"
+                      placeholder="Enter Cage ID"
+                      value={cageId}
+                      onChange={(e) => setCageId(e.target.value)}
+                      min="1"
+                      className="cage-id-input"
+                    />
+                    <button 
+                      onClick={handleDeleteCage}
+                      className="remove-button"
+                    >
+                      Remove Cage
+                    </button>
+                  </div>
+                  {cages.length > 0 && (
+                    <div className="available-cages">
+                      <strong>Available Cage IDs:</strong> {cages.map(cage => cage.id).join(', ')}
+                    </div>
+                  )}
                 </div>
             </>
         )}
       </div>
-      {/* modal for feedback */}
+      {/* Modal with improved visibility */}
       {modalMessage && (
         <div className="modal">
-            <div className="modal-content">
-                <p>{modalMessage}</p>
-                <button onClick={closeModal}>Close</button>
-            </div>
+          <div className="modal-content">
+            <h3>Status</h3>
+            <p>{modalMessage}</p>
+            <button onClick={() => {
+              setModalMessage('');
+              // Optionally refresh the page or data after closing modal
+            }}>Close</button>
+          </div>
         </div>
       )}
     </div>
