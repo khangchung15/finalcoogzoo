@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './manageCages.css';
-import showSidebar from './managerdash';
 
-function ManageCages({ cageData, setCageData, addCage, cageId, setCageId,showSidebar}) {
+function ManageCages({ cageData, setCageData, addCage, cageId, setCageId, showSidebar }) {
   const [cages, setCages] = useState([]);
   const [exhibits, setExhibits] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -83,21 +82,46 @@ function ManageCages({ cageData, setCageData, addCage, cageId, setCageId,showSid
   };
 
   const handleDeleteCage = async () => {
+    // Convert cageId to number and validate
+    const id = parseInt(cageId);
+    
+    // Basic validation
+    if (!cageId || isNaN(id)) {
+      setModalMessage('Please enter a valid cage ID');
+      return;
+    }
+
     try {
-      const response = await fetch(`http://localhost:5000/remove-cage?id=${cageId}`, {
+      const response = await fetch(`https://coogzootestbackend-phi.vercel.app/remove-cage?id=${id}`, {
         method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
-  
+
       const data = await response.json();
+      
       if (response.ok) {
-        setModalMessage('Cage soft-deleted successfully.');
-        setCages(cages.filter(cage => cage.id !== parseInt(cageId, 10)));
+        // Successfully deleted
+        setModalMessage(data.message);
+        // Update local state to remove the cage
+        setCages(prevCages => prevCages.filter(cage => cage.id !== id));
+        // Clear input
+        setCageId('');
+        
+        // Optional: Refresh the cage list from server
+        const refreshResponse = await fetch('https://coogzootestbackend-phi.vercel.app/cages');
+        if (refreshResponse.ok) {
+          const refreshedCages = await refreshResponse.json();
+          setCages(refreshedCages);
+        }
       } else {
-        setModalMessage(data.message || 'Error deleting cage.');
+        // Server returned an error
+        setModalMessage(data.message || 'Error removing cage');
       }
     } catch (error) {
       console.error('Error:', error);
-      setModalMessage('An error occurred while attempting to delete the cage.');
+      setModalMessage('An error occurred while attempting to remove the cage');
     }
   };
 
@@ -285,26 +309,43 @@ function ManageCages({ cageData, setCageData, addCage, cageId, setCageId,showSid
 
                 {/* remove cage section */}
                 <div className="remove-cage-section">
-                    <h2>Remove Cage</h2>
+                  <h2>Remove Cage</h2>
+                  <div className="input-group">
                     <input
-                        type="number"
-                        placeholder="Cage ID (required)"
-                        value={cageId}
-                        onChange={(e) => setCageId(e.target.value)}
-                        required
+                      type="number"
+                      placeholder="Enter Cage ID"
+                      value={cageId}
+                      onChange={(e) => setCageId(e.target.value)}
+                      min="1"
+                      className="cage-id-input"
                     />
-                    <button onClick={handleDeleteCage}>Remove Cage</button>
+                    <button 
+                      onClick={handleDeleteCage}
+                      className="remove-button"
+                    >
+                      Remove Cage
+                    </button>
+                  </div>
+                  {cages.length > 0 && (
+                    <div className="available-cages">
+                      <strong>Available Cage IDs:</strong> {cages.map(cage => cage.id).join(', ')}
+                    </div>
+                  )}
                 </div>
             </>
         )}
       </div>
-      {/* modal for feedback */}
+      {/* Modal with improved visibility */}
       {modalMessage && (
         <div className="modal">
-            <div className="modal-content">
-                <p>{modalMessage}</p>
-                <button onClick={closeModal}>Close</button>
-            </div>
+          <div className="modal-content">
+            <h3>Status</h3>
+            <p>{modalMessage}</p>
+            <button onClick={() => {
+              setModalMessage('');
+              // Optionally refresh the page or data after closing modal
+            }}>Close</button>
+          </div>
         </div>
       )}
     </div>

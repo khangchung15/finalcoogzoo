@@ -2,7 +2,7 @@
 .manage-exhibits-container {
     padding: 2%;
     transition: margin-left 0.3s ease;
-    margin-left: -10%;
+    margin-left: -9%;
     margin-top: -2%;
     width: 126%;
     display: flex;
@@ -10,7 +10,7 @@
 }
 
 .manage-exhibits-container.sidebar-collapsed {
-    margin-left: -34%;
+    margin-left: -33%;
     gap: 0.5%;
 }
 
@@ -37,23 +37,23 @@
 }
 
 /* Arrange forms side by side and ensure equal height */
-.form-sections-wrapper {
+.form-sections-wrapper.sidebar-collapse {
     display: flex;
     justify-content: space-between;
     gap: 20px;
     align-items: stretch;
+
+    position: relative;
+    top:50px;
 }
 
 /* Ensure consistency for form containers */
 .update-form-section {
     flex: 1;
-    max-width: 400px;
-    height: 100%; /* Ensure forms stretch to fill the available height */
-    background-color: #f9f9f9;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px; /* Ensure spacing between different form sections */
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    z-index: 1000;
 }
 
 /* Input fields and select dropdown */
@@ -73,13 +73,6 @@
 
 /* Checkbox and label styling */
 .manage-exhibits label, 
-.update-form-section label {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
-    font-size: 16px;
-}
 
 /* Button styling */
 .manage-exhibits button, 
@@ -131,7 +124,6 @@
 }
 
 .exhibit-table td {
-    white-space: nowrap;
     padding: 12px;
     text-align: center;
     border-bottom: 1px solid #ddd;

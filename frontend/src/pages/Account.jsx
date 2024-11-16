@@ -8,14 +8,9 @@ const Account = () => {
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
   const displayRole = userRole === 'Customer' ? 'Customer' : 'Employee';
 
   useEffect(() => {
-    console.log(userEmail);
-    console.log(userRole);
-    console.log(displayRole);
-
     const fetchProfileData = async () => {
       try {
         const response = await fetch(
@@ -46,30 +41,21 @@ const Account = () => {
     }
   }, [userEmail, displayRole]);
 
-  const renderNameFields = () => {
-    if (!profileData) return null;
-
-    if (displayRole === 'Customer') {
-      return (
-        <>
-          <p>First Name: {profileData.First_name}</p>
-          <p>Last Name: {profileData.Last_name}</p>
-        </>
-      );
-    } else {
-      return (
-        <><p>First Name: {profileData.First_Name}</p>
-        <p>Last Name: {profileData.Last_Name}</p> </>
-      )
-    }
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Not available';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
   };
 
   return (
     <div className="account-container">
       <div className="role-display">
-        <h2>User Role: {userRole ? userRole : "No role assigned"}</h2>
+        <h2>User Role: {userRole || "No role assigned"}</h2>
       </div>
-
+      
       <div className="account-header">
         {displayRole === 'Employee' && (
           <Link to="/employee-dashboard" className="dashboard-btn">
@@ -94,10 +80,8 @@ const Account = () => {
             <p>ID: {profileData.ID}</p>
             {renderNameFields()}
             <p>Email: {profileData.email}</p>
-            <p>Phone: {profileData.phone}</p>
-            {displayRole === 'Customer' && (
-              <p>Date of Birth: {profileData.DateOfBirth}</p>
-            )}
+            <p>Phone: {profileData.phone || 'Not available'}</p>
+            <p>Date of Birth: {formatDate(profileData.DateOfBirth)}</p>
           </>
         ) : (
           <p>No profile data available.</p>

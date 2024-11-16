@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './manageExhibits.css';
-import showSidebar from './managerdash';
 
-function ManageExhibits({ exhibitData, setExhibitData, addExhibit, exhibitId, setExhibitId, deleteExhibit,showSidebar }) {
+function ManageExhibits({ exhibitData, setExhibitData, addExhibit, exhibitId, setExhibitId, showSidebar }) {
   const [exhibits, setExhibits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -11,7 +10,7 @@ function ManageExhibits({ exhibitData, setExhibitData, addExhibit, exhibitId, se
   const [showUpdateForm, setShowUpdateForm] = useState(false); // Toggle for showing update form
   const [modalMessage, setModalMessage] = useState(''); // Modal message for feedback
 
-  // Fetch exhibit information from the database
+  // fetch exhibit information from the database
   useEffect(() => {
     const fetchExhibits = async () => {
       try {
@@ -27,67 +26,87 @@ function ManageExhibits({ exhibitData, setExhibitData, addExhibit, exhibitId, se
         setLoading(false);
       }
     };
-
     fetchExhibits();
   }, []);
 
+  // Populate update form when editing an exhibit
+  const handleEditClick = (exhibit) => {
+    setUpdateData(exhibit);
+    setShowUpdateForm(true);
+    console.log("Editing exhibit:", exhibit);
+    console.log("Show Update Form:", showUpdateForm);
+  };
+
+  const updateExhibit = async () => {
+    const validationError = validateExhibitData(updateData);
+    if (validationError) {
+      setModalMessage(validationError);
+      return;
+    }
+    try {
+      const response = await fetch(`https://coogzootestbackend-phi.vercel.app/update-exhibit?id=${updateData.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateData),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setModalMessage('Exhibit updated successfully.');
+        setExhibits(exhibits.map((exh) => (exh.id === updateData.id ? { ...exh, ...updateData } : exh)));
+        setShowUpdateForm(false); // close modal on success
+      } else {
+        setModalMessage(data.message || 'Error updating exhibit.');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setModalMessage('An error occurred while attempting to update the exhibit.');
+    }
+  };
+
+  const handleDeleteExhibit = async () => {
+    try {
+      const response = await fetch(`https://coogzootestbackend-phi.vercel.app/remove-exhibit?id=${exhibitId}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setModalMessage('Exhibit soft-deleted successfully.');
+        setExhibits(exhibits.filter(exh => exh.id !== parseInt(exhibitId, 10)));
+      } else {
+        setModalMessage(data.message || 'Error deleting exhibit.');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setModalMessage('An error occurred while attempting to delete the exhibit.');
+    }
+  };
+
   // Shared validation function for both entry and update forms
   const validateExhibitData = (data) => {
-    if (!data.name || !data.location || !data.hours || !data.type) {
+    if (!data.name || !data.location || !data.description || !data.hours || !data.type || !data.imageLink) {
       return "Please fill out all required fields.";
     }
-    if (data.is_closed && (!data.closure_reason || !data.closure_start)) {
-      return "If the exhibit is closed, provide a reason and start date.";
+    if (data.isClosed) {
+      if (!data.closureReason) {
+        return "If the exhibit is closed, provide a reason.";
+      }
+      if (!data.closureStart) {
+        return "If the exhibit is closed, provide a start date.";
+      }
+      if (!data.closureEnd) {
+        return "If the exhibit is closed, provide an end date.";
+      }
     }
     return null;
   };
 
   // Filter exhibits based on the search query
   const filteredExhibits = exhibits.filter((exhibit) =>
-    exhibit.Name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    exhibit.Location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    exhibit.Type.toLowerCase().includes(searchQuery.toLowerCase())
+    exhibit.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    exhibit.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    exhibit.type.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const handleUpdateExhibit = async () => {
-    console.log("Attempting to update with:", updateData); // Log data before sending
-    const validationError = validateExhibitData(updateData);
-    if (validationError) {
-      setModalMessage(validationError);
-      return;
-    }
-
-    try {
-      const response = await fetch(`https://coogzootestbackend-phi.vercel.app/update-exhibit?id=${updateData.ID}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updateData),
-      });
-
-      const result = await response.json();
-      console.log("Response from update:", result); // Log response from server
-
-      if (response.ok) {
-        setModalMessage('Exhibit updated successfully');
-        setExhibits((prev) =>
-          prev.map((ex) => (ex.ID === updateData.ID ? { ...ex, ...updateData } : ex))
-        );
-        setShowUpdateForm(false);
-      } else {
-        setModalMessage(result.message);
-      }
-    } catch (error) {
-      console.log("Error during update fetch:", error); // Log any fetch errors
-      setModalMessage('Error updating exhibit');
-    }
-  };
-  
-  // Populate update form when editing an exhibit
-  const handleEditClick = (exhibit) => {
-    console.log("Editing exhibit:", exhibit); // Debugging
-    setUpdateData(exhibit);
-    setShowUpdateForm(true);
-  };
 
   // Close modal
   const closeModal = () => setModalMessage('');
@@ -124,6 +143,13 @@ function ManageExhibits({ exhibitData, setExhibitData, addExhibit, exhibitId, se
           />
           <input
             type="text"
+            placeholder="Description (required)"
+            value={exhibitData.description}
+            onChange={(e) => setExhibitData({ ...exhibitData, description: e.target.value })}
+            required
+          />
+          <input
+            type="text"
             placeholder="Hours (required)"
             value={exhibitData.hours}
             onChange={(e) => setExhibitData({ ...exhibitData, hours: e.target.value })}
@@ -143,120 +169,44 @@ function ManageExhibits({ exhibitData, setExhibitData, addExhibit, exhibitId, se
           <label>
             <input
               type="checkbox"
-              checked={exhibitData.is_closed}
-              onChange={(e) => setExhibitData({ ...exhibitData, is_closed: e.target.checked })}
+              checked={exhibitData.isClosed}
+              onChange={(e) => setExhibitData({ ...exhibitData, isClosed: e.target.checked })}
             />
             Closed?
           </label>
-          {exhibitData.is_closed && (
+          {exhibitData.isClosed && (
             <>
               <input
                 type="text"
                 placeholder="Closure Reason (if closed)"
-                value={exhibitData.closure_reason}
-                onChange={(e) => setExhibitData({ ...exhibitData, closure_reason: e.target.value })}
+                value={exhibitData.closureReason}
+                onChange={(e) => setExhibitData({ ...exhibitData, closureReason: e.target.value })}
               />
               <input
                 type="date"
                 placeholder="Closure Start Date (if closed)"
-                value={exhibitData.closure_start}
-                onChange={(e) => setExhibitData({ ...exhibitData, closure_start: e.target.value })}
+                value={exhibitData.closureStart}
+                onChange={(e) => setExhibitData({ ...exhibitData, closureStart: e.target.value })}
               />
               <input
                 type="date"
                 placeholder="Closure End Date"
-                value={exhibitData.closure_end}
-                onChange={(e) => setExhibitData({ ...exhibitData, closure_end: e.target.value })}
+                value={exhibitData.closureEnd}
+                onChange={(e) => setExhibitData({ ...exhibitData, closureEnd: e.target.value })}
               />
             </>
           )}
           <input
             type="text"
             placeholder="Image Link"
-            value={exhibitData.Image_Link}
-            onChange={(e) => setExhibitData({ ...exhibitData, Image_Link: e.target.value })}
+            value={exhibitData.imageLink}
+            onChange={(e) => setExhibitData({ ...exhibitData, imageLink: e.target.value })}
           />
           <button onClick={validateAndAddExhibit}>Add Exhibit</button>
         </div>
-
-        {/* Update Exhibit Form */}
-        {showUpdateForm && (
-          <div className="update-form-section">
-            <h2>Update Exhibit</h2>
-            <input
-              type="text"
-              placeholder="Name (required)"
-              value={updateData.Name}
-              onChange={(e) => setUpdateData({ ...updateData, Name: e.target.value })}
-              required
-            />
-            <input
-              type="text"
-              placeholder="Location (required)"
-              value={updateData.Location}
-              onChange={(e) => setUpdateData({ ...updateData, Location: e.target.value })}
-              required
-            />
-            <input
-              type="text"
-              placeholder="Hours (required)"
-              value={updateData.Hours}
-              onChange={(e) => setUpdateData({ ...updateData, Hours: e.target.value })}
-              required
-            />
-            <select
-              value={updateData.Type}
-              onChange={(e) => setUpdateData({ ...updateData, Type: e.target.value })}
-              required
-            >
-              <option value="">Select Type (required)</option>
-              <option value="Aviary">Aviary</option>
-              <option value="Aquarium">Aquarium</option>
-              <option value="Petting Zoo">Petting Zoo</option>
-              <option value="Others">Others</option>
-            </select>
-            <label>
-              <input
-                type="checkbox"
-                checked={updateData.is_closed}
-                onChange={(e) => setUpdateData({ ...updateData, is_closed: e.target.checked })}
-              />
-              Is Closed
-            </label>
-            {updateData.is_closed && (
-              <>
-                <input
-                  type="text"
-                  placeholder="Closure Reason"
-                  value={updateData.closure_reason}
-                  onChange={(e) => setUpdateData({ ...updateData, closure_reason: e.target.value })}
-                />
-                <input
-                  type="date"
-                  placeholder="Closure Start Date"
-                  value={updateData.closure_start}
-                  onChange={(e) => setUpdateData({ ...updateData, closure_start: e.target.value })}
-                />
-                <input
-                  type="date"
-                  placeholder="Closure End Date"
-                  value={updateData.closure_end}
-                  onChange={(e) => setUpdateData({ ...updateData, closure_end: e.target.value })}
-                />
-              </>
-            )}
-            <input
-              type="text"
-              placeholder="Image Link"
-              value={updateData.Image_Link}
-              onChange={(e) => setUpdateData({ ...updateData, Image_Link: e.target.value })}
-            />
-            <button onClick={handleUpdateExhibit}>Update Exhibit</button>
-          </div>
-        )}
-      </div>
-
-      {/* Display Exhibit Information */}
+      </div>  
+      
+      {/* display employee information */}
       <div className="exhibit-list">
         <h2>Exhibit List</h2>
         <input
@@ -278,9 +228,10 @@ function ManageExhibits({ exhibitData, setExhibitData, addExhibit, exhibitId, se
                   <th>ID</th>
                   <th>Name</th>
                   <th>Location</th>
+                  <th>Description</th>
                   <th>Hours</th>
                   <th>Type</th>
-                  <th>Is Closed</th>
+                  <th>Closed?</th>
                   <th>Closure Reason</th>
                   <th>Start Date</th>
                   <th>End Date</th>
@@ -289,23 +240,22 @@ function ManageExhibits({ exhibitData, setExhibitData, addExhibit, exhibitId, se
                 </tr>
               </thead>
               <tbody>
-              {filteredExhibits.map((exhibit) => (
-                <tr key={exhibit.ID}>
-                  <td>{exhibit.ID}</td>
-                  <td>{exhibit.Name}</td>
-                  <td>{exhibit.Location}</td>
-                  <td>{exhibit.Hours}</td>
-                  <td>{exhibit.Type}</td>
-                  <td>{exhibit.is_closed ? "Yes" : "No"}</td>
-                  <td>{exhibit.closure_reason || "N/A"}</td>
-                  <td>{exhibit.closure_start || "N/A"}</td>
-                  <td>{exhibit.closure_end || "N/A"}</td>
-                  <td style={{ whiteSpace: 'normal', wordBreak: 'break-word', maxWidth: '200px' }}>
-                    {exhibit.Image_Link || "N/A"}
-                  </td>
-                  <td><button onClick={() => handleEditClick(exhibit)}>Edit</button></td>
-                </tr>
-              ))}
+                {filteredExhibits.map((exhibit) => (
+                  <tr key={exhibit.id}>
+                    <td>{exhibit.id}</td>
+                    <td>{exhibit.name}</td>
+                    <td>{exhibit.location}</td>
+                    <td>{exhibit.description}</td>
+                    <td>{exhibit.hours}</td>
+                    <td>{exhibit.type}</td>
+                    <td>{exhibit.isClosed ? "Yes" : "No"}</td>
+                    <td>{exhibit.closureReason || "N/A"}</td>
+                    <td>{exhibit.closureStart || "N/A"}</td>
+                    <td>{exhibit.closureEnd || "N/A"}</td>
+                    <td>{exhibit.imageLink || "N/A"}</td>
+                    <td><button onClick={() => handleEditClick(exhibit)}>Edit</button></td>
+                  </tr>
+                ))}
               </tbody>
             </table>
 
@@ -319,11 +269,97 @@ function ManageExhibits({ exhibitData, setExhibitData, addExhibit, exhibitId, se
                 onChange={(e) => setExhibitId(e.target.value)}
                 required
               />
-              <button onClick={deleteExhibit}>Remove Exhibit</button>
+              <button onClick={handleDeleteExhibit}>Remove Exhibit</button>
             </div>
           </>
         )}
       </div>
+        
+      {/* Update Exhibit Form */}
+      {showUpdateForm && (
+        <div className="modal">
+          <div className="modal-content">
+            <button className="close-button" onClick={() => setShowUpdateForm(false)}></button>
+            <h2>Edit Exhibit</h2>
+            <input
+              type="text"
+              placeholder="Name"
+              value={updateData.name}
+              onChange={(e) => setUpdateData({ ...updateData, name: e.target.value })}
+              required
+            />
+            <input
+              type="text"
+              placeholder="Location"
+              value={updateData.location}
+              onChange={(e) => setUpdateData({ ...updateData, location: e.target.value })}
+              required
+            />
+            <input
+              type="text"
+              placeholder="Description"
+              value={updateData.description}
+              onChange={(e) => setUpdateData({ ...updateData, description: e.target.value })}
+              required
+            />
+            <input
+              type="text"
+              placeholder="Hours"
+              value={updateData.hours}
+              onChange={(e) => setUpdateData({ ...updateData, hours: e.target.value })}
+              required
+            />
+            <select
+              value={updateData.type}
+              onChange={(e) => setUpdateData({ ...updateData, type: e.target.value })}
+              required
+            >
+              <option value="">Select Type (required)</option>
+              <option value="Aviary">Aviary</option>
+              <option value="Aquarium">Aquarium</option>
+              <option value="Petting Zoo">Petting Zoo</option>
+              <option value="Others">Others</option>
+            </select>
+            <label>
+              <input
+                type="checkbox"
+                checked={updateData.isClosed}
+                onChange={(e) => setUpdateData({ ...updateData, isClosed: e.target.checked })}
+              />
+              Closed?
+            </label>
+            {updateData.isClosed && (
+              <>
+                <input
+                  type="text"
+                  placeholder="Closure Reason"
+                  value={updateData.closureReason || ''}
+                  onChange={(e) => setUpdateData({ ...updateData, closureReason: e.target.value })}
+                />
+                <input
+                  type="date"
+                  placeholder="Closure Start Date"
+                  value={updateData.closureStart || ''}
+                  onChange={(e) => setUpdateData({ ...updateData, closureStart: e.target.value })}
+                />
+                <input
+                  type="date"
+                  placeholder="Closure End Date"
+                  value={updateData.closureEnd || ''}
+                  onChange={(e) => setUpdateData({ ...updateData, closureEnd: e.target.value })}
+                />
+              </>
+            )}
+            <input
+              type="text"
+              placeholder="Image Link"
+              value={updateData.imageLink}
+              onChange={(e) => setUpdateData({ ...updateData, imageLink: e.target.value })}
+            />
+            <button onClick={updateExhibit}>Save Changes</button>
+          </div>
+        </div>
+      )}
 
       {/* Modal for feedback */}
       {modalMessage && (

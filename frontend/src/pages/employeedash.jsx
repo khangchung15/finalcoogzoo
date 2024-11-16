@@ -6,7 +6,7 @@ import {
   calculateTrend,
   calculateReportingPeriod,
   calculateAverageReportInterval
-} from './helperfunction';
+} from './helperFunctions';
 import '../pages/employeedash.css';
 
 function Employeedash() {
@@ -63,7 +63,7 @@ function Employeedash() {
     e.preventDefault();
     
     try {
-      const response = await fetch('http://localhost:5000/add-report', {
+      const response = await fetch('https://coogzootestbackend-phi.vercel.app/add-report', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -105,7 +105,7 @@ function Employeedash() {
     setLoading(true);
 
     try {
-      const response = await fetch(`http://localhost:5000/health-reports?animalId=${reportQuery.animalId}&startDate=${reportQuery.startDate}&endDate=${reportQuery.endDate}`);
+      const response = await fetch(`https://coogzootestbackend-phi.vercel.app/health-reports?animalId=${reportQuery.animalId}&startDate=${reportQuery.startDate}&endDate=${reportQuery.endDate}`);
       const data = await response.json();
       setHealthReports(data);
     } catch (error) {

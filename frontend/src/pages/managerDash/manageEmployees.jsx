@@ -1,42 +1,16 @@
-// manage employees jsx 
-
 import React, { useState, useEffect } from 'react';
 import './manageEmployees.css';
-import showSidebar from './managerdash';
 
-function ManageEmployees({ employeeData, setEmployeeData, addEmployee, employeeId, setEmployeeId,showSidebar}) {
+function ManageEmployees({ employeeData, setEmployeeData, addEmployee, employeeId, setEmployeeId, showSidebar }) {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [updateData, setUpdateData] = useState({}); // State for storing update form data
-  const [showUpdateForm, setShowUpdateForm] = useState(false); // Toggle for showing update form
-  const [modalMessage, setModalMessage] = useState(''); // Modal message for feedback
+  const [updateData, setUpdateData] = useState({}); // state for storing update form data
+  const [showUpdateForm, setShowUpdateForm] = useState(false); // toggle for showing update form
+  const [modalMessage, setModalMessage] = useState(''); // modal message for feedback
 
-  const fetchWithTimeout = async (url, options = {}, timeout = 8000) => {
-    const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), timeout);
-    
-    try {
-      const response = await fetch(url, {
-        ...options,
-        signal: controller.signal
-      });
-      clearTimeout(id);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return await response.json();
-    } catch (error) {
-      clearTimeout(id);
-      if (error.name === 'AbortError') {
-        throw new Error('Request timed out');
-      }
-      throw error;
-    }
-  };
-  
+  // fetch employee information from the database
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -57,16 +31,16 @@ function ManageEmployees({ employeeData, setEmployeeData, addEmployee, employeeI
   const handleEditClick = (employee) => {
     setUpdateData(employee);
     setShowUpdateForm(true);
+    console.log("Editing employee:", employee); // check if data is correct
+    console.log("Show Update Form:", showUpdateForm);
   };
 
-  // Function to handle the employee update
   const updateEmployee = async () => {
     const validationError = validateEmployeeData(updateData);
     if (validationError) {
       setModalMessage(validationError);
       return;
     }
-
     try {
       const response = await fetch(`https://coogzootestbackend-phi.vercel.app/update-employee?id=${updateData.id}`, {
         method: 'PUT',
@@ -77,7 +51,7 @@ function ManageEmployees({ employeeData, setEmployeeData, addEmployee, employeeI
       if (response.ok) {
         setModalMessage('Employee updated successfully.');
         setEmployees(employees.map((emp) => (emp.id === updateData.id ? { ...emp, ...updateData } : emp)));
-        setShowUpdateForm(false); // Close the update modal on success
+        setShowUpdateForm(false); // close modal on success
       } else {
         setModalMessage(data.message || 'Error updating employee.');
       }
@@ -86,7 +60,6 @@ function ManageEmployees({ employeeData, setEmployeeData, addEmployee, employeeI
       setModalMessage('An error occurred while attempting to update the employee.');
     }
   };
-
 
   const handleDeleteEmployee = async () => {
     try {
@@ -107,6 +80,7 @@ function ManageEmployees({ employeeData, setEmployeeData, addEmployee, employeeI
     }
   };
   
+
   // shared validation function for both entry and update forms
   const validateEmployeeData = (data) => {
     const phonePattern = /^\d{3}-\d{3}-\d{4}$/;
@@ -154,14 +128,14 @@ function ManageEmployees({ employeeData, setEmployeeData, addEmployee, employeeI
           <input
             type="text"
             placeholder="First Name (required)"
-            value={employeeData.firstName || ""}
+            value={employeeData.firstName}
             onChange={(e) => setEmployeeData({ ...employeeData, firstName: e.target.value })}
             required
           />
           <input
             type="text"
             placeholder="Last Name (required)"
-            value={employeeData.lastName || ""}
+            value={employeeData.lastName}
             onChange={(e) => setEmployeeData({ ...employeeData, lastName: e.target.value })}
             required
           />
@@ -169,35 +143,35 @@ function ManageEmployees({ employeeData, setEmployeeData, addEmployee, employeeI
           <input
             type="date"
             placeholder="Birth Date (required)"
-            value={employeeData.birthDate || ""}
+            value={employeeData.birthDate}
             onChange={(e) => setEmployeeData({ ...employeeData, birthDate: e.target.value })}
             required
           />
           <input
             type="email"
             placeholder="Email (required)"
-            value={employeeData.email || ""}
+            value={employeeData.email}
             onChange={(e) => setEmployeeData({ ...employeeData, email: e.target.value })}
             required
           />
           <input
             type="text"
             placeholder="Phone (required; xxx-xxx-xxxx)"
-            value={employeeData.phone || ""}
+            value={employeeData.phone}
             onChange={(e) => setEmployeeData({ ...employeeData, phone: e.target.value })}
             required
           />
           <input
             type="text"
             placeholder="Department (required)"
-            value={employeeData.department || ""}
+            value={employeeData.department}
             onChange={(e) => setEmployeeData({ ...employeeData, department: e.target.value })}
             required
           />
           <input
             type="text"
             placeholder="Role (required)"
-            value={employeeData.role || ""} 
+            value={employeeData.role}
             onChange={(e) => setEmployeeData({ ...employeeData, role: e.target.value })}
             required
           />
@@ -205,24 +179,24 @@ function ManageEmployees({ employeeData, setEmployeeData, addEmployee, employeeI
           <input
             type="date"
             placeholder="Start Date (required)"
-            value={employeeData.startDate || ""}
+            value={employeeData.startDate}
             onChange={(e) => setEmployeeData({ ...employeeData, startDate: e.target.value })}
             required
           />
           <input
             type="number"
             placeholder="Exhibit ID (optional)"
-            value={employeeData.exhibitId || ""}
+            value={employeeData.exhibitId}
             onChange={(e) => setEmployeeData({ ...employeeData, exhibitId: e.target.value ? parseInt(e.target.value, 10) : null })}
           />
           <input
             type="number"
             placeholder="Supervisor ID (optional)"
-            value={employeeData.supervisorId || ""}
+            value={employeeData.supervisorId}
             onChange={(e) => setEmployeeData({ ...employeeData, supervisorId: e.target.value ? parseInt(e.target.value, 10) : null })}
           />
           <select
-            value={employeeData.status || ""}
+            value={employeeData.status}
             onChange={(e) => setEmployeeData({ ...employeeData, status: e.target.value })}
             required
           >
@@ -234,112 +208,14 @@ function ManageEmployees({ employeeData, setEmployeeData, addEmployee, employeeI
           <input
             type="date"
             placeholder="End Date (optional)"
-            value={employeeData.endDate || ""}
-              onChange={(e) => setEmployeeData({ ...employeeData, endDate: e.target.value })}
+            value={employeeData.endDate}
+            onChange={(e) => setEmployeeData({ ...employeeData, endDate: e.target.value })}
+            required
           />
           <button onClick={validateAndAddEmployee}>Add Employee</button>
         </div>
       </div>
-      {/* Update Employee Modal */}
-      {showUpdateForm && (
-        <div className="modal">
-          <div className="modal-content">
-            <div className="modal-header">
-              <button className="close-button" onClick={() => setShowUpdateForm(false)}>×</button>
-              <h2>Edit Employee</h2>
-              {/* form fields pre-filled with updateData */}
-              <label>First Name</label>
-              <input
-                type="text"
-                placeholder="First Name"
-                value={updateData.firstName}
-                onChange={(e) => setUpdateData({ ...updateData, firstName: e.target.value })}
-                required
-              />
-              <label>Last Name</label>
-              <input
-                type="text"
-                placeholder="Last Name"
-                value={updateData.lastName}
-                onChange={(e) => setUpdateData({ ...updateData, lastName: e.target.value })}
-              />
-              <label>Birth Date</label>
-              <input
-                type="date"
-                placeholder="Birth Date"
-                value={updateData.birthDate}
-                onChange={(e) => setUpdateData({ ...updateData, birthDate: e.target.value })}
-              />
-              <label>Email</label>
-              <input
-                type="email"
-                placeholder="Email"
-                value={updateData.email}
-                onChange={(e) => setUpdateData({ ...updateData, email: e.target.value })}
-              />
-              <label>Phone</label>
-              <input
-                type="text"
-                placeholder="Phone"
-                value={updateData.phone}
-                onChange={(e) => setUpdateData({ ...updateData, phone: e.target.value })}
-              />
-              <label>Department</label>
-              <input
-                type="text"
-                placeholder="Department"
-                value={updateData.department}
-                onChange={(e) => setUpdateData({ ...updateData, department: e.target.value })}
-              />
-              <label>Role</label>
-              <input
-                type="text"
-                placeholder="Role"
-                value={updateData.role}
-                onChange={(e) => setUpdateData({ ...updateData, role: e.target.value })}
-              />
-              <label>Start Date</label>
-              <input
-                type="date"
-                placeholder="Start Date"
-                value={updateData.startDate}
-                onChange={(e) => setUpdateData({ ...updateData, startDate: e.target.value })}
-              />
-              <label>Exhibit ID</label>
-              <input
-                type="number"
-                placeholder="Exhibit ID (optional)"
-                value={updateData.exhibitID || ''}
-                onChange={(e) => setUpdateData({ ...updateData, exhibitID: e.target.value ? parseInt(e.target.value, 10) : null })}
-              />
-              <label>Supervisor_ID</label>
-              <input
-                type="number"
-                placeholder="Supervisor ID (optional)"
-                value={updateData.supervisorID || ''}
-                onChange={(e) => setUpdateData({ ...updateData, supervisorID: e.target.value ? parseInt(e.target.value, 10) : null })}
-              />
-              <label>Status</label>
-              <select
-                value={updateData.status}
-                onChange={(e) => setUpdateData({ ...updateData, status: e.target.value })}
-              >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="vacation">Vacation</option>
-              </select>
-              <label>End Date</label>
-              <input
-                type="date"
-                placeholder="End Date (optional)"
-                value={updateData.endDate || ''}
-                onChange={(e) => setUpdateData({ ...updateData, endDate: e.target.value })}
-              />
-              <button onClick={updateEmployee}>Save Changes</button>
-            </div>
-          </div>
-        </div>
-      )}
+
       {/* display employee information */}
       <div className="employee-list">
         <h2>Employee List</h2>
@@ -412,9 +288,92 @@ function ManageEmployees({ employeeData, setEmployeeData, addEmployee, employeeI
           </>
         )}
       </div>
-      
-      
-      
+
+      {/* Update Employee Modal */}
+      {showUpdateForm && (
+        <div className="modal">
+          <div className="modal-content">
+            <button className="close-button" onClick={() => setShowUpdateForm(false)}>×</button>
+            <h2>Edit Employee</h2>
+            <input
+              type="text"
+              placeholder="First Name"
+              value={updateData.firstName}
+              onChange={(e) => setUpdateData({ ...updateData, firstName: e.target.value })}
+            />
+            <input
+              type="text"
+              placeholder="Last Name"
+              value={updateData.lastName}
+              onChange={(e) => setUpdateData({ ...updateData, lastName: e.target.value })}
+            />
+            <input
+              type="date"
+              placeholder="Birth Date"
+              value={updateData.birthDate}
+              onChange={(e) => setUpdateData({ ...updateData, birthDate: e.target.value })}
+            />
+            <input
+              type="email"
+              placeholder="Email"
+              value={updateData.email}
+              onChange={(e) => setUpdateData({ ...updateData, email: e.target.value })}
+            />
+            <input
+              type="text"
+              placeholder="Phone"
+              value={updateData.phone}
+              onChange={(e) => setUpdateData({ ...updateData, phone: e.target.value })}
+            />
+            <input
+              type="text"
+              placeholder="Department"
+              value={updateData.department}
+              onChange={(e) => setUpdateData({ ...updateData, department: e.target.value })}
+            />
+            <input
+              type="text"
+              placeholder="Role"
+              value={updateData.role}
+              onChange={(e) => setUpdateData({ ...updateData, role: e.target.value })}
+            />
+            <input
+              type="date"
+              placeholder="Start Date"
+              value={updateData.startDate}
+              onChange={(e) => setUpdateData({ ...updateData, startDate: e.target.value })}
+            />
+            <input
+              type="number"
+              placeholder="Exhibit ID (optional)"
+              value={updateData.exhibitID || ''}
+              onChange={(e) => setUpdateData({ ...updateData, exhibitID: e.target.value ? parseInt(e.target.value, 10) : null })}
+            />
+            <input
+              type="number"
+              placeholder="Supervisor ID (optional)"
+              value={updateData.supervisorID || ''}
+              onChange={(e) => setUpdateData({ ...updateData, supervisorID: e.target.value ? parseInt(e.target.value, 10) : null })}
+            />
+            <select
+              value={updateData.status}
+              onChange={(e) => setUpdateData({ ...updateData, status: e.target.value })}
+            >
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="vacation">Vacation</option>
+            </select>
+            <input
+              type="date"
+              placeholder="End Date"
+              value={updateData.endDate || ''}
+              onChange={(e) => setUpdateData({ ...updateData, endDate: e.target.value })}
+            />
+            <button onClick={updateEmployee}>Save Changes</button>
+          </div>
+        </div>
+      )}
+
       {/* Modal for feedback */}
       {modalMessage && (
         <div className="modal">
