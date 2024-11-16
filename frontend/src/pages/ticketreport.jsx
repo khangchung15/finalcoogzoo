@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import './TicketReport.css';
+import './ticketreport.css';
 
 const TicketReport = () => {
   const [reportData, setReportData] = useState({
