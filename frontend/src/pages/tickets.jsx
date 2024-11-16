@@ -12,6 +12,7 @@ const TicketsPage = () => {
   const [loading, setLoading] = useState(false);
   const [exhibits, setExhibits] = useState([]);
   const [selectedExhibit, setSelectedExhibit] = useState('');
+  const [loadingExhibits, setLoadingExhibits] = useState(true);
 
   const ticketOptions = [
     { type: 'Child', price: 10, description: 'Ages 3-12' },
@@ -28,87 +29,22 @@ const TicketsPage = () => {
 
   const fetchExhibits = async () => {
     try {
+      setLoadingExhibits(true);
       const response = await fetch('https://coogzootestbackend-phi.vercel.app/exhibits');
-      if (response.ok) {
-        const data = await response.json();
-        setExhibits(data);
-      } else {
-        console.error('Failed to fetch exhibits');
+      if (!response.ok) {
+        throw new Error('Failed to fetch exhibits');
       }
+      const data = await response.json();
+      console.log('Fetched exhibits:', data); // Debug log
+      setExhibits(data);
     } catch (error) {
       console.error('Error fetching exhibits:', error);
-    }
-  };
-
-  const fetchPurchasedTickets = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`https://coogzootestbackend-phi.vercel.app/purchased-tickets?email=${userEmail}`);
-      if (response.ok) {
-        const data = await response.json();
-        setPurchasedTickets(data);
-      } else {
-        console.error('Failed to fetch purchased tickets');
-      }
-    } catch (error) {
-      console.error('Error fetching purchased tickets:', error);
     } finally {
-      setLoading(false);
+      setLoadingExhibits(false);
     }
   };
 
-  const handleTicketSelection = (ticketType) => {
-    setSelectedTicket(ticketType);
-  };
-
-  const handleExhibitSelection = (e) => {
-    setSelectedExhibit(e.target.value);
-  };
-
-  const handlePurchase = async (e) => {
-    e.preventDefault();
-
-    if (!selectedTicket || !selectedExhibit) {
-      alert('Please select a ticket type and an exhibit.');
-      return;
-    }
-
-    try {
-      const response = await fetch('https://coogzootestbackend-phi.vercel.app/tickets', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: userEmail,
-          ticketType: selectedTicket.type,
-          price: selectedTicket.price,
-          exhibitId: selectedExhibit,
-        }),
-      });
-
-      if (response.ok) {
-        setSelectedTicket(null);
-        setSelectedExhibit('');
-        setPurchaseSuccess(true);
-        await fetchPurchasedTickets();
-        setTimeout(() => setPurchaseSuccess(false), 5000);
-      } else {
-        throw new Error('Purchase failed');
-      }
-    } catch (error) {
-      console.error('Error purchasing ticket:', error);
-      alert('Failed to purchase ticket. Please try again.');
-    }
-  };
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
+  // ... rest of your existing functions ...
 
   return (
     <div className="tickets-container">
@@ -143,16 +79,25 @@ const TicketsPage = () => {
                 value={selectedExhibit}
                 onChange={handleExhibitSelection}
                 required
+                className="exhibit-select"
               >
                 <option value="">Select an Exhibit</option>
-                {exhibits.map((exhibit) => (
-                  <option key={exhibit.ID} value={exhibit.ID}>
-                    {exhibit.Name}
-                  </option>
-                ))}
+                {loadingExhibits ? (
+                  <option disabled>Loading exhibits...</option>
+                ) : (
+                  exhibits.map((exhibit) => (
+                    <option key={exhibit.id} value={exhibit.id}>
+                      {exhibit.name}
+                    </option>
+                  ))
+                )}
               </select>
 
-              <button type="submit" className="purchase-button">
+              <button 
+                type="submit" 
+                className="purchase-button"
+                disabled={!selectedExhibit || loadingExhibits}
+              >
                 Purchase Ticket
               </button>
             </form>

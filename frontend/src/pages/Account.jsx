@@ -78,7 +78,8 @@ const Account = () => {
         ) : profileData ? (
           <>
             <p>ID: {profileData.ID}</p>
-            {renderNameFields()}
+            <p>First Name: {profileData.First_Name}</p>
+            <p>Last Name: {profileData.Last_Name}</p>
             <p>Email: {profileData.email}</p>
             <p>Phone: {profileData.phone || 'Not available'}</p>
             <p>Date of Birth: {formatDate(profileData.DateOfBirth)}</p>
