@@ -3,7 +3,6 @@ import "./managerdash.css";
 import ManageEmployees from './manageEmployees';
 import ManageExhibits from './manageExhibits';
 import ManageCages from './manageCages';
-import TicketReport from '../ticketreport';
 
 function ManagerDash() {
   const [showSidebar, setShowSidebar] = useState(true); // State to track sidebar visibility
@@ -266,8 +265,6 @@ function ManagerDash() {
             showSidebar={showSidebar}
           />
         )}
-
-        
 
         {/* Similar sections for Cages, Animals, etc. */}
       </div>
