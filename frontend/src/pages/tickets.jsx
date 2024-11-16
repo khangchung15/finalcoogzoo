@@ -30,7 +30,7 @@ const TicketsPage = () => {
   const fetchExhibits = async () => {
     try {
       setLoadingExhibits(true);
-      const response = await fetch('http://localhost:5000/exhibits');
+      const response = await fetch('https://coogzootestbackend-phi.vercel.app/exhibits');
       if (!response.ok) {
         throw new Error('Failed to fetch exhibits');
       }
@@ -46,7 +46,7 @@ const TicketsPage = () => {
   const fetchPurchasedTickets = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:5000/purchased-tickets?email=${userEmail}`);
+      const response = await fetch(`https://coogzootestbackend-phi.vercel.app/purchased-tickets?email=${userEmail}`);
       if (response.ok) {
         const data = await response.json();
         setPurchasedTickets(data);
@@ -77,7 +77,7 @@ const TicketsPage = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/tickets', {
+      const response = await fetch('https://coogzootestbackend-phi.vercel.app/tickets', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

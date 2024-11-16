@@ -448,15 +448,15 @@ const purchaseTicket = async (ticketData, res) => {
 
       const receiptId = receiptResult.insertId;
 
-      // Insert into Ticket table using the new Receipt ID
-      const insertTicketQuery = 'INSERT INTO Ticket (Customer_ID, Ticket_Type, Price, Purchase_Date, Receipt_ID) VALUES (?, ?, ?, ?, ?)';
+      // Insert into Ticket table with the new Exhibit_ID column
+      const insertTicketQuery = 'INSERT INTO Ticket (Customer_ID, Ticket_Type, Price, Purchase_Date, Receipt_ID, Exhibit_ID) VALUES (?, ?, ?, ?, ?, ?)';
       
-      connection.query(insertTicketQuery, [customerId, ticketData.ticketType, ticketData.price, purchaseDate, receiptId], (err) => {
+      connection.query(insertTicketQuery, [customerId, ticketData.ticketType, ticketData.price, purchaseDate, receiptId, ticketData.exhibitId], (err) => {
         if (err) return handleDBError(res, err);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ message: 'Ticket purchased successfully', receiptId }));
       });
-    });
+    }); 
   } catch (error) {
     handleDBError(res, error);
   }
