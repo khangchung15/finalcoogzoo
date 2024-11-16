@@ -749,6 +749,138 @@ const upgradeMembership = (userId, membershipData, res) => {
       }
   );
 };
+const getTicketReport = (startDate, endDate, exhibits, res) => {
+  const exhibitFilter = exhibits && exhibits.length > 0 ? 
+    `AND t.Exhibit_ID IN (${exhibits})` : '';
+  
+  const queries = {
+    ticketTypes: `
+      SELECT 
+        t.Ticket_Type as type,
+        COUNT(*) as count,
+        SUM(t.Price) as revenue
+      FROM Ticket t
+      WHERE t.Purchase_Date BETWEEN ? AND ?
+        ${exhibitFilter}
+      GROUP BY t.Ticket_Type
+      ORDER BY count DESC
+    `,
+    
+    exhibitPopularity: `
+      SELECT 
+        e.Name as name,
+        COUNT(t.ID) as tickets,
+        COALESCE(SUM(t.Price), 0) as revenue
+      FROM Exhibit e
+      LEFT JOIN Ticket t ON e.ID = t.Exhibit_ID 
+        AND t.Purchase_Date BETWEEN ? AND ?
+        ${exhibitFilter}
+      GROUP BY e.ID, e.Name
+      ORDER BY tickets DESC
+    `,
+    
+    totalStats: `
+      SELECT 
+        COUNT(*) as totalTickets,
+        COALESCE(SUM(Price), 0) as totalRevenue
+      FROM Ticket t
+      WHERE t.Purchase_Date BETWEEN ? AND ?
+        ${exhibitFilter}
+    `
+  };
+
+  const reportData = {
+    ticketTypes: [],
+    exhibitPopularity: [],
+    totalRevenue: 0,
+    totalTickets: 0
+  };
+
+  Promise.all([
+    new Promise((resolve, reject) => {
+      connection.query(queries.ticketTypes, [startDate, endDate], (error, results) => {
+        if (error) {
+          reject(error);
+        } else {
+          reportData.ticketTypes = results.map(type => ({
+            ...type,
+            count: type.count || 0,
+            revenue: type.revenue || 0
+          }));
+          resolve();
+        }
+      });
+    }),
+
+    new Promise((resolve, reject) => {
+      connection.query(queries.exhibitPopularity, [startDate, endDate], (error, results) => {
+        if (error) {
+          reject(error);
+        } else {
+          reportData.exhibitPopularity = results.map(exhibit => ({
+            ...exhibit,
+            tickets: exhibit.tickets || 0,
+            revenue: exhibit.revenue || 0
+          }));
+          resolve();
+        }
+      });
+    }),
+
+    new Promise((resolve, reject) => {
+      connection.query(queries.totalStats, [startDate, endDate], (error, results) => {
+        if (error) {
+          reject(error);
+        } else {
+          if (results && results[0]) {
+            reportData.totalRevenue = results[0].totalRevenue || 0;
+            reportData.totalTickets = results[0].totalTickets || 0;
+          }
+          resolve();
+        }
+      });
+    })
+  ])
+  .then(() => {
+    if (reportData.totalTickets > 0) {
+      reportData.ticketTypes = reportData.ticketTypes.map(type => ({
+        ...type,
+        percentage: ((type.count / reportData.totalTickets) * 100).toFixed(1)
+      }));
+
+      reportData.exhibitPopularity = reportData.exhibitPopularity.map(exhibit => ({
+        ...exhibit,
+        percentage: ((exhibit.tickets / reportData.totalTickets) * 100).toFixed(1)
+      }));
+    } else {
+      reportData.ticketTypes = reportData.ticketTypes.map(type => ({
+        ...type,
+        percentage: '0.0'
+      }));
+
+      reportData.exhibitPopularity = reportData.exhibitPopularity.map(exhibit => ({
+        ...exhibit,
+        percentage: '0.0'
+      }));
+    }
+
+    res.writeHead(200, { 
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*'
+    });
+    res.end(JSON.stringify(reportData));
+  })
+  .catch(error => {
+    res.writeHead(500, { 
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*'
+    });
+    res.end(JSON.stringify({ 
+      error: 'Failed to generate report',
+      details: error.message 
+    }));
+  });
+};
 
 // Function to fetch profile data based on user type
 const fetchProfileData = (user, res) => {
@@ -1150,6 +1282,23 @@ http.createServer((req, res) => {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ message: 'Cage ID is required' }));
     }
+  }
+
+  else if (req.method === 'GET' && req.url.startsWith('/ticket-report')){
+    console.log('Received ticket report request:', req.url);
+
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    let startDate = url.searchParams.get('startDate');
+    let endDate = url.searchParams.get('endDate');
+    const exhibits = url.searchParams.get('exhibits');
+    if (!startDate || !endDate) {
+      const today = new Date();
+      const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+      startDate = thirtyDaysAgo.toISOString().split('T')[0];
+      endDate = today.toISOString().split('T')[0];
+    }
+    const exhibitsList = exhibits ? exhibits.split(',').filter(Boolean) : [];
+    getTicketReport(startDate, endDate, exhibitsList, res);
   }
 
   else {
