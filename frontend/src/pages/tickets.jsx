@@ -190,7 +190,6 @@ const TicketsPage = () => {
                       <p><strong>Price:</strong> ${ticket.Price}</p>
                       <p><strong>Receipt ID:</strong> {ticket.Receipt_ID}</p>
                       <p><strong>Exhibit:</strong> {ticket.Exhibit_Name || 'N/A'}</p>
-                      <p><strong>Status:</strong> {ticket.is_used ? "Used" : "Not Used"}</p>
                     </div>
                   </div>
                 ))}

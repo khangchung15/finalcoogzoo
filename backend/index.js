@@ -482,7 +482,6 @@ const fetchPurchasedTickets = (email, res) => {
       t.Price,
       t.Purchase_Date,
       t.Receipt_ID,
-      t.is_used,
       r.Total_Amount,
       e.Name AS Exhibit_Name
     FROM Ticket t
