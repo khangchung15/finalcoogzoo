@@ -267,9 +267,7 @@ function ManagerDash() {
           />
         )}
 
-        {activeSection === 'reports' && (
-          <TicketReport/>
-        )}
+        
 
         {/* Similar sections for Cages, Animals, etc. */}
       </div>
