@@ -4,34 +4,31 @@ import { useAuth } from '../components/AuthContext';
 import './Account.css';
 
 const Account = () => {
-  const { userRole, userEmail } = useAuth(); // Get userRole for display
+  const { userRole, userEmail } = useAuth();
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  // Use displayRole derived from userRole
   const displayRole = userRole === 'Customer' ? 'Customer' : 'Employee';
 
   useEffect(() => {
-    console.log(userEmail);
-    console.log(userRole);
-    console.log(displayRole);
-
     const fetchProfileData = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/profile?email=${encodeURIComponent(userEmail)}&type=${encodeURIComponent(displayRole)}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
+        const response = await fetch(
+          `http://localhost:5000/profile?email=${encodeURIComponent(userEmail)}&type=${encodeURIComponent(displayRole)}`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
 
         if (!response.ok) {
           throw new Error('Failed to fetch profile data');
         }
 
         const data = await response.json();
-        setProfileData(data.profile); // Access the profile data from the response
+        setProfileData(data.profile);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -44,19 +41,28 @@ const Account = () => {
     }
   }, [userEmail, displayRole]);
 
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Not available';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
   return (
     <div className="account-container">
       <div className="role-display">
-        <h2>User Role: {userRole ? userRole : "No role assigned"}</h2> {/* Display userRole here */}
+        <h2>User Role: {userRole || "No role assigned"}</h2>
       </div>
-
+      
       <div className="account-header">
         {displayRole === 'Employee' && (
           <Link to="/employee-dashboard" className="dashboard-btn">
             Employee Dashboard
           </Link>
         )}
-        {userRole === 'Manager' && ( // Check userRole for Manager
+        {userRole === 'Manager' && (
           <Link to="/manager-dashboard" className="dashboard-btn">
             Manager Dashboard
           </Link>
@@ -75,9 +81,8 @@ const Account = () => {
             <p>First Name: {profileData.First_Name}</p>
             <p>Last Name: {profileData.Last_Name}</p>
             <p>Email: {profileData.email}</p>
-            <p>Phone: {profileData.phone}</p>
-            <p>Date of Birth: {new Date(profileData.DateOfBirth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-
+            <p>Phone: {profileData.phone || 'Not available'}</p>
+            <p>Date of Birth: {formatDate(profileData.DateOfBirth)}</p>
           </>
         ) : (
           <p>No profile data available.</p>

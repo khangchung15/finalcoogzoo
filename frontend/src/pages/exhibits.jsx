@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import './exhibits.css'; // Import your CSS file
+import './exhibits.css';
 
 const Exhibits = () => {
   const [exhibits, setExhibits] = useState([]);
@@ -21,7 +21,6 @@ const Exhibits = () => {
         setLoading(false);
       }
     };
-
     fetchExhibits();
   }, []);
 
@@ -35,19 +34,25 @@ const Exhibits = () => {
 
   return (
     <div className="exhibits-container">
-      <h1>Exhibits List</h1>
+      <h1>Our Exhibits!</h1>
       <div className="exhibits-list">
         {exhibits.map((exhibit) => (
-          <div className="exhibit-card" key={exhibit.ID}>
-            <img src={exhibit.Image_Link} alt={exhibit.Name} className="exhibit-image" />
-            <h4>{exhibit.Name}</h4>
-            <p><strong>Location:</strong> {exhibit.Location}</p>
-            <p><strong>Type:</strong> {exhibit.Type}</p>
-            <p><strong>Hours:</strong> {exhibit.Hours}</p>
-            {exhibit.is_closed ? (
+          // Changed from exhibit.ID to exhibit.id
+          <div className="exhibit-card" key={exhibit.id}>
+            {/* Changed property names to match backend data */}
+            <img src={exhibit.imageLink} alt={exhibit.name} className="exhibit-image" />
+            <h4>{exhibit.name}</h4>
+            <p><strong>Location:</strong> {exhibit.location}</p>
+            <p><strong>Description:</strong> {exhibit.description}</p>
+            <p><strong>Type:</strong> {exhibit.type}</p>
+            <p><strong>Hours:</strong> {exhibit.hours}</p>
+            {exhibit.isClosed ? (
               <>
-                <p style={{ color: 'red' }}><strong>Closed:</strong> {exhibit.closure_reason}</p>
-                <p><strong>Closed from:</strong> {new Date(exhibit.closure_start).toLocaleDateString()} to {new Date(exhibit.closure_end).toLocaleDateString()}</p>
+                <p style={{ color: 'red' }}><strong>Closed:</strong> {exhibit.closureReason}</p>
+                <p><strong>Closed from:</strong> {' '}
+                  {exhibit.closureStart && new Date(exhibit.closureStart).toLocaleDateString()} to{' '}
+                  {exhibit.closureEnd && new Date(exhibit.closureEnd).toLocaleDateString()}
+                </p>
               </>
             ) : (
               <p style={{ color: 'green' }}><strong>Status:</strong> Open</p>

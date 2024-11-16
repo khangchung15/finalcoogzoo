@@ -10,7 +10,7 @@
 }
 
 .manage-exhibits-container.sidebar-collapsed {
-    margin-left: -30%;
+    margin-left: -33%;
     gap: 0.5%;
 }
 
@@ -124,7 +124,6 @@
 }
 
 .exhibit-table td {
-    white-space: nowrap;
     padding: 12px;
     text-align: center;
     border-bottom: 1px solid #ddd;
