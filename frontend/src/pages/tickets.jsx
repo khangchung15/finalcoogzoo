@@ -4,7 +4,7 @@ import { useAuth } from '../components/AuthContext';
 
 const TicketsPage = () => {
   const { userRole, userEmail } = useAuth();
-  const isCustomer = userRole === 'Customer';
+  const isCustomer = userRole === 'Customer' ? true : false;
 
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
@@ -30,12 +30,11 @@ const TicketsPage = () => {
   const fetchExhibits = async () => {
     try {
       setLoadingExhibits(true);
-      const response = await fetch('https://coogzootestbackend-phi.vercel.app/exhibits');
+      const response = await fetch('http://localhost:5000/exhibits');
       if (!response.ok) {
         throw new Error('Failed to fetch exhibits');
       }
       const data = await response.json();
-      console.log('Fetched exhibits:', data); // Debug log
       setExhibits(data);
     } catch (error) {
       console.error('Error fetching exhibits:', error);
@@ -44,7 +43,75 @@ const TicketsPage = () => {
     }
   };
 
-  // ... rest of your existing functions ...
+  const fetchPurchasedTickets = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`http://localhost:5000/purchased-tickets?email=${userEmail}`);
+      if (response.ok) {
+        const data = await response.json();
+        setPurchasedTickets(data);
+      } else {
+        console.error('Failed to fetch purchased tickets');
+      }
+    } catch (error) {
+      console.error('Error fetching purchased tickets:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTicketSelection = (ticketType) => {
+    setSelectedTicket(ticketType);
+  };
+
+  const handleExhibitSelection = (e) => {
+    setSelectedExhibit(e.target.value);
+  };
+
+  const handlePurchase = async (e) => {
+    e.preventDefault();
+
+    if (!selectedTicket || !selectedExhibit) {
+      alert('Please select both a ticket type and an exhibit.');
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:5000/tickets', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: userEmail,
+          ticketType: selectedTicket.type,
+          price: selectedTicket.price,
+          exhibitId: selectedExhibit
+        }),
+      });
+
+      if (response.ok) {
+        setSelectedTicket(null);
+        setSelectedExhibit('');
+        setPurchaseSuccess(true);
+        await fetchPurchasedTickets();
+        setTimeout(() => setPurchaseSuccess(false), 5000);
+      } else {
+        throw new Error('Purchase failed');
+      }
+    } catch (error) {
+      console.error('Error purchasing ticket:', error);
+      alert('Failed to purchase ticket. Please try again.');
+    }
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
 
   return (
     <div className="tickets-container">
@@ -72,7 +139,7 @@ const TicketsPage = () => {
             <form className="customer-info-form" onSubmit={handlePurchase}>
               <h3>Anyday Access to the Zoo</h3>
               <p>Selected Ticket: {selectedTicket.type} - ${selectedTicket.price}</p>
-
+              
               <label htmlFor="exhibitSelect">Choose an Exhibit:</label>
               <select
                 id="exhibitSelect"
