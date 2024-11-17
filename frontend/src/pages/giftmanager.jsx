@@ -50,7 +50,6 @@ const GiftManager = () => {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchItems();
   }, []);
@@ -141,19 +140,11 @@ const GiftManager = () => {
   };
 
   if (!userRole || userRole !== 'Manager') {
-    return (
-      <div className="p-4 text-center">
-        <h2 className="text-xl font-semibold text-red-600">Access denied. Manager privileges required.</h2>
-      </div>
-    );
+    return <div className="access-denied">Access denied. Admin privileges required.</div>;
   }
 
   if (loading) {
-    return (
-      <div className="p-4 text-center">
-        <h2 className="text-xl">Loading...</h2>
-      </div>
-    );
+    return <div className="loading-state">Loading...</div>;
   }
 
   const formatPrice = (price) => {
@@ -162,117 +153,111 @@ const GiftManager = () => {
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Gift Shop Manager</h1>
+    <div className="gift-manager-container">
+      <div className="header-section">
+        <h1>Gift Shop Manager</h1>
         <button
           onClick={() => setShowAddForm(!showAddForm)}
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          className="add-button"
         >
           ➕ Add New Item
         </button>
       </div>
 
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
+        <div className="error-message">{error}</div>
       )}
 
       {showAddForm && (
-        <div className="bg-white p-6 rounded-lg shadow-lg mb-6">
-          <h2 className="text-xl font-semibold mb-4">{editingItem ? 'Edit Item' : 'Add New Item'}</h2>
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Name</label>
+        <div className="form-container">
+          <h2>{editingItem ? 'Edit Item' : 'Add New Item'}</h2>
+          <form onSubmit={handleSubmit} className="form-grid">
+            <div className="form-group">
+              <label className="form-label">Name</label>
               <input
                 type="text"
                 name="Name"
                 value={formData.Name}
                 onChange={handleInputChange}
-                className="w-full p-2 border rounded"
+                className="form-input"
                 required
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Category</label>
+            <div className="form-group">
+              <label className="form-label">Category</label>
               <input
                 type="text"
                 name="Category"
                 value={formData.Category}
                 onChange={handleInputChange}
-                className="w-full p-2 border rounded"
+                className="form-input"
                 required
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Price</label>
+            <div className="form-group">
+              <label className="form-label">Price</label>
               <input
                 type="number"
                 name="Price"
                 value={formData.Price}
                 onChange={handleInputChange}
-                className="w-full p-2 border rounded"
+                className="form-input"
                 step="0.01"
                 min="0"
                 required
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Stock Level</label>
+            <div className="form-group">
+              <label className="form-label">Stock Level</label>
               <input
                 type="number"
                 name="Stock_Level"
                 value={formData.Stock_Level}
                 onChange={handleInputChange}
-                className="w-full p-2 border rounded"
+                className="form-input"
                 min="0"
                 required
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Reorder Level</label>
+            <div className="form-group">
+              <label className="form-label">Reorder Level</label>
               <input
                 type="number"
                 name="Reorder_Level"
                 value={formData.Reorder_Level}
                 onChange={handleInputChange}
-                className="w-full p-2 border rounded"
+                className="form-input"
                 min="0"
                 required
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Image URL</label>
+            <div className="form-group">
+              <label className="form-label">Image URL</label>
               <input
                 type="text"
                 name="Image_URL"
                 value={formData.Image_URL}
                 onChange={handleInputChange}
-                className="w-full p-2 border rounded"
+                className="form-input"
               />
             </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium mb-1">Description</label>
+            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+              <label className="form-label">Description</label>
               <textarea
                 name="Item_Description"
                 value={formData.Item_Description}
                 onChange={handleInputChange}
-                className="w-full p-2 border rounded"
-                rows="3"
+                className="form-textarea"
               />
             </div>
-            <div className="md:col-span-2 flex gap-4">
-              <button 
-                type="submit"
-                className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-              >
+            <div className="button-group" style={{ gridColumn: '1 / -1' }}>
+              <button type="submit" className="submit-button">
                 {editingItem ? 'Update Item' : 'Add Item'}
               </button>
               <button
                 type="button"
                 onClick={resetForm}
-                className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+                className="cancel-button"
               >
                 Cancel
               </button>
@@ -281,48 +266,42 @@ const GiftManager = () => {
         </div>
       )}
 
-      <div className="overflow-x-auto">
-        <table className="w-full bg-white rounded-lg shadow">
-          <thead className="bg-gray-50">
+      <div className="items-table">
+        <table>
+          <thead>
             <tr>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">Name</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">Category</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">Price</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">Stock</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">Status</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">Actions</th>
+              <th>Name</th>
+              <th>Category</th>
+              <th>Price</th>
+              <th>Stock</th>
+              <th>Status</th>
+              <th>Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody>
             {items.map((item) => (
               <tr key={item.Item_ID}>
-                <td className="px-6 py-4">{item.Name}</td>
-                <td className="px-6 py-4">{item.Category}</td>
-                <td className="px-6 py-4">${formatPrice(item.Price)}</td>
-                <td className="px-6 py-4">{item.Stock_Level}</td>
-                <td className="px-6 py-4">
-                  <span className={`px-2 py-1 rounded-full text-sm ${
-                    item.Is_Active 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-red-100 text-red-800'
-                  }`}>
+                <td>{item.Name}</td>
+                <td>{item.Category}</td>
+                <td>${formatPrice(item.Price)}</td>
+                <td>{item.Stock_Level}</td>
+                <td>
+                  <span className={`status-badge ${item.Is_Active ? 'active' : 'inactive'}`}>
                     {item.Is_Active ? 'Active' : 'Inactive'}
                   </span>
                 </td>
-                <td className="px-6 py-4">
-                  <div className="flex gap-2">
+                <td>
+                  <div className="action-buttons">
                     <button
                       onClick={() => startEdit(item)}
-                      className="text-blue-600 hover:text-blue-800"
+                      className="edit-button"
                       title="Edit Item"
                     >
                       ✏️
                     </button>
                     <button
                       onClick={() => handleToggleActive(item.Item_ID, item.Is_Active)}
-                      className={`hover:opacity-75 ${
-                        item.Is_Active ? 'text-red-600' : 'text-green-600'
-                      }`}
+                      className={`toggle-button ${item.Is_Active ? 'active' : 'inactive'}`}
                       title={item.Is_Active ? 'Deactivate Item' : 'Activate Item'}
                     >
                       {item.Is_Active ? '❌' : '✔️'}
