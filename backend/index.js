@@ -920,6 +920,7 @@ const getTicketReport = (startDate, endDate, exhibits, res) => {
         COUNT(t.ID) as tickets,
         COALESCE(SUM(t.Price), 0) as revenue
       FROM Exhibit e
+      WHERE is_deleted = 0
       LEFT JOIN Ticket t ON e.ID = t.Exhibit_ID 
         AND t.Purchase_Date BETWEEN ? AND ?
         ${exhibitFilter}
