@@ -67,9 +67,17 @@ const handleDBError = (res, error) => {
 const initializeDatabase = () => {
   return new Promise((resolve, reject) => {
     const queries = [
-      // Drop triggers individually
+      // Drop existing triggers
       `DROP TRIGGER IF EXISTS after_event_insert`,
       `DROP TRIGGER IF EXISTS after_exhibit_insert`,
+      `DROP TRIGGER IF EXISTS exhibit_status_change`,
+      `DROP TRIGGER IF EXISTS new_exhibit_flag`,
+      `DROP TRIGGER IF EXISTS exhibit_update`,
+      
+      // Add columns to Exhibit table if they don't exist
+      `ALTER TABLE Exhibit
+       ADD COLUMN IF NOT EXISTS is_new BOOLEAN DEFAULT FALSE,
+       ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`,
       
       // Create EventNotifications table
       `CREATE TABLE IF NOT EXISTS EventNotifications (
@@ -93,7 +101,7 @@ const initializeDatabase = () => {
         FOREIGN KEY (exhibit_id) REFERENCES Exhibit(ID)
       )`,
 
-      // Create event trigger with plain text
+      // Create event insert trigger
       `CREATE TRIGGER after_event_insert
       AFTER INSERT ON Event
       FOR EACH ROW
@@ -122,7 +130,7 @@ const initializeDatabase = () => {
         FROM Customer;
       END`,
 
-      // Create exhibit trigger with plain text
+      // Create exhibit insert trigger
       `CREATE TRIGGER after_exhibit_insert
       AFTER INSERT ON Exhibit
       FOR EACH ROW
@@ -147,6 +155,115 @@ const initializeDatabase = () => {
             '\n\nCome visit us to explore this exciting new addition!'
           ),
           FALSE
+        );
+      END`,
+
+      // Create exhibit status change trigger
+      `CREATE TRIGGER exhibit_status_change
+      AFTER UPDATE ON Exhibit
+      FOR EACH ROW
+      BEGIN
+        IF NEW.is_closed != OLD.is_closed THEN
+          INSERT INTO ExhibitNotifications (exhibit_id, message, notification_sent)
+          VALUES (
+            NEW.ID,
+            CASE 
+              WHEN NEW.is_closed = 1 
+              THEN CONCAT(
+                'Exhibit Closure: ', NEW.Name, '\n',
+                'Location: ', NEW.Location, '\n',
+                'Reason: ', COALESCE(NEW.closure_reason, 'Maintenance'), '\n',
+                'From: ', DATE_FORMAT(NEW.closure_start, '%M %D, %Y'), 
+                ' To: ', DATE_FORMAT(NEW.closure_end, '%M %D, %Y')
+              )
+              ELSE CONCAT(
+                'Exhibit Reopening: ', NEW.Name, '\n',
+                'Location: ', NEW.Location, '\n',
+                'Regular Hours: ', COALESCE(NEW.Hours, 'Standard Zoo Hours')
+              )
+            END,
+            FALSE
+          );
+        END IF;
+      END`,
+
+      // Create new exhibit flag trigger
+      `CREATE TRIGGER new_exhibit_flag
+      BEFORE INSERT ON Exhibit
+      FOR EACH ROW
+      BEGIN
+        UPDATE Exhibit SET is_new = FALSE WHERE is_new = TRUE;
+        SET NEW.is_new = TRUE;
+        SET NEW.created_at = CURRENT_TIMESTAMP;
+      END`,
+
+      // Create exhibit update trigger
+      `CREATE TRIGGER exhibit_update
+      AFTER UPDATE ON Exhibit
+      FOR EACH ROW
+      BEGIN
+        IF NEW.Name != OLD.Name 
+          OR NEW.Location != OLD.Location 
+          OR NEW.Hours != OLD.Hours 
+          OR NEW.Type != OLD.Type 
+        THEN
+          INSERT INTO ExhibitNotifications (exhibit_id, message, notification_sent)
+          VALUES (
+            NEW.ID,
+            CONCAT(
+              'Exhibit Update: ', NEW.Name, '\n',
+              CASE 
+                WHEN NEW.Name != OLD.Name 
+                THEN CONCAT('Name updated from ', OLD.Name, ' to ', NEW.Name, '\n')
+                ELSE ''
+              END,
+              CASE 
+                WHEN NEW.Location != OLD.Location 
+                THEN CONCAT('Location updated from ', OLD.Location, ' to ', NEW.Location, '\n')
+                ELSE ''
+              END,
+              CASE 
+                WHEN NEW.Hours != OLD.Hours 
+                THEN CONCAT('Hours updated from ', OLD.Hours, ' to ', NEW.Hours, '\n')
+                ELSE ''
+              END,
+              CASE 
+                WHEN NEW.Type != OLD.Type 
+                THEN CONCAT('Type updated from ', OLD.Type, ' to ', NEW.Type)
+                ELSE ''
+              END
+            ),
+            FALSE
+          );
+        END IF;
+      END`,
+
+      // Create audit log table
+      `CREATE TABLE IF NOT EXISTS AuditLog (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        table_name VARCHAR(50),
+        record_id INT,
+        action_type ENUM('INSERT', 'UPDATE', 'DELETE'),
+        changed_fields JSON,
+        changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`,
+
+      // Create exhibit audit trigger
+      `CREATE TRIGGER exhibit_audit
+      AFTER UPDATE ON Exhibit
+      FOR EACH ROW
+      BEGIN
+        INSERT INTO AuditLog (table_name, record_id, action_type, changed_fields)
+        VALUES (
+          'Exhibit',
+          NEW.ID,
+          'UPDATE',
+          JSON_OBJECT(
+            'name', CASE WHEN NEW.Name != OLD.Name THEN JSON_ARRAY(OLD.Name, NEW.Name) ELSE NULL END,
+            'location', CASE WHEN NEW.Location != OLD.Location THEN JSON_ARRAY(OLD.Location, NEW.Location) ELSE NULL END,
+            'hours', CASE WHEN NEW.Hours != OLD.Hours THEN JSON_ARRAY(OLD.Hours, NEW.Hours) ELSE NULL END,
+            'status', CASE WHEN NEW.is_closed != OLD.is_closed THEN JSON_ARRAY(OLD.is_closed, NEW.is_closed) ELSE NULL END
+          )
         );
       END`
     ];
