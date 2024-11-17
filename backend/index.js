@@ -899,7 +899,7 @@ const fetchHealthReports = (animalId, startDate, endDate, res) => {
 
 const getTicketReport = (startDate, endDate, exhibits, res) => {
   const exhibitFilter = exhibits && exhibits.length > 0 ?
-    `AND t.Exhibit_ID IN (${exhibits})` : '';
+    `AND t.Exhibit_ID IN (${exhibits.join(',')})` : '';
  
   const queries = {
     ticketTypes: `
