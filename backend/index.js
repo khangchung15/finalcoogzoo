@@ -70,9 +70,7 @@ const fetchEmployees = (res) => {
   });
 };
 const addEmployee = (employeeData, res) => {
-  const { firstName, lastName, birthDate, email, phone, department, role, startDate, exhibitID, status, supervisorID, endDate, is_deleted } = employeeData;
-
-  // check if the email already exists
+  const { firstName, lastName, birthDate, email, password, phone, department, role, startDate, exhibitID, status, supervisorID, endDate, is_deleted } = employeeData;
   checkEmailExists(email, (err, exists) => {
     if (err) return handleDBError(res, err);
     if (exists) {
@@ -80,33 +78,80 @@ const addEmployee = (employeeData, res) => {
       return res.end(JSON.stringify({ message: 'Email already exists' }));
     }
 
-    // insert the employee into the Employee table
-    connection.query(
-      `INSERT INTO Employee (First_Name, Last_Name, Birth_Date, Email, Phone, Department, Role, Start_Date, Exhibit_ID, Supervisor_ID, Status, End_Date) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [firstName, lastName, birthDate, email, phone, department, role, startDate, exhibitID || null, status, supervisorID || null, endDate || null],
-      (err) => {
-        if (err) return handleDBError(res, err);
+    // Begin transaction
+    connection.beginTransaction(async (err) => {
+      if (err) return handleDBError(res, err);
+
+      try {
+        // First insert the employee
+        const [employeeResult] = await connection.promise().query(
+          `INSERT INTO Employee (First_Name, Last_Name, Birth_Date, Email, Phone, Department, Role, Start_Date, Exhibit_ID, Supervisor_ID, Status, End_Date) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [firstName, lastName, birthDate, email, phone, department, role, startDate, exhibitID || null, supervisorID || null, status, endDate || null]
+        );
+
+        // Then insert the password
+        await connection.promise().query(
+          'INSERT INTO Passwords (email, password) VALUES (?, ?)',
+          [email, password]
+        );
+
+        // If both queries succeed, commit the transaction
+        await connection.promise().commit();
+        
         res.writeHead(201, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ message: 'Employee added successfully' }));
+
+      } catch (error) {
+        // If any error occurs, rollback the transaction
+        await connection.promise().rollback();
+        handleDBError(res, error);
       }
-    );
+    });
   });
 };
 const removeEmployee = (employeeId, res) => {
-  connection.query('UPDATE Employee SET is_deleted = 1 WHERE ID = ?',
-    [employeeId],
-    (err, result) => {
-      if (err) return handleDBError(res, err);
-      if (result.affectedRows > 0) {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: 'Employee removed successfully (soft-deleted)' }));
-      } else {
+  connection.beginTransaction(async (err) => {
+    if (err) return handleDBError(res, err);
+
+    try {
+      // First get the employee's email
+      const [employee] = await connection.promise().query(
+        'SELECT Email FROM Employee WHERE ID = ?',
+        [employeeId]
+      );
+
+      if (employee.length === 0) {
         res.writeHead(404, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: 'Employee not found' }));
+        return res.end(JSON.stringify({ message: 'Employee not found' }));
       }
+
+      const email = employee[0].Email;
+
+      // Soft delete the employee
+      await connection.promise().query(
+        'UPDATE Employee SET is_deleted = 1 WHERE ID = ?',
+        [employeeId]
+      );
+
+      // Soft delete the password
+      await connection.promise().query(
+        'UPDATE Passwords SET is_deleted = 1 WHERE email = ?',
+        [email]
+      );
+
+      // If both queries succeed, commit the transaction
+      await connection.promise().commit();
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Employee removed successfully (soft-deleted)' }));
+
+    } catch (error) {
+      // If any error occurs, rollback the transaction
+      await connection.promise().rollback();
+      handleDBError(res, error);
     }
-  );
+  });
 };
 const updateEmployee = (employeeId, employeeData, res) => {
   const normalizedData = {
@@ -123,32 +168,46 @@ const updateEmployee = (employeeId, employeeData, res) => {
     Status: employeeData.status,
     End_Date: employeeData.endDate || null
   };
-  connection.query(
-    `UPDATE Employee 
-     SET First_Name = ?, Last_Name = ?, Birth_Date = ?, Email = ?, Phone = ?, 
-         Department = ?, Role = ?, Start_Date = ?, Exhibit_ID = ?, Supervisor_ID = ?, 
-         Status = ?, End_Date = ? 
-     WHERE ID = ?`,
-    [
-      normalizedData.First_Name,
-      normalizedData.Last_Name,
-      normalizedData.Birth_Date,
-      normalizedData.Email,
-      normalizedData.Phone,
-      normalizedData.Department,
-      normalizedData.Role,
-      normalizedData.Start_Date,
-      normalizedData.Exhibit_ID,
-      normalizedData.Supervisor_ID,
-      normalizedData.Status,
-      normalizedData.End_Date,
-      employeeId
-    ],
-    (err, result) => {
-      if (err) {
-        console.error("Update error:", err);
-        return handleDBError(res, err);
+
+  connection.beginTransaction(async (err) => {
+    if (err) return handleDBError(res, err);
+
+    try {
+      // First update the employee
+      const [result] = await connection.promise().query(
+        `UPDATE Employee 
+         SET First_Name = ?, Last_Name = ?, Birth_Date = ?, Email = ?, Phone = ?, 
+             Department = ?, Role = ?, Start_Date = ?, Exhibit_ID = ?, Supervisor_ID = ?, 
+             Status = ?, End_Date = ? 
+         WHERE ID = ?`,
+        [
+          normalizedData.First_Name,
+          normalizedData.Last_Name,
+          normalizedData.Birth_Date,
+          normalizedData.Email,
+          normalizedData.Phone,
+          normalizedData.Department,
+          normalizedData.Role,
+          normalizedData.Start_Date,
+          normalizedData.Exhibit_ID,
+          normalizedData.Supervisor_ID,
+          normalizedData.Status,
+          normalizedData.End_Date,
+          employeeId
+        ]
+      );
+
+      // If password is provided, update it
+      if (employeeData.password) {
+        await connection.promise().query(
+          'UPDATE Passwords SET password = ? WHERE email = ?',
+          [employeeData.password, normalizedData.Email]
+        );
       }
+
+      // If both queries succeed, commit the transaction
+      await connection.promise().commit();
+
       if (result.affectedRows > 0) {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ 
@@ -159,10 +218,14 @@ const updateEmployee = (employeeId, employeeData, res) => {
         res.writeHead(404, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ message: 'Employee not found' }));
       }
-    }
-  );
-};
 
+    } catch (error) {
+      // If any error occurs, rollback the transaction
+      await connection.promise().rollback();
+      handleDBError(res, error);
+    }
+  });
+};
 //Exhibit Section
 const fetchExhibits = (res) => {
   connection.query('SELECT * FROM Exhibit WHERE is_deleted = 0', (error, results) => {
