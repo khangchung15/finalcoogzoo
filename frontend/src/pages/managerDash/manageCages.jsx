@@ -13,31 +13,42 @@ function ManageCages({ cageData, setCageData, addCage, cageId, setCageId, showSi
 
   // fetch cage information from the database
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchCages = async () => {
       try {
-        const [cagesResponse, exhibitsResponse] = await Promise.all([
-          fetch('https://coogzootestbackend-phi.vercel.app/cages'),
-          fetch('https://coogzootestbackend-phi.vercel.app/exhibits'),
-        ]);
-  
-        if (!cagesResponse.ok || !exhibitsResponse.ok) {
-          throw new Error('Failed to fetch data');
+        const response = await fetch('https://coogzootestbackend-phi.vercel.app/cages');
+        if (!response.ok) {
+          throw new Error('Failed to fetch cages');
         }
-  
-        const cagesData = await cagesResponse.json();
-        const exhibitsData = await exhibitsResponse.json();
-        setCages(cagesData);
-        setExhibits(exhibitsData);
+        const data = await response.json();
+        setCages(data);
       } catch (err) {
         setError(err.message);
       } finally {
         setLoading(false);
       }
     };
-  
-    fetchData();
+    fetchCages();
   }, []);
-  
+
+  // fetch exhibit information from the database
+  useEffect(() => {
+    const fetchExhibits = async () => {
+      try {
+        const response = await fetch('https://coogzootestbackend-phi.vercel.app/exhibits');
+        if (!response.ok) {
+          throw new Error('Failed to fetch exhibits');
+        }
+        const data = await response.json();
+        setExhibits(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchExhibits();
+  }, []);
+
   const handleEditClick = (cage) => {
     setUpdateData(cage);
     setShowUpdateForm(true);
@@ -142,12 +153,7 @@ function ManageCages({ cageData, setCageData, addCage, cageId, setCageId, showSi
   };
 
   return (
-    <div className={`manage-cages-container ${showSidebar ? '' : 'sidebar-collapsed'}`}>  
-      {loading ? (
-        <p>Loading...</p>
-      ) : error ? (
-        <p className="error">{error}</p>
-      ) : (
+    <div className={`manage-cages-container ${showSidebar ? '' : 'sidebar-collapsed'}`}>
       <div className="form-sections-wrapper">
         {/* cage entry form */}
         <div className="manage-cages">
@@ -201,7 +207,6 @@ function ManageCages({ cageData, setCageData, addCage, cageId, setCageId, showSi
             <button onClick={validateAndAddCage}>Add Cage</button>
         </div>
       </div>
-      )}
       {/*update cage modal*/}
        {showUpdateForm && (
         <div className="modal">
