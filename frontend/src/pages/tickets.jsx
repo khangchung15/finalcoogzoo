@@ -4,12 +4,14 @@ import { useAuth } from '../components/AuthContext';
 
 const TicketsPage = () => {
   const { userRole, userEmail } = useAuth();
-  const isCustomer = userRole === 'Customer' ? true : false;
+  const isCustomer = userRole === 'Customer';
 
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
   const [purchasedTickets, setPurchasedTickets] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [exhibits, setExhibits] = useState([]);
+  const [selectedExhibit, setSelectedExhibit] = useState('');
 
   const ticketOptions = [
     { type: 'Child', price: 10, description: 'Ages 3-12' },
@@ -20,8 +22,24 @@ const TicketsPage = () => {
   useEffect(() => {
     if (isCustomer && userEmail) {
       fetchPurchasedTickets();
+      fetchExhibits();
     }
   }, [isCustomer, userEmail, purchaseSuccess]);
+
+  const fetchExhibits = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/exhibits');
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Fetched exhibits:', data); // For debugging
+        setExhibits(data);
+      } else {
+        console.error('Failed to fetch exhibits');
+      }
+    } catch (error) {
+      console.error('Error fetching exhibits:', error);
+    }
+  };
 
   const fetchPurchasedTickets = async () => {
     try {
@@ -44,11 +62,16 @@ const TicketsPage = () => {
     setSelectedTicket(ticketType);
   };
 
+  const handleExhibitSelection = (e) => {
+    const selectedValue = e.target.value ? parseInt(e.target.value, 10) : '';
+    setSelectedExhibit(selectedValue);
+  };
+
   const handlePurchase = async (e) => {
     e.preventDefault();
 
-    if (!selectedTicket) {
-      alert('Please select a ticket type.');
+    if (!selectedTicket || !selectedExhibit) {
+      alert('Please select a ticket type and an exhibit.');
       return;
     }
 
@@ -61,14 +84,15 @@ const TicketsPage = () => {
         body: JSON.stringify({
           email: userEmail,
           ticketType: selectedTicket.type,
-          price: selectedTicket.price
+          price: selectedTicket.price,
+          exhibitId: selectedExhibit,
         }),
       });
 
       if (response.ok) {
         setSelectedTicket(null);
+        setSelectedExhibit('');
         setPurchaseSuccess(true);
-        // Refresh the purchased tickets list
         await fetchPurchasedTickets();
         setTimeout(() => setPurchaseSuccess(false), 5000);
       } else {
@@ -114,6 +138,21 @@ const TicketsPage = () => {
             <form className="customer-info-form" onSubmit={handlePurchase}>
               <h3>Anyday Access to the Zoo</h3>
               <p>Selected Ticket: {selectedTicket.type} - ${selectedTicket.price}</p>
+
+              <label htmlFor="exhibitSelect">Choose an Exhibit:</label>
+              <select
+                id="exhibitSelect"
+                value={selectedExhibit || ''}  // Use empty string when no value is selected
+                onChange={handleExhibitSelection}
+                required
+              >
+                <option value="">Select an Exhibit</option>
+                {exhibits.map((exhibit) => (
+                  <option key={exhibit.id} value={exhibit.id}>
+                    {exhibit.name}
+                  </option>
+                ))}
+              </select>
               <button type="submit" className="purchase-button">
                 Purchase Ticket
               </button>
@@ -126,7 +165,6 @@ const TicketsPage = () => {
             </div>
           )}
 
-          {/* Purchased Tickets Section */}
           <div className="purchased-tickets-section">
             <h2>Your Purchased Tickets</h2>
             {loading ? (
@@ -140,6 +178,7 @@ const TicketsPage = () => {
                       <p><strong>Purchase Date:</strong> {formatDate(ticket.Purchase_Date)}</p>
                       <p><strong>Price:</strong> ${ticket.Price}</p>
                       <p><strong>Receipt ID:</strong> {ticket.Receipt_ID}</p>
+                      <p><strong>Exhibit:</strong> {ticket.Exhibit_Name || 'N/A'}</p>
                     </div>
                   </div>
                 ))}
