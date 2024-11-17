@@ -2145,6 +2145,40 @@ http.createServer((req, res) => {
         }
     });
   }
+  else if(req.method === 'GET' && req.url.startsWith('/membership-details')){
+    const url = new URL(req.url, `http://${req.headers.host}`);
+  const userId = url.searchParams.get('userId');
+
+  if (!userId) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: 'User ID is required' }));
+  }
+
+  fetchMembershipDetails(userId, res);
+  }else if(req.method === 'POST' && req.url === '/upgrade-membership'){
+    let body = '';
+
+    req.on('data', chunk => {
+        body += chunk.toString();
+    });
+
+    req.on('end', () => {
+        try {
+            const { userId, membershipTier, durationType } = JSON.parse(body);
+            
+            if (!userId || !membershipTier || !durationType) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                return res.end(JSON.stringify({ error: 'Missing required fields' }));
+            }
+
+            upgradeMembership(userId, { membershipTier, durationType }, res);
+        } catch (error) {
+            console.error('Error processing membership upgrade:', error);
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Invalid request data' }));
+        }
+    });
+  }
   else {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ message: 'Route not found' }));
