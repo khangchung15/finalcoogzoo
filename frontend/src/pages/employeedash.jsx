@@ -6,7 +6,7 @@ import {
   calculateTrend,
   calculateReportingPeriod,
   calculateAverageReportInterval
-} from './helperfunctions';
+} from './helperFunctions';
 import '../pages/employeedash.css';
 
 function Employeedash() {
@@ -31,6 +31,13 @@ function Employeedash() {
     startDate: '',
     endDate: ''
   });
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
 
   useEffect(() => {
     const fetchEmployeeId = async () => {
@@ -88,7 +95,6 @@ function Employeedash() {
           height: '',
           weight: ''
         });
-        // Optionally refresh the reports if you're viewing them
         if (activeTab === 'health-reports') {
           handleHealthReportFetch(new Event('submit'));
         }
@@ -112,6 +118,46 @@ function Employeedash() {
       console.error("Error fetching health reports:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess('');
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError('New passwords do not match');
+      return;
+    }
+
+    try {
+      const response = await fetch('https://coogzootestbackend-phi.vercel.app/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: userEmail,
+          currentPassword: passwordForm.currentPassword,
+          newPassword: passwordForm.newPassword
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setPasswordSuccess('Password changed successfully');
+        setPasswordForm({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        });
+      } else {
+        setPasswordError(data.message || 'Failed to change password');
+      }
+    } catch (error) {
+      setPasswordError('Error changing password. Please try again.');
     }
   };
 
@@ -233,6 +279,7 @@ function Employeedash() {
             </div>
             <button type="submit" className="emp-submit-btn">Retrieve Reports</button>
           </form>
+          
           {loading ? (
             <div className="emp-loading">Loading...</div>
           ) : healthReports.length > 0 ? (
@@ -245,7 +292,7 @@ function Employeedash() {
                       <th>Employee ID</th>
                       <th>Diagnosis</th>
                       <th>Treatment</th>
-                      <th>Current Height (m)</th>
+                      <th>Current Height (cm)</th>
                       <th>Current Weight (kg)</th>
                       <th>Report Date</th>
                     </tr>
@@ -266,235 +313,299 @@ function Employeedash() {
                 </table>
               </div>
               
-              <div className="emp-summary-box">
-                <h3>Animal Health Analysis</h3>
-                <div className="emp-summary-grid">
-                  <div className="emp-summary-section">
-                    <h4>Basic Measurements</h4>
-                    <div className="emp-summary-item">
-                      <label>Original Height:</label>
-                      <span>{metrics.originalHeight} m</span>
+              {metrics && (
+                <div className="emp-summary-box">
+                  <h3>Animal Health Analysis</h3>
+                  <div className="emp-summary-grid">
+                    <div className="emp-summary-section">
+                      <h4>Basic Measurements</h4>
+                      <div className="emp-summary-item">
+                        <label>Original Height:</label>
+                        <span>{metrics.originalHeight} cm</span>
+                      </div>
+                      <div className="emp-summary-item">
+                        <label>Original Weight:</label>
+                        <span>{metrics.originalWeight} kg</span>
+                      </div>
+                      <div className="emp-summary-item">
+                        <label>Average Height:</label>
+                        <span>{metrics.heightAverage} cm</span>
+                      </div>
+                      <div className="emp-summary-item">
+                        <label>Average Weight:</label>
+                        <span>{metrics.weightAverage} kg</span>
+                      </div>
                     </div>
-                    <div className="emp-summary-item">
-                      <label>Original Weight:</label>
-                      <span>{metrics.originalWeight} kg</span>
-                    </div>
-                    <div className="emp-summary-item">
-                      <label>Average Height:</label>
-                      <span>{metrics.heightAverage} m</span>
-                    </div>
-                    <div className="emp-summary-item">
-                      <label>Average Weight:</label>
-                      <span>{metrics.weightAverage} kg</span>
-                    </div>
-                  </div>
 
-                  <div className="emp-summary-section">
-                    <h4>Growth Analysis</h4>
-                    <div className="emp-summary-item">
-                      <label>Total Weight Gain:</label>
-                      <span>{metrics.totalWeightGain} kg ({metrics.weightGrowthPercent}%)</span>
+                    <div className="emp-summary-section">
+                      <h4>Growth Analysis</h4>
+                      <div className="emp-summary-item">
+                        <label>Total Weight Gain:</label>
+                        <span>{metrics.totalWeightGain} kg ({metrics.weightGrowthPercent}%)</span>
+                      </div>
+                      <div className="emp-summary-item">
+                        <label>Total Height Gain:</label>
+                        <span>{metrics.totalHeightGain} cm ({metrics.heightGrowthPercent}%)</span>
+                      </div>
+                      <div className="emp-summary-item">
+                        <label>Daily Weight Growth:</label>
+                        <span>{metrics.dailyWeightGrowth} kg/day</span>
+                      </div>
+                      <div className="emp-summary-item">
+                        <label>Daily Height Growth:</label>
+                        <span>{metrics.dailyHeightGrowth} cm/day</span>
+                      </div>
                     </div>
-                    <div className="emp-summary-item">
-                      <label>Total Height Gain:</label>
-                      <span>{metrics.totalHeightGain} m ({metrics.heightGrowthPercent}%)</span>
-                    </div>
-                    <div className="emp-summary-item">
-                      <label>Daily Weight Growth:</label>
-                      <span>{metrics.dailyWeightGrowth} kg/day</span>
-                    </div>
-                    <div className="emp-summary-item">
-                      <label>Daily Height Growth:</label>
-                      <span>{metrics.dailyHeightGrowth} m/day</span>
-                    </div>
-                  </div>
 
-                  <div className="emp-summary-section">
-                    <h4>Range Analysis</h4>
-                    <div className="emp-summary-item">
-                      <label>Weight Range:</label>
-                      <span>{metrics.minWeight} - {metrics.maxWeight} kg</span>
+                    <div className="emp-summary-section">
+                      <h4>Range Analysis</h4>
+                      <div className="emp-summary-item">
+                        <label>Weight Range:</label>
+                        <span>{metrics.minWeight} - {metrics.maxWeight} kg</span>
+                      </div>
+                      <div className="emp-summary-item">
+                        <label>Height Range:</label>
+                        <span>{metrics.minHeight} - {metrics.maxHeight} cm</span>
+                      </div>
+                      <div className="emp-summary-item">
+                        <label>Weight Trend:</label>
+                        <span>{metrics.weightTrend}</span>
+                      </div>
+                      <div className="emp-summary-item">
+                        <label>Height Trend:</label>
+                        <span>{metrics.heightTrend}</span>
+                      </div>
                     </div>
-                    <div className="emp-summary-item">
-                      <label>Height Range:</label>
-                      <span>{metrics.minHeight} - {metrics.maxHeight} m</span>
-                    </div>
-                    <div className="emp-summary-item">
-                      <label>Weight Trend:</label>
-                      <span>{metrics.weightTrend}</span>
-                    </div>
-                    <div className="emp-summary-item">
-                      <label>Height Trend:</label>
-                      <span>{metrics.heightTrend}</span>
-                    </div>
-                  </div>
 
-                  <div className="emp-summary-section">
-                    <h4>Reporting Statistics</h4>
-                    <div className="emp-summary-item">
-                      <label>Total Reports:</label>
-                      <span>{metrics.totalReports}</span>
-                    </div>
-                    <div className="emp-summary-item">
-                      <label>Reporting Period:</label>
-                      <span>{metrics.reportingPeriod}</span>
-                    </div>
-                    <div className="emp-summary-item">
-                      <label>Average Interval:</label>
-                      <span>{metrics.averageReportInterval}</span>
+                    <div className="emp-summary-section">
+                      <h4>Reporting Statistics</h4>
+                      <div className="emp-summary-item">
+                        <label>Total Reports:</label>
+                        <span>{metrics.totalReports}</span>
+                      </div>
+                      <div className="emp-summary-item">
+                        <label>Reporting Period:</label>
+                        <span>{metrics.reportingPeriod}</span>
+                      </div>
+                      <div className="emp-summary-item">
+                        <label>Average Interval:</label>
+                        <span>{metrics.averageReportInterval}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
             </>
           ) : (
             <div className="emp-no-data">No reports found for the specified criteria.</div>
           )}
         </div>
       );
-    }
-    return null;
-  };
-
-  return (
-    <div className="emp-dashboard">
-      <div className={`emp-sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
-        <button 
-          className="emp-sidebar-toggle" 
-          onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-        >
-          {isSidebarCollapsed ? '→' : '←'}
-        </button>
-        <div className="emp-sidebar-header">
-          <h2>Zoo Dashboard</h2>
-        </div>
-        <div className="emp-sidebar-nav">
-          <div 
-            className={`emp-nav-item ${activeTab === 'animals' ? 'active' : ''}`}
-            onClick={() => setActiveTab('animals')}
-          >
-            <i className="fas fa-paw"></i>
-            <span>Animals In Your Exhibit</span>
-          </div>
-          <div 
-            className={`emp-nav-item ${activeTab === 'reports' ? 'active' : ''}`}
-            onClick={() => setActiveTab('reports')}
-          >
-            <i className="fas fa-file-medical"></i>
-            <span>Animal Reports</span>
-          </div>
-          <div 
-            className={`emp-nav-item ${activeTab === 'health-reports' ? 'active' : ''}`}
-            onClick={() => setActiveTab('health-reports')}
-          >
-            <i className="fas fa-notes-medical"></i>
-            <span>Retrieve Health Reports</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="emp-main-content">
-        <h1>
-          {activeTab === 'animals'
-            ? 'Animal Management'
-            : activeTab === 'reports'
-            ? 'Animal Reports'
-            : 'Retrieve Health Reports'}
-        </h1>
-        {renderContent()}
-      </div>
-
-      {showReportModal && (
-        <div className="emp-modal-overlay">
-          <div className="emp-modal">
-            <div className="emp-modal-header">
-              <h2>Add Report for {selectedAnimal?.Name}</h2>
-              <button 
-                className="emp-close-button"
-                onClick={() => setShowReportModal(false)}
-              >
-                ×
-              </button>
+    } else if (activeTab === 'change-password') {
+      return (
+        <div className="emp-password-change">
+          <h2></h2>
+          <form onSubmit={handlePasswordChange} className="emp-password-form">
+            {passwordError && (
+              <div className="emp-error-message">{passwordError}</div>
+            )}
+            {passwordSuccess && (
+              <div className="emp-success-message">{passwordSuccess}</div>
+            )}
+            <div className="emp-form-group">
+              <label>Current Password:</label>
+              <input
+                type="password"
+                value={passwordForm.currentPassword}
+                onChange={(e) => setPasswordForm({
+                  ...passwordForm,
+                  currentPassword: e.target.value
+                })}
+                required
+              />
             </div>
-            <form onSubmit={handleReportSubmit}>
-  <div className="emp-form-group">
-    <label>Diagnosis:</label>
-    <textarea
-      value={reportForm.diagnosis}
-      onChange={(e) => setReportForm({
-        ...reportForm,
-        diagnosis: e.target.value
-      })}
-      required
-    />
-  </div>
-  <div className="emp-form-group">
-    <label>Treatment:</label>
-    <textarea
-      value={reportForm.treatment}
-      onChange={(e) => setReportForm({
-        ...reportForm,
-        treatment: e.target.value
-      })}
-      required
-    />
-  </div>
-  <div className="emp-form-group">
-    <label>Height (m):</label>
-    <input
-      type="number"
-      step="0.01"
-      value={reportForm.height}
-      onChange={(e) => setReportForm({
-        ...reportForm,
-        height: e.target.value
-      })}
-      required
-    />
-  </div>
-  <div className="emp-form-group">
-    <label>Weight (kg):</label>
-    <input
-      type="number"
-      step="0.01"
-      value={reportForm.weight}
-      onChange={(e) => setReportForm({
-        ...reportForm,
-        weight: e.target.value
-      })}
-      required
-    />
-  </div>
-  <div className="emp-form-group">
-    <label>Report Date:</label>
-    <input
-      type="date"
-      value={reportForm.reportDate}
-      onChange={(e) => setReportForm({
-        ...reportForm,
-        reportDate: e.target.value
-      })}
-      required
-    />
-  </div>
-  <div className="emp-modal-footer">
-    <button type="submit" className="emp-submit-btn">
-      Submit Report
-    </button>
-    <button 
-      type="button" 
-      className="emp-cancel-btn"
-      onClick={() => setShowReportModal(false)}
-    >
-      Cancel
-    </button>
-  </div>
-</form>
+            <div className="emp-form-group">
+              <label>New Password:</label>
+              <input
+                type="password"
+                value={passwordForm.newPassword}
+                onChange={(e) => setPasswordForm({
+                  ...passwordForm,
+                  newPassword: e.target.value
+                })}
+                required
+              />
+            </div>
+            <div className="emp-form-group">
+                <label>Confirm New Password:</label>
+                <input
+                  type="password"
+                  value={passwordForm.confirmPassword}
+                  onChange={(e) => setPasswordForm({
+                    ...passwordForm,
+                    confirmPassword: e.target.value
+                  })}
+                  required
+                />
+              </div>
+              <button type="submit" className="emp-submit-btn">
+                Confirm Change
+              </button>
+            </form>
+          </div>
+        );
+      }
+      return null;
+    };
+
+    return (
+      <div className="emp-dashboard">
+        <div className={`emp-sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
+          <button 
+            className="emp-sidebar-toggle" 
+            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          >
+            {isSidebarCollapsed ? '→' : '←'}
+          </button>
+          <div className="emp-sidebar-header">
+            <h2>Zoo Dashboard</h2>
+          </div>
+          <div className="emp-sidebar-nav">
+            <div 
+              className={`emp-nav-item ${activeTab === 'animals' ? 'active' : ''}`}
+              onClick={() => setActiveTab('animals')}
+            >
+              <i className="fas fa-paw"></i>
+              <span>Animals In Your Exhibit</span>
+            </div>
+            <div 
+              className={`emp-nav-item ${activeTab === 'reports' ? 'active' : ''}`}
+              onClick={() => setActiveTab('reports')}
+            >
+              <i className="fas fa-file-medical"></i>
+              <span>Animal Reports</span>
+            </div>
+            <div 
+              className={`emp-nav-item ${activeTab === 'health-reports' ? 'active' : ''}`}
+              onClick={() => setActiveTab('health-reports')}
+            >
+              <i className="fas fa-notes-medical"></i>
+              <span>Retrieve Health Reports</span>
+            </div>
+            <div 
+              className={`emp-nav-item ${activeTab === 'change-password' ? 'active' : ''}`}
+              onClick={() => setActiveTab('change-password')}
+            >
+              <i className="fas fa-key"></i>
+              <span>Change Password</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="emp-main-content">
+          <h1>
+            {activeTab === 'animals'
+              ? 'Animal Management'
+              : activeTab === 'reports'
+              ? 'Animal Reports'
+              : activeTab === 'health-reports'
+              ? 'Retrieve Health Reports'
+              : 'Password Manager'}
+          </h1>
+          {renderContent()}
+        </div>
+
+        {showReportModal && (
+          <div className="emp-modal-overlay">
+            <div className="emp-modal">
+              <div className="emp-modal-header">
+                <h2>Add Report for {selectedAnimal?.Name}</h2>
+                <button 
+                  className="emp-close-button"
+                  onClick={() => setShowReportModal(false)}
+                >
+                  ×
+                </button>
+              </div>
+              <form onSubmit={handleReportSubmit}>
+                <div className="emp-form-group">
+                  <label>Diagnosis:</label>
+                  <textarea
+                    value={reportForm.diagnosis}
+                    onChange={(e) => setReportForm({
+                      ...reportForm,
+                      diagnosis: e.target.value
+                    })}
+                    required
+                  />
+                </div>
+                <div className="emp-form-group">
+                  <label>Treatment:</label>
+                  <textarea
+                    value={reportForm.treatment}
+                    onChange={(e) => setReportForm({
+                      ...reportForm,
+                      treatment: e.target.value
+                    })}
+                    required
+                  />
+                </div>
+                <div className="emp-form-group">
+                  <label>Height (cm):</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={reportForm.height}
+                    onChange={(e) => setReportForm({
+                      ...reportForm,
+                      height: e.target.value
+                    })}
+                    required
+                  />
+                </div>
+                <div className="emp-form-group">
+                  <label>Weight (kg):</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={reportForm.weight}
+                    onChange={(e) => setReportForm({
+                      ...reportForm,
+                      weight: e.target.value
+                    })}
+                    required
+                  />
+                </div>
+                <div className="emp-form-group">
+                  <label>Report Date:</label>
+                  <input
+                    type="date"
+                    value={reportForm.reportDate}
+                    onChange={(e) => setReportForm({
+                      ...reportForm,
+                      reportDate: e.target.value
+                    })}
+                    required
+                  />
+                </div>
+                <div className="emp-modal-footer">
+                  <button type="submit" className="emp-submit-btn">
+                    Submit Report
+                  </button>
+                  <button 
+                    type="button" 
+                    className="emp-cancel-btn"
+                    onClick={() => setShowReportModal(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}
       </div>
     );
-  }
-  
-  export default Employeedash;
+}
+
+export default Employeedash;
