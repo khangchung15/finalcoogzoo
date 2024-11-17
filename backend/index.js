@@ -898,15 +898,25 @@ const fetchHealthReports = (animalId, startDate, endDate, res) => {
 };
 
 const getTicketReport = (startDate, endDate, exhibits, res) => {
+  console.log('Getting ticket report with:', { startDate, endDate, exhibits });
+
+  // Validate inputs
+  if (!startDate || !endDate) {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ error: 'Start date and end date are required' }));
+  }
+
   const exhibitFilter = exhibits && exhibits.length > 0 ?
-    `AND t.Exhibit_ID IN (${exhibits.join(',')})` : '';
- 
+    `AND t.Exhibit_ID IN (${exhibits.map(id => parseInt(id, 10)).join(',')})` : '';
+  
+  console.log('Using exhibit filter:', exhibitFilter);
+
   const queries = {
     ticketTypes: `
       SELECT
         t.Ticket_Type as type,
         COUNT(*) as count,
-        SUM(t.Price) as revenue
+        COALESCE(SUM(t.Price), 0) as revenue
       FROM Ticket t
       WHERE t.Purchase_Date BETWEEN ? AND ?
         ${exhibitFilter}
@@ -923,7 +933,7 @@ const getTicketReport = (startDate, endDate, exhibits, res) => {
       LEFT JOIN Ticket t ON e.ID = t.Exhibit_ID
         AND t.Purchase_Date BETWEEN ? AND ?
       WHERE e.is_deleted = 0
-        ${exhibits && exhibits.length > 0 ? `AND e.ID IN (${exhibits})` : ''}
+        ${exhibits && exhibits.length > 0 ? `AND e.ID IN (${exhibits.map(id => parseInt(id, 10)).join(',')})` : ''}
       GROUP BY e.ID, e.Name
       ORDER BY tickets DESC
     `,
@@ -949,8 +959,10 @@ const getTicketReport = (startDate, endDate, exhibits, res) => {
     new Promise((resolve, reject) => {
       connection.query(queries.ticketTypes, [startDate, endDate], (error, results) => {
         if (error) {
+          console.error('Error in ticketTypes query:', error);
           reject(error);
         } else {
+          console.log('Ticket types results:', results);
           reportData.ticketTypes = results.map(type => ({
             ...type,
             count: type.count || 0,
@@ -964,8 +976,10 @@ const getTicketReport = (startDate, endDate, exhibits, res) => {
     new Promise((resolve, reject) => {
       connection.query(queries.exhibitPopularity, [startDate, endDate], (error, results) => {
         if (error) {
+          console.error('Error in exhibitPopularity query:', error);
           reject(error);
         } else {
+          console.log('Exhibit popularity results:', results);
           reportData.exhibitPopularity = results.map(exhibit => ({
             ...exhibit,
             tickets: exhibit.tickets || 0,
@@ -979,8 +993,10 @@ const getTicketReport = (startDate, endDate, exhibits, res) => {
     new Promise((resolve, reject) => {
       connection.query(queries.totalStats, [startDate, endDate], (error, results) => {
         if (error) {
+          console.error('Error in totalStats query:', error);
           reject(error);
         } else {
+          console.log('Total stats results:', results);
           if (results && results[0]) {
             reportData.totalRevenue = results[0].totalRevenue || 0;
             reportData.totalTickets = results[0].totalTickets || 0;
@@ -991,6 +1007,7 @@ const getTicketReport = (startDate, endDate, exhibits, res) => {
     })
   ])
   .then(() => {
+    // Calculate percentages
     if (reportData.totalTickets > 0) {
       reportData.ticketTypes = reportData.ticketTypes.map(type => ({
         ...type,
@@ -1013,6 +1030,8 @@ const getTicketReport = (startDate, endDate, exhibits, res) => {
       }));
     }
 
+    console.log('Sending report data:', reportData);
+
     res.writeHead(200, { 
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*'
@@ -1020,17 +1039,18 @@ const getTicketReport = (startDate, endDate, exhibits, res) => {
     res.end(JSON.stringify(reportData));
   })
   .catch(error => {
+    console.error('Error generating report:', error);
     res.writeHead(500, { 
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*'
     });
     res.end(JSON.stringify({ 
       error: 'Failed to generate report',
-      details: error.message 
+      details: error.message,
+      stack: error.stack
     }));
   });
 };
-
 
 // Function to add a user to the database during signup
 const addUser = (userData, res) => {

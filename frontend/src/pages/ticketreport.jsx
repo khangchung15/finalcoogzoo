@@ -39,37 +39,44 @@ const TicketReport = () => {
   useEffect(() => {
     const fetchReportData = async () => {
       if (!startDate || !endDate) return;
-
+  
       setLoading(true);
       setError('');
-
+  
       try {
         const queryParams = new URLSearchParams({
           startDate,
           endDate,
           exhibits: selectedExhibits.join(',')
         });
-
-        console.log('Making request with params:', queryParams.toString());
-
+  
+        console.log('Query params:', queryParams.toString());
+  
         const response = await fetch(`https://coogzootestbackend-phi.vercel.app/ticket-report?${queryParams}`);
+        console.log('Response status:', response.status);
         
         if (!response.ok) {
-          throw new Error('Failed to fetch report data');
+          const errorText = await response.text(); // Get the error message as text
+          console.error('Error response:', errorText);
+          throw new Error(`Failed to fetch report data: ${errorText}`);
         }
-
+  
         const data = await response.json();
-        console.log('Received report data:', data);
+        console.log('Received data:', data);
         
+        if (!data) {
+          throw new Error('No data received from server');
+        }
+  
         setReportData(data);
       } catch (error) {
-        console.error('Error:', error);
-        setError(error.message);
+        console.error('Full error:', error);
+        setError(error.message || 'Failed to fetch report data');
       } finally {
         setLoading(false);
       }
     };
-
+  
     fetchReportData();
   }, [startDate, endDate, selectedExhibits]);
 
