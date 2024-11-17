@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../components/AuthContext';
 import './giftshop.css';
 
-const GiftShopPage = () => {
+const GiftShopPage = (showSidebar) => {
   const { userRole, userEmail } = useAuth();
   // Make the check case-insensitive
   const isCustomer = userRole?.toLowerCase() === 'customer';
@@ -14,10 +14,8 @@ const GiftShopPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [quantity, setQuantity] = useState(1);
-  const [debug, setDebug] = useState({ userRole, userEmail, isCustomer });
 
   useEffect(() => {
-    setDebug({ userRole, userEmail, isCustomer });
   }, [userRole, userEmail, isCustomer]);
 
   useEffect(() => {
@@ -46,7 +44,7 @@ const GiftShopPage = () => {
 
   const fetchGiftShopItems = async () => {
     try {
-      const response = await fetch('https://coogzootestbackend-phi.vercel.app/giftshop-items');
+      const response = await fetch('http://localhost:5000/giftshop-items');
       if (!response.ok) {
         throw new Error(`Failed to fetch items: ${response.status} ${response.statusText}`);
       }
@@ -64,7 +62,7 @@ const GiftShopPage = () => {
 
   const fetchPurchaseHistory = async () => {
     try {
-      const response = await fetch(`https://coogzootestbackend-phi.vercel.app/giftshop-history?email=${encodeURIComponent(userEmail)}`);
+      const response = await fetch(`http://localhost:5000/giftshop-history?email=${encodeURIComponent(userEmail)}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch history: ${response.status} ${response.statusText}`);
       }
@@ -89,7 +87,7 @@ const GiftShopPage = () => {
 
     try {
       setError(null);
-      const response = await fetch('https://coogzootestbackend-phi.vercel.app/purchase-giftshop-item', {
+      const response = await fetch('http://localhost:5000/purchase-giftshop-item', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -127,13 +125,6 @@ const GiftShopPage = () => {
     );
   }
 
-  const debugInfo = process.env.NODE_ENV === 'development' && (
-    <div className="debug-info" style={{ margin: '10px', padding: '10px', background: '#f0f0f0' }}>
-      <h3>Debug Information</h3>
-      <pre>{JSON.stringify(debug, null, 2)}</pre>
-    </div>
-  );
-
   // Group items by category
   const itemsByCategory = items.reduce((acc, item) => {
     if (!acc[item.Category]) {
@@ -159,11 +150,9 @@ const GiftShopPage = () => {
   }
 
   return (
-    <div className="giftshop-container">
+    <div className={`giftshop-container ${showSidebar ? '' : 'sidebar-collapsed'}`}>
       <h1>Gift Shop</h1>
-      
-      {debugInfo}
-      
+
       {error && (
         <div className="error-message">
           {error}

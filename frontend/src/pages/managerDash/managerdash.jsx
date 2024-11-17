@@ -97,7 +97,7 @@ function ManagerDash() {
 
   const addEmployee = async () => {
     try {
-      const response = await fetch('https://coogzootestbackend-phi.vercel.app/add-employee', {
+      const response = await fetch('http://localhost:5000/add-employee', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(employeeData),
@@ -131,7 +131,7 @@ function ManagerDash() {
 
   const deleteEmployee = async () => {
     try {
-      const response = await fetch(`https://coogzootestbackend-phi.vercel.app/remove-employee?id=${employeeId}&managerEmail=${managerEmail}`, {
+      const response = await fetch(`http://localhost:5000/remove-employee?id=${employeeId}&managerEmail=${managerEmail}`, {
         method: 'DELETE',
       });
 
@@ -149,7 +149,7 @@ function ManagerDash() {
 
   const addExhibit = async () => {
     try {
-      const response = await fetch('https://coogzootestbackend-phi.vercel.app/add-exhibit', {
+      const response = await fetch('http://localhost:5000/add-exhibit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(exhibitData),
@@ -180,7 +180,7 @@ function ManagerDash() {
 
   const deleteExhibit = async () => {
     try {
-      const response = await fetch(`https://coogzootestbackend-phi.vercel.app/remove-exhibit?id=${exhibitId}`, {
+      const response = await fetch(`http://localhost:5000/remove-exhibit?id=${exhibitId}`, {
         method: 'DELETE',
       });
 
@@ -198,7 +198,7 @@ function ManagerDash() {
 
   const addAnimal = async () => {
     try {
-      const response = await fetch('https://coogzootestbackend-phi.vercel.app/add-animal', {
+      const response = await fetch('http://localhost:5000/add-animal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(animalData),
@@ -229,7 +229,7 @@ function ManagerDash() {
 
   const deleteAnimal = async () => {
     try {
-      const response = await fetch(`https://coogzootestbackend-phi.vercel.app/remove-animal?id=${animalId}`, {
+      const response = await fetch(`http://localhost:5000/remove-animal?id=${animalId}`, {
         method: 'DELETE',
       });
 
@@ -247,7 +247,7 @@ function ManagerDash() {
 
   const addCage = async () => {
     try {
-      const response = await fetch('https://coogzootestbackend-phi.vercel.app/add-cage', {
+      const response = await fetch('http://localhost:5000/add-cage', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cageData),
@@ -272,7 +272,7 @@ function ManagerDash() {
 
   const deleteCage = async () => {
     try {
-      const response = await fetch(`https://coogzootestbackend-phi.vercel.app/remove-cage?id=${cageId}`, {
+      const response = await fetch(`http://localhost:5000/remove-cage?id=${cageId}`, {
         method: 'DELETE',
       });
       if (response.ok) {
@@ -289,7 +289,7 @@ function ManagerDash() {
 
   const addShowcase = async () => {
     try {
-      const response = await fetch('https://coogzootestbackend-phi.vercel.app/add-showcase', {
+      const response = await fetch('http://localhost:5000/add-showcase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(showcaseData),
@@ -317,7 +317,7 @@ function ManagerDash() {
 
   const deleteShowcase = async () => {
     try {
-      const response = await fetch(`https://coogzootestbackend-phi.vercel.app/remove-showcase?id=${showcaseId}`, {
+      const response = await fetch(`http://localhost:5000/remove-showcase?id=${showcaseId}`, {
         method: 'DELETE',
       });
       if (response.ok) {

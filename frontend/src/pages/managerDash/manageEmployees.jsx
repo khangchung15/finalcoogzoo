@@ -29,7 +29,7 @@ function ManageEmployees({employeeId, setEmployeeId, showSidebar }) {
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        const response = await fetch('https://coogzootestbackend-phi.vercel.app/employees');
+        const response = await fetch('http://localhost:5000/employees');
         if (!response.ok) {
           throw new Error('Failed to fetch employees');
         }
@@ -58,7 +58,7 @@ function ManageEmployees({employeeId, setEmployeeId, showSidebar }) {
       return;
     }
     try {
-      const response = await fetch(`https://coogzootestbackend-phi.vercel.app/update-employee?id=${updateData.id}`, {
+      const response = await fetch(`http://localhost:5000/update-employee?id=${updateData.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updateData),
@@ -79,7 +79,7 @@ function ManageEmployees({employeeId, setEmployeeId, showSidebar }) {
 
   const handleDeleteEmployee = async () => {
     try {
-      const response = await fetch(`https://coogzootestbackend-phi.vercel.app/remove-employee?id=${employeeId}`, {
+      const response = await fetch(`http://localhost:5000/remove-employee?id=${employeeId}`, {
         method: 'DELETE',
       });
   
@@ -149,7 +149,7 @@ function ManageEmployees({employeeId, setEmployeeId, showSidebar }) {
     }
   
     try {
-      const response = await fetch('https://coogzootestbackend-phi.vercel.app/add-employee', {
+      const response = await fetch('http://localhost:5000/add-employee', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -177,7 +177,7 @@ function ManageEmployees({employeeId, setEmployeeId, showSidebar }) {
           endDate: ''
         });
         // Refresh the employee list
-        const updatedResponse = await fetch('https://coogzootestbackend-phi.vercel.app/employees');
+        const updatedResponse = await fetch('http://localhost:5000/employees');
         const updatedData = await updatedResponse.json();
         setEmployees(updatedData);
       } else {

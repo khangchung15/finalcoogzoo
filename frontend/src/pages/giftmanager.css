@@ -1,11 +1,16 @@
 /* giftmanager.css */
 
 .gift-manager-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
   }
   
+.gift-manager-container.sidebar-collapsed {
+  margin-left: -27%;
+  gap: 0.5%;
+}
+
   .header-section {
     display: flex;
     justify-content: space-between;
