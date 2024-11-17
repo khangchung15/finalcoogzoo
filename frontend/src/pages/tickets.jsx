@@ -21,13 +21,20 @@ const TicketsPage = () => {
   ];
 
   useEffect(() => {
-    fetchExhibits();
-  }, []);
-
-  useEffect(() => {
-    if (isCustomer && userEmail) {
-      fetchPurchasedTickets();
-    }
+    const fetchData = async () => {
+      if (isCustomer && userEmail) {
+        try {
+          setLoading(true);
+          await fetchPurchasedTickets();
+          await fetchExhibits();
+        } catch (error) {
+          console.error('Error fetching data:', error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    fetchData();
   }, [isCustomer, userEmail, purchaseSuccess]);
 
   const fetchExhibits = async () => {
@@ -61,30 +68,38 @@ const TicketsPage = () => {
 
   const fetchPurchasedTickets = async () => {
     try {
-      setLoading(true);
-      const response = await fetch(`https://coogzootestbackend-phi.vercel.app/purchased-tickets?email=${userEmail}`);
-      if (response.ok) {
-        const data = await response.json();
+      if (!userEmail) {
+        console.error('No user email provided');
+        return;
+      }
+      const response = await fetch(`https://coogzootestbackend-phi.vercel.app/purchased-tickets?email=${encodeURIComponent(userEmail)}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch tickets: ${response.status} ${response.statusText}`);
+      }
+  
+      const data = await response.json();
+      if (Array.isArray(data)) {
         setPurchasedTickets(data);
       } else {
-        console.error('Failed to fetch purchased tickets');
+        console.error('Unexpected response format:', data);
+        setPurchasedTickets([]);
       }
     } catch (error) {
       console.error('Error fetching purchased tickets:', error);
-    } finally {
-      setLoading(false);
+      setPurchasedTickets([]);
     }
   };
 
   const handleTicketSelection = (ticketType) => {
     setSelectedTicket(ticketType);
+    setSelectedExhibit(''); // Reset exhibit selection
+    console.log('Selected ticket:', ticketType); // Debug log
   };
 
   const handleExhibitSelection = (e) => {
     const value = e.target.value;
-    console.log('Selected exhibit value:', value); // Debug log
+    console.log('Selected exhibit value:', value);
     const selectedValue = value ? parseInt(value, 10) : '';
-    console.log('Parsed exhibit value:', selectedValue); // Debug log
     setSelectedExhibit(selectedValue);
   };
 

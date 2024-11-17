@@ -694,14 +694,32 @@ const fetchPurchasedTickets = (email, res) => {
     FROM Ticket t
     JOIN Receipt r ON t.Receipt_ID = r.ID
     JOIN Customer c ON t.Customer_ID = c.ID
-    LEFT JOIN Exhibit e ON t.Exhibit_ID = e.ID  -- Join with Exhibit to get exhibit details
+    LEFT JOIN Exhibit e ON t.Exhibit_ID = e.ID
     WHERE c.email = ?
     ORDER BY t.Purchase_Date DESC`;
 
   connection.query(query, [email], (error, results) => {
-    if (error) return handleDBError(res, error);
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(results));
+    if (error) {
+      console.error('Database error:', error);
+      res.writeHead(500, { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      });
+      return res.end(JSON.stringify({ 
+        error: 'Failed to fetch tickets',
+        details: error.message 
+      }));
+    }
+
+    // Always return an array, even if empty
+    const tickets = results || [];
+    console.log('Fetched tickets for email:', email, tickets);
+
+    res.writeHead(200, { 
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*'
+    });
+    res.end(JSON.stringify(tickets));
   });
 };
 
