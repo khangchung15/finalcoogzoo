@@ -22,6 +22,7 @@ const setCORSHeaders = (res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, POST, OPTIONS, DELETE');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Set-Cookie', `__vercel_live_token=123456789; Path=/; HttpOnly; SameSite=None; Secure`);
 };
 
 // Function to handle database errors
