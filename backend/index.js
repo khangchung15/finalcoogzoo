@@ -497,30 +497,53 @@ const checkEmailExists = (email, callback) => {
 };
 const purchaseTicket = async (ticketData, res) => {
   try {
+    console.log('Processing ticket purchase:', ticketData); // Add debug logging
+
     const customerId = await getCustomerIdByEmail(ticketData.email);
     const purchaseDate = new Date().toISOString().split('T')[0];
 
-    // Insert into Receipt table
-    const insertReceiptQuery = 'INSERT INTO Receipt (Customer_ID, Item_IDs, Total_Amount, Purchase_Date) VALUES (?, ?, ?, ?)';
-    const itemIDs = '1'; // Specify item IDs if needed
-    const totalAmount = ticketData.price;
+    // Begin transaction
+    await connection.promise().beginTransaction();
 
-    connection.query(insertReceiptQuery, [customerId, itemIDs, totalAmount, purchaseDate], (err, receiptResult) => {
-      if (err) return handleDBError(res, err);
+    try {
+      // Insert into Receipt table
+      const [receiptResult] = await connection.promise().query(
+        'INSERT INTO Receipt (Customer_ID, Item_IDs, Total_Amount, Purchase_Date) VALUES (?, ?, ?, ?)',
+        [customerId, '1', ticketData.price, purchaseDate]
+      );
 
       const receiptId = receiptResult.insertId;
 
-      // Insert into Ticket table with the new Exhibit_ID column
-      const insertTicketQuery = 'INSERT INTO Ticket (Customer_ID, Ticket_Type, Price, Purchase_Date, Receipt_ID, Exhibit_ID) VALUES (?, ?, ?, ?, ?, ?)';
-      
-      connection.query(insertTicketQuery, [customerId, ticketData.ticketType, ticketData.price, purchaseDate, receiptId, ticketData.exhibitId], (err) => {
-        if (err) return handleDBError(res, err);
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: 'Ticket purchased successfully', receiptId }));
-      });
-    }); 
+      // Insert into Ticket table
+      await connection.promise().query(
+        'INSERT INTO Ticket (Customer_ID, Ticket_Type, Price, Purchase_Date, Receipt_ID, Exhibit_ID) VALUES (?, ?, ?, ?, ?, ?)',
+        [customerId, ticketData.ticketType, ticketData.price, purchaseDate, receiptId, ticketData.exhibitId]
+      );
+
+      // Commit the transaction
+      await connection.promise().commit();
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ 
+        message: 'Ticket purchased successfully', 
+        receiptId,
+        success: true 
+      }));
+
+    } catch (err) {
+      // If anything fails, roll back the transaction
+      await connection.promise().rollback();
+      throw err;
+    }
+
   } catch (error) {
-    handleDBError(res, error);
+    console.error('Error in purchaseTicket:', error);
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ 
+      error: 'Failed to purchase ticket',
+      message: error.message,
+      success: false
+    }));
   }
 };
 const fetchManageAnimals = (res) => {

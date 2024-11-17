@@ -15,6 +15,7 @@ const TicketsPage = () => {
   const [exhibitsLoading, setExhibitsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+
   const ticketOptions = [
     { type: 'Child', price: 10, description: 'Ages 3-12' },
     { type: 'Adult', price: 20, description: 'Ages 13-64' },
@@ -26,7 +27,7 @@ const TicketsPage = () => {
       fetchPurchasedTickets();
       fetchExhibits();
     }
-  }, [isCustomer, userEmail, purchaseSuccess]);
+  }, [isCustomer, userEmail]);
 
   const fetchExhibits = async () => {
     try {
@@ -55,6 +56,7 @@ const TicketsPage = () => {
         throw new Error('Failed to fetch purchased tickets');
       }
       const data = await response.json();
+      console.log('Fetched purchased tickets:', data);
       setPurchasedTickets(data);
     } catch (error) {
       console.error('Error fetching purchased tickets:', error);
@@ -64,44 +66,40 @@ const TicketsPage = () => {
     }
   };
 
-  const handleTicketSelection = (ticketType) => {
-    setSelectedTicket(ticketType);
-    setSelectedExhibit('');
-  };
-
-  const handleExhibitSelection = (e) => {
-    const selectedValue = e.target.value ? parseInt(e.target.value, 10) : '';
-    console.log('Selected exhibit:', selectedValue);
-    setSelectedExhibit(selectedValue);
-  };
-
   const handlePurchase = async (e) => {
     e.preventDefault();
 
     if (!selectedTicket || !selectedExhibit) {
-      alert('Please select both a ticket type and an exhibit.');
+      setError('Please select both a ticket type and an exhibit.');
       return;
     }
 
     try {
       setLoading(true);
       setError(null);
+      
+      const purchaseData = {
+        email: userEmail,
+        ticketType: selectedTicket.type,
+        price: selectedTicket.price,
+        exhibitId: selectedExhibit,
+      };
+
+      console.log('Sending purchase request:', purchaseData);
+
       const response = await fetch('https://coogzootestbackend-phi.vercel.app/tickets', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          email: userEmail,
-          ticketType: selectedTicket.type,
-          price: selectedTicket.price,
-          exhibitId: selectedExhibit,
-        }),
+        body: JSON.stringify(purchaseData),
       });
 
+      const responseData = await response.json();
+      console.log('Purchase response:', responseData);
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to purchase ticket');
+        throw new Error(responseData.message || 'Failed to purchase ticket');
       }
 
       setSelectedTicket(null);
