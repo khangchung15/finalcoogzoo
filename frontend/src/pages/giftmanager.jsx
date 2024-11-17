@@ -1,7 +1,3 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../components/AuthContext';
-import './giftmanager.css';
-
 const GiftManager = () => {
   const { userRole } = useAuth();
   const [items, setItems] = useState([]);
@@ -20,37 +16,49 @@ const GiftManager = () => {
     Is_Active: true
   });
 
-  useEffect(() => {
-    fetchItems();
-  }, []);
-
   const fetchItems = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
+      console.log('Fetching items...'); // Debug log
+      
       const response = await fetch('http://localhost:5000/giftshop-items-all', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
       });
+
+      console.log('Response status:', response.status); // Debug log
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.text();
+        console.error('Response error:', errorData); // Debug log
+        throw new Error(errorData || 'Failed to fetch items');
       }
-      
+
       const data = await response.json();
+      console.log('Fetched data:', data); // Debug log
+
       const formattedData = data.map(item => ({
         ...item,
         Price: parseFloat(item.Price)
       }));
+      
       setItems(formattedData);
     } catch (err) {
       console.error('Fetch error:', err);
-      setError('Failed to load items');
+      setError(err.message || 'Failed to load items');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchItems();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value, type } = e.target;

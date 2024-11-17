@@ -6,7 +6,11 @@ const connection = mysql.createConnection({
   host: 'database-1.cpia0w4c2ec6.us-east-2.rds.amazonaws.com',
   user: 'admin',
   password: 'zoodatabase1',
-  database: 'ZooManagement'
+  database: 'ZooManagement',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+  connectTimeout: 60000,
 });
 
 connection.connect((err) => {
@@ -16,6 +20,29 @@ connection.connect((err) => {
   }
   console.log('Connected to the ZooManagement database.');
 });
+
+function handleDisconnect() {
+  connection.connect((err) => {
+    if (err) {
+      console.error('Error connecting to the database:', err);
+      setTimeout(handleDisconnect, 2000);
+    } else {
+      console.log('Connected to the ZooManagement database.');
+    }
+  });
+
+  connection.on('error', (err) => {
+    console.error('Database error:', err);
+    if (err.code === 'PROTOCOL_CONNECTION_LOST' || 
+        err.code === 'ECONNRESET' || 
+        err.code === 'PROTOCOL_ENQUEUE_AFTER_FATAL_ERROR') {
+      handleDisconnect();
+    } else {
+      throw err;
+    }
+  });
+}
+handleDisconnect();
 
 // Set CORS headers
 const setCORSHeaders = (res) => {
@@ -27,9 +54,14 @@ const setCORSHeaders = (res) => {
 
 // Function to handle database errors
 const handleDBError = (res, error) => {
-  console.error('Error executing query:', error);
+  console.error('Database error:', error);
+  setCORSHeaders(res);
   res.writeHead(500, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({ error: 'Error processing the request' }));
+  res.end(JSON.stringify({ 
+    error: 'Error processing the request',
+    details: error.message,
+    stack: error.stack 
+  }));
 };
 
 
@@ -898,21 +930,32 @@ const fetchHealthReports = (animalId, startDate, endDate, res) => {
   });
 };
 
-const getTicketReport = (startDate, endDate, exhibits, res) => {
-  console.log('Getting ticket report with:', { startDate, endDate, exhibits });
+const getTicketReport = async (startDate, endDate, exhibits, res) => {
+  try {
+    // Check connection state and wait for reconnection if needed
+    if (connection.state === 'disconnected') {
+      await new Promise((resolve, reject) => {
+        setTimeout(() => {
+          handleDisconnect();
+          resolve();
+        }, 1000);
+      });
+    }
 
-  // Validate inputs
-  if (!startDate || !endDate) {
-    res.writeHead(400, { 'Content-Type': 'application/json' });
-    return res.end(JSON.stringify({ error: 'Start date and end date are required' }));
-  }
+    console.log('Getting ticket report with:', { startDate, endDate, exhibits });
 
-  const exhibitFilter = exhibits && exhibits.length > 0 ?
-    `AND t.Exhibit_ID IN (${exhibits.map(id => parseInt(id, 10)).join(',')})` : '';
-  
-  console.log('Using exhibit filter:', exhibitFilter);
+    // Validate inputs
+    if (!startDate || !endDate) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: 'Start date and end date are required' }));
+    }
 
-  const queries = {
+    const exhibitFilter = exhibits && exhibits.length > 0 ?
+      `AND t.Exhibit_ID IN (${exhibits.map(id => parseInt(id, 10)).join(',')})` : '';
+    
+    console.log('Using exhibit filter:', exhibitFilter);
+
+    const queries = {
     ticketTypes: `
       SELECT
         t.Ticket_Type as type,
@@ -956,7 +999,7 @@ const getTicketReport = (startDate, endDate, exhibits, res) => {
     totalTickets: 0
   };
 
-  Promise.all([
+  await Promise.all([
     new Promise((resolve, reject) => {
       connection.query(queries.ticketTypes, [startDate, endDate], (error, results) => {
         if (error) {
@@ -1006,51 +1049,51 @@ const getTicketReport = (startDate, endDate, exhibits, res) => {
         }
       });
     })
-  ])
-  .then(() => {
-    // Calculate percentages
-    if (reportData.totalTickets > 0) {
-      reportData.ticketTypes = reportData.ticketTypes.map(type => ({
-        ...type,
-        percentage: ((type.count / reportData.totalTickets) * 100).toFixed(1)
-      }));
+  ]);
 
-      reportData.exhibitPopularity = reportData.exhibitPopularity.map(exhibit => ({
-        ...exhibit,
-        percentage: ((exhibit.tickets / reportData.totalTickets) * 100).toFixed(1)
-      }));
-    } else {
-      reportData.ticketTypes = reportData.ticketTypes.map(type => ({
-        ...type,
-        percentage: '0.0'
-      }));
-
-      reportData.exhibitPopularity = reportData.exhibitPopularity.map(exhibit => ({
-        ...exhibit,
-        percentage: '0.0'
-      }));
-    }
-
-    console.log('Sending report data:', reportData);
-
-    res.writeHead(200, { 
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*'
-    });
-    res.end(JSON.stringify(reportData));
-  })
-  .catch(error => {
-    console.error('Error generating report:', error);
-    res.writeHead(500, { 
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*'
-    });
-    res.end(JSON.stringify({ 
-      error: 'Failed to generate report',
-      details: error.message,
-      stack: error.stack
+  // Calculate percentages
+  if (reportData.totalTickets > 0) {
+    reportData.ticketTypes = reportData.ticketTypes.map(type => ({
+      ...type,
+      percentage: ((type.count / reportData.totalTickets) * 100).toFixed(1)
     }));
+
+    reportData.exhibitPopularity = reportData.exhibitPopularity.map(exhibit => ({
+      ...exhibit,
+      percentage: ((exhibit.tickets / reportData.totalTickets) * 100).toFixed(1)
+    }));
+  } else {
+    reportData.ticketTypes = reportData.ticketTypes.map(type => ({
+      ...type,
+      percentage: '0.0'
+    }));
+
+    reportData.exhibitPopularity = reportData.exhibitPopularity.map(exhibit => ({
+      ...exhibit,
+      percentage: '0.0'
+    }));
+  }
+
+  console.log('Sending report data:', reportData);
+
+  res.writeHead(200, { 
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*'
   });
+  res.end(JSON.stringify(reportData));
+
+} catch (error) {
+  console.error('Error generating report:', error);
+  res.writeHead(500, { 
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*'
+  });
+  res.end(JSON.stringify({ 
+    error: 'Failed to generate report',
+    details: error.message,
+    stack: error.stack
+  }));
+}
 };
 
 // Function to add a user to the database during signup
@@ -2160,24 +2203,43 @@ http.createServer((req, res) => {
   }
   
   else if (req.method === 'GET' && req.url.startsWith('/ticket-report')) {
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    let startDate = url.searchParams.get('startDate');
-    let endDate = url.searchParams.get('endDate');
-    const exhibits = url.searchParams.get('exhibits');
-    
-    console.log('Received parameters:', { startDate, endDate, exhibits });
+    (async () => {  // Wrap in an async IIFE (Immediately Invoked Function Expression)
+      try {
+        const url = new URL(req.url, `http://${req.headers.host}`);
+        let startDate = url.searchParams.get('startDate');
+        let endDate = url.searchParams.get('endDate');
+        const exhibits = url.searchParams.get('exhibits');
+        
+        console.log('Received parameters:', { startDate, endDate, exhibits });
+      
+        if (!startDate || !endDate) {
+          const today = new Date();
+          const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+          startDate = thirtyDaysAgo.toISOString().split('T')[0];
+          endDate = today.toISOString().split('T')[0];
+        }
+        
+        const exhibitsList = exhibits ? exhibits.split(',').filter(Boolean) : [];
+        console.log('Processed exhibits list:', exhibitsList);
   
-    if (!startDate || !endDate) {
-      const today = new Date();
-      const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
-      startDate = thirtyDaysAgo.toISOString().split('T')[0];
-      endDate = today.toISOString().split('T')[0];
-    }
-    const exhibitsList = exhibits ? exhibits.split(',').filter(Boolean) : [];
-    
-    console.log('Processed exhibits list:', exhibitsList);
-  
-    getTicketReport(startDate, endDate, exhibitsList, res);
+        // Check connection state
+        if (connection.state === 'disconnected') {
+          console.log('Reconnecting to database...');
+          handleDisconnect();
+        }
+      
+        await getTicketReport(startDate, endDate, exhibitsList, res);
+      } catch (error) {
+        console.error('Error in ticket report endpoint:', error);
+        setCORSHeaders(res);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ 
+          error: 'Failed to generate report',
+          details: error.message,
+          stack: error.stack 
+        }));
+      }
+    })();
   }
 
   else if (req.method === 'GET' && req.url === '/giftshop-items') {
