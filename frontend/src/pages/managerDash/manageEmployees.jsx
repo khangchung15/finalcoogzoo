@@ -27,20 +27,21 @@ function ManageEmployees({employeeId, setEmployeeId, showSidebar }) {
 
   // fetch employee information from the database
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchEmployees = async () => {
       try {
-        setLoading(true);
-        const data = await fetchWithTimeout('https://coogzootestbackend-phi.vercel.app/employees');
+        const response = await fetch('https://coogzootestbackend-phi.vercel.app/employees');
+        if (!response.ok) {
+          throw new Error('Failed to fetch employees');
+        }
+        const data = await response.json();
         setEmployees(data);
       } catch (err) {
-        console.error('Fetch error:', err);
         setError(err.message);
       } finally {
         setLoading(false);
       }
     };
-    
-    fetchData();
+    fetchEmployees();
   }, []);
 
   const handleEditClick = (employee) => {

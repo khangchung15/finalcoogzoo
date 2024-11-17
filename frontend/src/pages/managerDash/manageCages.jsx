@@ -153,7 +153,12 @@ function ManageCages({ cageData, setCageData, addCage, cageId, setCageId, showSi
   };
 
   return (
-    <div className={`manage-cages-container ${showSidebar ? '' : 'sidebar-collapsed'}`}>
+    <div className={`manage-cages-container ${showSidebar ? '' : 'sidebar-collapsed'}`}>  
+      {loading ? (
+        <p>Loading...</p>
+      ) : error ? (
+        <p className="error">{error}</p>
+      ) : (
       <div className="form-sections-wrapper">
         {/* cage entry form */}
         <div className="manage-cages">
@@ -207,6 +212,7 @@ function ManageCages({ cageData, setCageData, addCage, cageId, setCageId, showSi
             <button onClick={validateAndAddCage}>Add Cage</button>
         </div>
       </div>
+      )}
       {/*update cage modal*/}
        {showUpdateForm && (
         <div className="modal">
