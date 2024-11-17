@@ -1321,6 +1321,8 @@ const fetchProfileData = (user, res) => {
     );
   }
 };
+
+//Giftshop Section
 const fetchGiftShopItems = (res) => {
   const query = `
     SELECT 
@@ -1348,8 +1350,6 @@ const fetchGiftShopItems = (res) => {
     res.end(JSON.stringify(results));
   });
 };
-
-// Purchase gift shop item
 const purchaseGiftShopItem = (res, body) => {
   const { email, itemId, quantity } = JSON.parse(body);
 
@@ -1360,10 +1360,7 @@ const purchaseGiftShopItem = (res, body) => {
       res.writeHead(404, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ error: 'Customer not found' }));
     }
-
     const customerId = customerResults[0].ID;
-
-    // Check item and stock
     connection.query(
       'SELECT * FROM Gift_Shop_Item WHERE Item_ID = ? AND Is_Active = 1',
       [itemId],
@@ -1373,23 +1370,16 @@ const purchaseGiftShopItem = (res, body) => {
           res.writeHead(404, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ error: 'Item not found' }));
         }
-
         const item = itemResults[0];
-        
-        // Check stock level
         if (item.Stock_Level < quantity) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ error: 'Insufficient stock' }));
         }
-
-        // Begin transaction
         connection.beginTransaction((err) => {
           if (err) {
             console.error('Transaction error:', err);
             return handleDBError(res, err);
           }
-
-          // 1. Create receipt
           const totalAmount = item.Price * quantity;
           connection.query(
             'INSERT INTO Receipt (Customer_ID, Item_IDs, Total_Amount, Purchase_Date) VALUES (?, ?, ?, CURDATE())',
@@ -1398,10 +1388,7 @@ const purchaseGiftShopItem = (res, body) => {
               if (err) {
                 return connection.rollback(() => handleDBError(res, err));
               }
-
               const receiptId = receiptResult.insertId;
-
-              // 2. Record in GiftShop table
               connection.query(
                 'INSERT INTO GiftShop (Customer_ID, Item_ID, Quantity, Price, Purchase_Date, Receipt_ID) VALUES (?, ?, ?, ?, CURDATE(), ?)',
                 [customerId, itemId, quantity, totalAmount, receiptId],
@@ -1409,8 +1396,6 @@ const purchaseGiftShopItem = (res, body) => {
                   if (err) {
                     return connection.rollback(() => handleDBError(res, err));
                   }
-
-                  // 3. Update stock level
                   connection.query(
                     'UPDATE Gift_Shop_Item SET Stock_Level = Stock_Level - ? WHERE Item_ID = ?',
                     [quantity, itemId],
@@ -1418,8 +1403,6 @@ const purchaseGiftShopItem = (res, body) => {
                       if (err) {
                         return connection.rollback(() => handleDBError(res, err));
                       }
-
-                      // Commit transaction
                       connection.commit((err) => {
                         if (err) {
                           return connection.rollback(() => handleDBError(res, err));
@@ -1440,6 +1423,134 @@ const purchaseGiftShopItem = (res, body) => {
         });
       }
     );
+  });
+};
+
+const fetchAllGiftShopItems = (res) => {
+  const query = `
+    SELECT 
+      Item_ID,
+      Name,
+      Item_Description,
+      Category,
+      Price,
+      Stock_Level,
+      Reorder_Level,
+      Image_URL,
+      Is_Active
+    FROM Gift_Shop_Item
+    ORDER BY Category, Name
+  `;
+
+  connection.query(query, (error, results) => {
+    if (error) {
+      console.error('Database error:', error);
+      return handleDBError(res, error);
+    }
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(results));
+  });
+};
+
+const addGiftShopItem = (res, body) => {
+  const item = JSON.parse(body);
+  
+  const query = `
+    INSERT INTO Gift_Shop_Item (
+      Name,
+      Item_Description,
+      Category,
+      Price,
+      Stock_Level,
+      Reorder_Level,
+      Image_URL,
+      Is_Active
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  const values = [
+    item.Name,
+    item.Item_Description,
+    item.Category,
+    item.Price,
+    item.Stock_Level,
+    item.Reorder_Level,
+    item.Image_URL,
+    item.Is_Active
+  ];
+
+  connection.query(query, values, (error, results) => {
+    if (error) {
+      console.error('Database error:', error);
+      return handleDBError(res, error);
+    }
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ 
+      message: 'Item added successfully',
+      itemId: results.insertId 
+    }));
+  });
+};
+
+const updateGiftShopItem = (res, itemId, body) => {
+  const item = JSON.parse(body);
+  
+  const query = `
+    UPDATE Gift_Shop_Item
+    SET 
+      Name = ?,
+      Item_Description = ?,
+      Category = ?,
+      Price = ?,
+      Stock_Level = ?,
+      Reorder_Level = ?,
+      Image_URL = ?,
+      Is_Active = ?
+    WHERE Item_ID = ?
+  `;
+
+  const values = [
+    item.Name,
+    item.Item_Description,
+    item.Category,
+    item.Price,
+    item.Stock_Level,
+    item.Reorder_Level,
+    item.Image_URL,
+    item.Is_Active,
+    itemId
+  ];
+
+  connection.query(query, values, (error) => {
+    if (error) {
+      console.error('Database error:', error);
+      return handleDBError(res, error);
+    }
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ message: 'Item updated successfully' }));
+  });
+};
+
+const toggleItemActive = (res, itemId, body) => {
+  const { is_active } = JSON.parse(body);
+  
+  const query = `
+    UPDATE Gift_Shop_Item
+    SET Is_Active = ?
+    WHERE Item_ID = ?
+  `;
+
+  connection.query(query, [is_active, itemId], (error) => {
+    if (error) {
+      console.error('Database error:', error);
+      return handleDBError(res, error);
+    }
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ message: 'Item status updated successfully' }));
   });
 };
 
@@ -1948,7 +2059,6 @@ http.createServer((req, res) => {
   else if (req.method === 'GET' && req.url === '/giftshop-items') {
     return fetchGiftShopItems(res);
   }
-
   else if (req.method === 'POST' && req.url === '/purchase-giftshop-item') {
     let body = '';
     req.on('data', chunk => {
@@ -1971,7 +2081,46 @@ http.createServer((req, res) => {
       res.end(JSON.stringify({ message: 'Email is required' }));
     }
   }
+  else if (req.method === 'GET' && req.url === '/giftshop-items-all') {
+    return fetchAllGiftShopItems(res);
+  }
+  else if (req.method === 'POST' && req.url === '/giftshop-items') {
+    let body = '';
+    req.on('data', chunk => { body += chunk.toString(); });
+    req.on('end', () => addGiftShopItem(res, body));
+    return;
+  }
+  else if (req.method === 'PUT' && req.url.match(/^\/giftshop-items\/\d+$/)) {
+    const itemId = req.url.split('/')[2];
+    let body = '';
+    req.on('data', chunk => { body += chunk.toString(); });
+    req.on('end', () => updateGiftShopItem(res, itemId, body));
+    return;
+  }
+  else if (req.method === 'PUT' && req.url.match(/^\/giftshop-items\/\d+\/toggle-active$/)) {
+    const itemId = req.url.split('/')[2];
+    let body = '';
+    req.on('data', chunk => { body += chunk.toString(); });
+    req.on('end', () => toggleItemActive(res, itemId, body));
+    return;
+  }
+  else if (req.method === 'GET' && req.url.startsWith('/membership-report')) {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    let startDate = url.searchParams.get('startDate');
+    let endDate = url.searchParams.get('endDate');
+    const types = url.searchParams.get('types');
 
+    if (!startDate || !endDate) {
+      const today = new Date();
+      const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+      startDate = thirtyDaysAgo.toISOString().split('T')[0];
+      endDate = today.toISOString().split('T')[0];
+    }
+
+    const typesList = types ? types.split(',').filter(Boolean) : [];
+    getMembershipReport(startDate, endDate, typesList, res);
+
+  }
   else {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ message: 'Route not found' }));

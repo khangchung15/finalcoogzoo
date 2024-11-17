@@ -5,6 +5,9 @@ import ManageExhibits from './manageExhibits';
 import ManageAnimals from './manageAnimals';
 import ManageCages from './manageCages';
 import ManageShowcases from './manageShowcases'
+import GiftShopManager from '../giftshopmanager';
+import TicketReport from '../ticketreport';
+import MembershipReport from '../membershipreport';
 
 function ManagerDash() {
   const [showSidebar, setShowSidebar] = useState(true);
@@ -346,6 +349,9 @@ function ManagerDash() {
           <li onClick={() => handleSectionChange('showcases')}>Manage Animal Showcases</li>
           <li onClick={() => handleSectionChange('events')}>Manage Events</li>
           <li onClick={() => handleSectionChange('reports')}>Reports</li>
+          <li onClick={() => handleSectionChange('manageshop')}>Manage Shop</li>
+          <li onClick={() => handleSectionChange('ticketreport')}>Ticket Report</li>
+          <li onClick={() => handleSectionChange('memberreport')}>Member Report</li>
         </ul>
       </div>
       )}
@@ -415,6 +421,17 @@ function ManagerDash() {
           />
         )}
 
+        {activeSection === 'manageshop' && (
+          <GiftShopManager />
+        )}
+
+        {activeSection === 'ticketreport' && (
+          <TicketReport />
+        )}
+
+        {activeSection === 'memberreport' && (
+          <MembershipReport />
+        )}
         {/* Similar sections for Animal Showcases, etc. */}
       </div>
 
