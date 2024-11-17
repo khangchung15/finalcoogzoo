@@ -1,36 +1,54 @@
 import React, { useState } from 'react';
-import "./managerdash.css";
+import './managerdash.css';
 import ManageEmployees from './manageEmployees';
 import ManageExhibits from './manageExhibits';
+import ManageAnimals from './manageAnimals';
 import ManageCages from './manageCages';
+import ManageShowcases from './manageShowcases';
 
 function ManagerDash() {
-  const [showSidebar, setShowSidebar] = useState(true); // State to track sidebar visibility
+  const [showSidebar, setShowSidebar] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
   const [activeSection, setActiveSection] = useState('dashboard');
   const [employeeData, setEmployeeData] = useState({
-    name: '',
-    department: '',
-    exhibitId: '',
-    role: '',
-    phone: '',
+    firstName: '',
+    lastName: '',
+    birthDate: '',
     email: '',
+    phone: '',
+    department: '',
+    role: '',
     startDate: '',
-    supervisorId: '',
+    exhibitID: '',
+    supervisorID: '',
     status: 'active'
   });
 
   const [exhibitData, setExhibitData] = useState({
     name: '',
     location: '',
+    description: '',
     hours: '',
     type: '',
-    is_closed: false,
-    closure_reason: '',
-    closure_start: '',
-    closure_end: '',
-    image_link: ''
+    isClosed: false,
+    closureReason: '',
+    closureStart: '',
+    closureEnd: '',
+    imageLink: ''
+  });
+
+  const [animalData, setAnimalData] = useState({
+    name: '',
+    scientificName: '',
+    species: '',
+    birthDate: '',
+    height: '',
+    weight: '',
+    status: 'active',
+    statusReason: '',
+    cageID: '',
+    exhibitID: ''
   });
 
   const [cageData, setCageData] = useState({
@@ -40,12 +58,22 @@ function ManagerDash() {
     exhibitID: '',
   });
 
-
+  const [showcaseData, setShowcaseData] = useState({
+    name: '',
+    scientificName: '',
+    habitat: '',
+    funFact: '',
+    location: '',
+    imageLink: '',
+  });
+  
   const [managerEmail] = useState("manager@example.com");
   const [employeeId, setEmployeeId] = useState('');
   const [exhibitId, setExhibitId] = useState('');
-  const [cageID, setCageID] = useState('');
-
+  const [animalId, setAnimalId] = useState('');
+  const [cageId, setCageId] = useState('');
+  const [showcaseId, setShowcaseId] = useState('');
+  
   const showModalMessage = (message) => {
     setModalMessage(message);
     setShowModal(true);
@@ -71,19 +99,23 @@ function ManagerDash() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(employeeData),
       });
-
+  
       if (response.ok) {
         showModalMessage('Employee added successfully!');
+        // Reset to match initial state structure
         setEmployeeData({
-          name: '',
-          department: '',
-          exhibitId: '',
-          role: '',
-          phone: '',
+          firstName: '',
+          lastName: '',
+          birthDate: '',
           email: '',
+          phone: '',
+          department: '',
+          role: '',
           startDate: '',
-          supervisorId: '',
-          status: 'active'
+          exhibitID: '',
+          supervisorID: '',
+          status: 'active',
+          endDate: ''
         });
       } else {
         showModalMessage('Failed to add employee.');
@@ -125,6 +157,7 @@ function ManagerDash() {
         setExhibitData({
           name: '',
           location: '',
+          description: '',
           hours: '',
           type: '',
           is_closed: false,
@@ -160,6 +193,55 @@ function ManagerDash() {
     }
   };
 
+  const addAnimal = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/add-animal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(animalData),
+      });
+
+      if (response.ok) {
+        showModalMessage('Animal added successfully!');
+        setAnimalData({
+          name: '',
+          scientificName: '',
+          species: '',
+          birthDate: '',
+          height: '',
+          weight: '',
+          status: 'active',
+          statusReason: '',
+          cageID: '',
+          exhibitID: ''
+        });
+      } else {
+        showModalMessage('Failed to add animal.');
+      }
+    } catch (error) {
+      console.error(error);
+      showModalMessage('Error adding animal.');
+    }
+  };
+
+  const deleteAnimal = async () => {
+    try {
+      const response = await fetch(`http://localhost:5000/remove-animal?id=${animalId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        showModalMessage('Animal removed successfully!');
+        setAnimalId('');
+      } else {
+        showModalMessage('Failed to remove animal.');
+      }
+    } catch (error) {
+      console.error(error);
+      showModalMessage('Error removing animal.');
+    }
+  };
+
   const addCage = async () => {
     try {
       const response = await fetch('http://localhost:5000/add-cage', {
@@ -190,10 +272,9 @@ function ManagerDash() {
       const response = await fetch(`http://localhost:5000/remove-cage?id=${cageId}`, {
         method: 'DELETE',
       });
-
       if (response.ok) {
         showModalMessage('Cage removed successfully!');
-        setCageID('');
+        setCageId('');
       } else {
         showModalMessage('Failed to remove cage.');
       }
@@ -203,13 +284,57 @@ function ManagerDash() {
     }
   };
 
+  const addShowcase = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/add-showcase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(showcaseData),
+      });
+
+      if (response.ok) {
+        showModalMessage('Showcase added successfully!');
+        setShowcaseData({
+          name: '',
+          scientificName: '',
+          habitat: '',
+          funFact: '',
+          location: '',
+          imageLink: '',
+        });
+
+      } else {
+        showModalMessage('Failed to add showcase.');
+      }
+    } catch (error) {
+      console.error(error);
+      showModalMessage('Error adding showcase.');
+    }
+  };
+
+  const deleteShowcase = async () => {
+    try {
+      const response = await fetch(`http://localhost:5000/remove-showcase?id=${showcaseId}`, {
+        method: 'DELETE',
+      });
+      if (response.ok) {
+        showModalMessage('Showcase removed successfully!');
+        setShowcaseId('');
+      } else {
+        showModalMessage('Failed to remove showcase.');
+      }
+    } catch (error) {
+      console.error(error);
+      showModalMessage('Error removing showcase.');
+    }
+  };
+
   return (
     <div className="manager-dash">
-    <button className="toggle-sidebar" onClick={toggleSidebar}>
-      {showSidebar ? 'Close sidebar' : 'Open sidebar'}
-    </button>
-
-    {showSidebar && (
+      <button className="toggle-sidebar" onClick={toggleSidebar}>
+        {showSidebar ? 'Close sidebar' : 'Open sidebar'}
+      </button>
+      {showSidebar && (
       <div className="sidebar">
         <h2>Manager Dashboard</h2>
         <ul>
@@ -223,12 +348,12 @@ function ManagerDash() {
           <li onClick={() => handleSectionChange('reports')}>Reports</li>
         </ul>
       </div>
-    )}
-    <div className="content">
-      {activeSection === 'dashboard' && (
-        <h1>Manager Dashboard</h1>
-      )
-    }
+      )}
+
+      <div className="content">
+        {activeSection === 'dashboard' && (
+          <h1>Manager Dashboard</h1>
+        )}
 
         {activeSection === 'employees' && (
           <ManageEmployees
@@ -254,19 +379,43 @@ function ManagerDash() {
           />
         )}
 
+        {activeSection === 'animals' && (
+          <ManageAnimals
+            animalData={animalData}
+            setAnimalData={setAnimalData}
+            addAnimal={addAnimal}
+            animalId={animalId}
+            setAnimalId={setAnimalId}
+            deleteAnimal={deleteAnimal}
+            showSidebar={showSidebar}
+          />
+        )}
+
         {activeSection === 'cages' && (
           <ManageCages
             cageData={cageData}
             setCageData={setCageData}
             addCage={addCage}
-            cageID={cageID}
-            setCageID={setCageID}
+            cageId={cageId}
+            setCageId={setCageId}
             deleteCage={deleteCage}
             showSidebar={showSidebar}
           />
         )}
 
-        {/* Similar sections for Cages, Animals, etc. */}
+        {activeSection === 'showcases' && (
+          <ManageShowcases
+            showcaseData={showcaseData}
+            setShowcaseData={setShowcaseData}
+            addShowcase={addShowcase}
+            showcaseId={showcaseId}
+            setShowcaseId={setShowcaseId}
+            deleteShowcase={deleteShowcase}
+            showSidebar={showSidebar}
+          />
+        )}
+
+        {/* Similar sections for Animal Showcases, etc. */}
       </div>
 
       {showModal && (

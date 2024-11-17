@@ -448,21 +448,143 @@ const purchaseTicket = async (ticketData, res) => {
 
       const receiptId = receiptResult.insertId;
 
-      // Insert into Ticket table using the new Receipt ID
-      const insertTicketQuery = 'INSERT INTO Ticket (Customer_ID, Ticket_Type, Price, Purchase_Date, Receipt_ID) VALUES (?, ?, ?, ?, ?)';
+      // Insert into Ticket table with the new Exhibit_ID column
+      const insertTicketQuery = 'INSERT INTO Ticket (Customer_ID, Ticket_Type, Price, Purchase_Date, Receipt_ID, Exhibit_ID) VALUES (?, ?, ?, ?, ?, ?)';
       
-      connection.query(insertTicketQuery, [customerId, ticketData.ticketType, ticketData.price, purchaseDate, receiptId], (err) => {
+      connection.query(insertTicketQuery, [customerId, ticketData.ticketType, ticketData.price, purchaseDate, receiptId, ticketData.exhibitId], (err) => {
         if (err) return handleDBError(res, err);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ message: 'Ticket purchased successfully', receiptId }));
       });
-    });
+    }); 
   } catch (error) {
     handleDBError(res, error);
   }
 };
+const fetchManageAnimals = (res) => {
+  connection.query('SELECT * FROM Animal WHERE is_deleted = 0', (error, results) => {
+    if (error) {
+      console.error('Database error:', error);
+      return handleDBError(res, error);
+    }
 
-// Ticket System Finished //
+    const animals = results.map(animal => ({
+      id: animal.ID,
+      name: animal.Name,
+      scientificName: animal.Scientific_Name,
+      species: animal.Species,
+      birthDate: animal.Date_Of_Birth ? new Date(animal.Date_Of_Birth).toISOString().split('T')[0] : null,
+      height: animal.Height,
+      weight: animal.Weight,
+      status: animal.Status,
+      statusReason: animal.Status_Reason,
+      cageID: animal.Cage_ID,
+      exhibitID: animal.Exhibit_ID,
+    }));
+
+    try {
+      const responseData = JSON.stringify(animals);
+      console.log('Fetched animals:', responseData);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(responseData);
+    } catch (jsonError) {
+      console.error('Error serializing JSON:', jsonError);
+      res.writeHead(500, { 'Content-Type': 'text/plain' });
+      res.end('Internal Server Error: Unable to process response.');
+    }
+  });
+};
+
+const addAnimal = (animalData, res) => {
+  const { name, scientificName, species, birthDate, height, weight, status, statusReason, cageID, exhibitID } = animalData;
+
+  connection.query(
+    `INSERT INTO Animal (Name, Scientific_Name, Species, Date_Of_Birth, Height, Weight, Status, Status_Reason, Cage_ID, Exhibit_ID) 
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [name, scientificName, species, birthDate, height, weight, status, statusReason, cageID, exhibitID],
+    (err) => {
+      if (err) return handleDBError(res, err);
+      res.writeHead(201, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Animal added successfully.' }));
+    }
+  );
+}
+
+// function to remove an animal (soft delete)
+const removeAnimal = (animalId, res) => {
+  connection.query(
+    'UPDATE Animal SET is_deleted = 1 WHERE ID = ?',
+    [animalId],
+    (err, result) => {
+      if (err) return handleDBError(res, err);
+      if (result.affectedRows > 0) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Animal removed successfully (soft-deleted).' }));
+      } else {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Animal not found' }));
+      }
+    }
+  );
+};
+
+// function to update an animal
+const updateAnimal = (animalId, animalData, res) => {
+
+  const normalizedData = {
+    Name: animalData.name,
+    Scientific_Name: animalData.scientificName,
+    Species: animalData.species,
+    Date_Of_Birth: animalData.birthDate,
+    Height: animalData.height,
+    Weight: animalData.weight,
+    Status: animalData.status,
+    Status_Reason: animalData.statusReason,
+    Cage_ID: animalData.cageID,
+    Exhibit_ID: animalData.exhibitID,
+  };
+
+  connection.query(
+    `UPDATE Animal SET 
+      Name = ?, 
+      Scientific_Name = ?, 
+      Species = ?,
+      Date_Of_Birth = ?, 
+      Height = ?, 
+      Weight = ?, 
+      Status = ?, 
+      Status_Reason = ?,
+      Cage_ID = ?, 
+      Exhibit_ID = ?
+    WHERE ID = ?`,
+    [
+      normalizedData.Name, 
+      normalizedData.Scientific_Name, 
+      normalizedData.Species, 
+      normalizedData.Date_Of_Birth, 
+      normalizedData.Height, 
+      normalizedData.Weight, 
+      normalizedData.Status,
+      normalizedData.Status_Reason,
+      normalizedData.Cage_ID,
+      normalizedData.Exhibit_ID,
+      animalId
+    ],
+    (err, result) => {
+      if (err) {
+        console.error("Update error:", err);
+        return handleDBError(res, err);
+      }
+      if (result.affectedRows > 0) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Animal updated successfully', updatedAnimal: normalizedData }));
+      } else {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Animal not found' }));
+      }
+    }
+  );
+};
 
 const getCustomerIdByEmail = (email) => {
   return new Promise((resolve, reject) => {
@@ -477,15 +599,17 @@ const getCustomerIdByEmail = (email) => {
 const fetchPurchasedTickets = (email, res) => {
   const query = `
     SELECT 
-      t.ID,
+      t.ID AS Ticket_ID,
       t.Ticket_Type,
       t.Price,
       t.Purchase_Date,
       t.Receipt_ID,
-      r.Total_Amount
+      r.Total_Amount,
+      e.Name AS Exhibit_Name
     FROM Ticket t
     JOIN Receipt r ON t.Receipt_ID = r.ID
     JOIN Customer c ON t.Customer_ID = c.ID
+    LEFT JOIN Exhibit e ON t.Exhibit_ID = e.ID  -- Join with Exhibit to get exhibit details
     WHERE c.email = ?
     ORDER BY t.Purchase_Date DESC`;
 
@@ -545,6 +669,115 @@ const fetchExhibitIDByEmail = (email, res) => {
 };
 
 // Fetch all animals from the database
+const fetchShowcase = (res) => {
+  connection.query('SELECT * FROM AnimalShowcase', (error, results) => {
+    if (error) {
+      console.error('Database error:', error);
+      return handleDBError(res, error);
+    }
+
+    // map database fields
+    const showcases = results.map(showcase => ({
+      id: showcase.ID,
+      name: showcase.Name,
+      scientificName: showcase.Scientific_Name,
+      habitat: showcase.Habitat,
+      funFact: showcase.Fun_Fact,
+      location: showcase.Location,
+      imageLink: showcase.Image_Link,
+    }));
+
+    try {
+      const responseData = JSON.stringify(showcases);
+      console.log('Fetched animals:', responseData);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(responseData);
+    } catch (jsonError) {
+      console.error('Error serializing JSON:', jsonError);
+      res.writeHead(500, { 'Content-Type': 'text/plain' });
+      res.end('Internal Server Error: Unable to process response.');
+    }
+  });
+};
+// function to add a showcase
+const addShowcase = (showcaseData, res) => {
+  const { name, scientificName, habitat, funFact, location, imageLink } = showcaseData;
+
+  connection.query(
+    `INSERT INTO AnimalShowcase (Name, Scientific_Name, Habitat, Fun_Fact, Location, Image_Link) 
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [name, scientificName, habitat, funFact, location, imageLink],
+    (err) => {
+        if (err) return handleDBError(res, err);
+        res.writeHead(201, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Showcase added successfully' }));
+    }
+  );
+};
+
+// function to remove an exhibit (soft delete)
+const removeShowcase = (showcaseId, res) => {
+  connection.query(
+    'DELETE FROM AnimalShowcase WHERE ID = ?',
+    [showcaseId],
+    (err, result) => {
+      if (err) return handleDBError(res, err);
+      if (result.affectedRows > 0) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Showcase removed successfully.' }));
+      } else {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Showcase not found' }));
+      }
+    }
+  );
+};
+
+// update showcase
+const updateShowcase = (showcaseId, showcaseData, res) => {
+  
+  const normalizedData = {
+    Name: showcaseData.name,
+    Scientific_Name: showcaseData.scientificName,
+    Habitat: showcaseData.habitat,
+    Fun_Fact: showcaseData.funFact,
+    Location: showcaseData.location,
+    Image_Link: showcaseData.imageLink,
+  };
+
+  connection.query(
+    `UPDATE AnimalShowcase SET 
+      Name = ?, 
+      Scientific_Name = ?, 
+      Habitat = ?,
+      Fun_Fact = ?, 
+      Location = ?, 
+      Image_Link = ?
+    WHERE ID = ?`,
+    [
+      normalizedData.Name, 
+      normalizedData.Scientific_Name, 
+      normalizedData.Habitat, 
+      normalizedData.Fun_Fact, 
+      normalizedData.Location, 
+      normalizedData.Image_Link,
+      showcaseId
+    ],
+    (err, result) => {
+      if (err) {
+        console.error("Update error:", err);
+        return handleDBError(res, err);
+      }
+      if (result.affectedRows > 0) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Showcase updated successfully', updatedShowcase: normalizedData }));
+      } else {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Showcase not found' }));
+      }
+    }
+  );
+};
 const fetchAnimals = (res) => {
   connection.query('SELECT * FROM AnimalShowcase', (error, results) => {
     if (error) return handleDBError(res, error);
@@ -747,6 +980,138 @@ const upgradeMembership = (userId, membershipData, res) => {
       }
   );
 };
+const getTicketReport = (startDate, endDate, exhibits, res) => {
+  const exhibitFilter = exhibits && exhibits.length > 0 ? 
+    `AND t.Exhibit_ID IN (${exhibits})` : '';
+  
+  const queries = {
+    ticketTypes: `
+      SELECT 
+        t.Ticket_Type as type,
+        COUNT(*) as count,
+        SUM(t.Price) as revenue
+      FROM Ticket t
+      WHERE t.Purchase_Date BETWEEN ? AND ?
+        ${exhibitFilter}
+      GROUP BY t.Ticket_Type
+      ORDER BY count DESC
+    `,
+    
+    exhibitPopularity: `
+      SELECT 
+        e.Name as name,
+        COUNT(t.ID) as tickets,
+        COALESCE(SUM(t.Price), 0) as revenue
+      FROM Exhibit e
+      LEFT JOIN Ticket t ON e.ID = t.Exhibit_ID 
+        AND t.Purchase_Date BETWEEN ? AND ?
+        ${exhibitFilter}
+      GROUP BY e.ID, e.Name
+      ORDER BY tickets DESC
+    `,
+    
+    totalStats: `
+      SELECT 
+        COUNT(*) as totalTickets,
+        COALESCE(SUM(Price), 0) as totalRevenue
+      FROM Ticket t
+      WHERE t.Purchase_Date BETWEEN ? AND ?
+        ${exhibitFilter}
+    `
+  };
+
+  const reportData = {
+    ticketTypes: [],
+    exhibitPopularity: [],
+    totalRevenue: 0,
+    totalTickets: 0
+  };
+
+  Promise.all([
+    new Promise((resolve, reject) => {
+      connection.query(queries.ticketTypes, [startDate, endDate], (error, results) => {
+        if (error) {
+          reject(error);
+        } else {
+          reportData.ticketTypes = results.map(type => ({
+            ...type,
+            count: type.count || 0,
+            revenue: type.revenue || 0
+          }));
+          resolve();
+        }
+      });
+    }),
+
+    new Promise((resolve, reject) => {
+      connection.query(queries.exhibitPopularity, [startDate, endDate], (error, results) => {
+        if (error) {
+          reject(error);
+        } else {
+          reportData.exhibitPopularity = results.map(exhibit => ({
+            ...exhibit,
+            tickets: exhibit.tickets || 0,
+            revenue: exhibit.revenue || 0
+          }));
+          resolve();
+        }
+      });
+    }),
+
+    new Promise((resolve, reject) => {
+      connection.query(queries.totalStats, [startDate, endDate], (error, results) => {
+        if (error) {
+          reject(error);
+        } else {
+          if (results && results[0]) {
+            reportData.totalRevenue = results[0].totalRevenue || 0;
+            reportData.totalTickets = results[0].totalTickets || 0;
+          }
+          resolve();
+        }
+      });
+    })
+  ])
+  .then(() => {
+    if (reportData.totalTickets > 0) {
+      reportData.ticketTypes = reportData.ticketTypes.map(type => ({
+        ...type,
+        percentage: ((type.count / reportData.totalTickets) * 100).toFixed(1)
+      }));
+
+      reportData.exhibitPopularity = reportData.exhibitPopularity.map(exhibit => ({
+        ...exhibit,
+        percentage: ((exhibit.tickets / reportData.totalTickets) * 100).toFixed(1)
+      }));
+    } else {
+      reportData.ticketTypes = reportData.ticketTypes.map(type => ({
+        ...type,
+        percentage: '0.0'
+      }));
+
+      reportData.exhibitPopularity = reportData.exhibitPopularity.map(exhibit => ({
+        ...exhibit,
+        percentage: '0.0'
+      }));
+    }
+
+    res.writeHead(200, { 
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*'
+    });
+    res.end(JSON.stringify(reportData));
+  })
+  .catch(error => {
+    res.writeHead(500, { 
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*'
+    });
+    res.end(JSON.stringify({ 
+      error: 'Failed to generate report',
+      details: error.message 
+    }));
+  });
+};
 
 // Function to fetch profile data based on user type
 const fetchProfileData = (user, res) => {
@@ -799,6 +1164,158 @@ const fetchProfileData = (user, res) => {
       }
     );
   }
+};
+const fetchGiftShopItems = (res) => {
+  const query = `
+    SELECT 
+      Item_ID,
+      Name,
+      Item_Description,
+      Category,
+      Price,
+      Stock_Level,
+      Reorder_Level,
+      Image_URL,
+      Is_Active
+    FROM Gift_Shop_Item
+    WHERE Is_Active = 1
+    ORDER BY Category, Name
+  `;
+
+  connection.query(query, (error, results) => {
+    if (error) {
+      console.error('Database error:', error);
+      return handleDBError(res, error);
+    }
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(results));
+  });
+};
+
+// Purchase gift shop item
+const purchaseGiftShopItem = (res, body) => {
+  const { email, itemId, quantity } = JSON.parse(body);
+
+  // First get customer ID
+  connection.query('SELECT ID FROM Customer WHERE email = ?', [email], (err, customerResults) => {
+    if (err || customerResults.length === 0) {
+      console.error('Customer not found or query error:', err);
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: 'Customer not found' }));
+    }
+
+    const customerId = customerResults[0].ID;
+
+    // Check item and stock
+    connection.query(
+      'SELECT * FROM Gift_Shop_Item WHERE Item_ID = ? AND Is_Active = 1',
+      [itemId],
+      (err, itemResults) => {
+        if (err || itemResults.length === 0) {
+          console.error('Item not found or query error:', err);
+          res.writeHead(404, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'Item not found' }));
+        }
+
+        const item = itemResults[0];
+        
+        // Check stock level
+        if (item.Stock_Level < quantity) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'Insufficient stock' }));
+        }
+
+        // Begin transaction
+        connection.beginTransaction((err) => {
+          if (err) {
+            console.error('Transaction error:', err);
+            return handleDBError(res, err);
+          }
+
+          // 1. Create receipt
+          const totalAmount = item.Price * quantity;
+          connection.query(
+            'INSERT INTO Receipt (Customer_ID, Item_IDs, Total_Amount, Purchase_Date) VALUES (?, ?, ?, CURDATE())',
+            [customerId, itemId.toString(), totalAmount],
+            (err, receiptResult) => {
+              if (err) {
+                return connection.rollback(() => handleDBError(res, err));
+              }
+
+              const receiptId = receiptResult.insertId;
+
+              // 2. Record in GiftShop table
+              connection.query(
+                'INSERT INTO GiftShop (Customer_ID, Item_ID, Quantity, Price, Purchase_Date, Receipt_ID) VALUES (?, ?, ?, ?, CURDATE(), ?)',
+                [customerId, itemId, quantity, totalAmount, receiptId],
+                (err) => {
+                  if (err) {
+                    return connection.rollback(() => handleDBError(res, err));
+                  }
+
+                  // 3. Update stock level
+                  connection.query(
+                    'UPDATE Gift_Shop_Item SET Stock_Level = Stock_Level - ? WHERE Item_ID = ?',
+                    [quantity, itemId],
+                    (err) => {
+                      if (err) {
+                        return connection.rollback(() => handleDBError(res, err));
+                      }
+
+                      // Commit transaction
+                      connection.commit((err) => {
+                        if (err) {
+                          return connection.rollback(() => handleDBError(res, err));
+                        }
+
+                        res.writeHead(200, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({
+                          message: 'Purchase successful',
+                          receiptId: receiptId
+                        }));
+                      });
+                    }
+                  );
+                }
+              );
+            }
+          );
+        });
+      }
+    );
+  });
+};
+
+// Fetch purchase history
+const fetchPurchaseHistory = (email, res) => {
+  const query = `
+    SELECT 
+      g.Customer_ID,
+      g.Item_ID,
+      g.Quantity,
+      g.Price,
+      g.Purchase_Date,
+      g.Receipt_ID,
+      i.Name,
+      i.Item_Description,
+      i.Category,
+      i.Image_URL
+    FROM GiftShop g
+    JOIN Gift_Shop_Item i ON g.Item_ID = i.Item_ID
+    JOIN Customer c ON g.Customer_ID = c.ID
+    WHERE c.email = ?
+    ORDER BY g.Purchase_Date DESC`;
+
+  connection.query(query, [email], (error, results) => {
+    if (error) {
+      console.error('Database error:', error);
+      return handleDBError(res, error);
+    }
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(results));
+  });
 };
 
 // HTTP Server to handle both login, signup, and profile requests
@@ -891,7 +1408,7 @@ http.createServer((req, res) => {
   });
   }
   else if (req.method === 'GET' && req.url === '/animals'){
-    fetchAnimals(res);
+    fetchShowcase(res);
   }
   else if (req.method === 'GET' && req.url === '/events'){
     fetchEvents(res);
@@ -1049,8 +1566,9 @@ http.createServer((req, res) => {
     fetchExhibits(res);
   }
 
-  else if(req.method === 'POST' && req.url === '/add-exhibit'){
+  else if (req.method === 'POST' && req.url === '/add-exhibit') {
     let body = '';
+
     req.on('data', (chunk) => {
       body += chunk.toString();
     });
@@ -1150,6 +1668,53 @@ http.createServer((req, res) => {
     }
   }
 
+  else if (req.method === 'GET' && req.url.startsWith('/ticket-report')){
+    console.log('Received ticket report request:', req.url);
+
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    let startDate = url.searchParams.get('startDate');
+    let endDate = url.searchParams.get('endDate');
+    const exhibits = url.searchParams.get('exhibits');
+    if (!startDate || !endDate) {
+      const today = new Date();
+      const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+      startDate = thirtyDaysAgo.toISOString().split('T')[0];
+      endDate = today.toISOString().split('T')[0];
+    }
+    const exhibitsList = exhibits ? exhibits.split(',').filter(Boolean) : [];
+    getTicketReport(startDate, endDate, exhibitsList, res);
+  }
+
+  else if (req.method === 'GET' && req.url === '/giftshop-items') {
+    return fetchGiftShopItems(res);
+  }
+
+  else if (req.method === 'POST' && req.url === '/purchase-giftshop-item') {
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+  
+    req.on('end', () => {
+      purchaseGiftShopItem(res, body);
+    });
+    return;
+  }
+
+  else if (req.method === 'GET' && req.url.startsWith('/giftshop-history')) {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const email = url.searchParams.get('email');
+    
+    if (email) {
+      return fetchPurchaseHistory(email, res);
+    } else {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Email is required' }));
+    }
+  }
+  else if (req.method === 'GET' && req.url === '/showcases') {
+    return fetchShowcase(res);
+  } 
   else {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ message: 'Route not found' }));
