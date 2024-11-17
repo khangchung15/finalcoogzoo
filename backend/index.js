@@ -2133,13 +2133,14 @@ http.createServer((req, res) => {
     }
   }
   
-  else if (req.method === 'GET' && req.url.startsWith('/ticket-report')){
-    console.log('Received ticket report request:', req.url);
-
+  else if (req.method === 'GET' && req.url.startsWith('/ticket-report')) {
     const url = new URL(req.url, `http://${req.headers.host}`);
     let startDate = url.searchParams.get('startDate');
     let endDate = url.searchParams.get('endDate');
     const exhibits = url.searchParams.get('exhibits');
+    
+    console.log('Received parameters:', { startDate, endDate, exhibits });
+  
     if (!startDate || !endDate) {
       const today = new Date();
       const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
@@ -2147,6 +2148,9 @@ http.createServer((req, res) => {
       endDate = today.toISOString().split('T')[0];
     }
     const exhibitsList = exhibits ? exhibits.split(',').filter(Boolean) : [];
+    
+    console.log('Processed exhibits list:', exhibitsList);
+  
     getTicketReport(startDate, endDate, exhibitsList, res);
   }
 
