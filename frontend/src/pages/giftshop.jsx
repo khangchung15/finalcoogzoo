@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../components/AuthContext';
+import './giftshop.css';
 
 const GiftShopPage = () => {
   const { userRole, userEmail } = useAuth();
-  const isCustomer = userRole === 'Customer';
+  // Make the check case-insensitive
+  const isCustomer = userRole?.toLowerCase() === 'customer';
 
   const [items, setItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
@@ -12,22 +14,41 @@ const GiftShopPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [quantity, setQuantity] = useState(1);
-
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://coogzootestbackend-phi.vercel.app';
+  const [debug, setDebug] = useState({ userRole, userEmail, isCustomer });
 
   useEffect(() => {
-    fetchGiftShopItems();
-    if (isCustomer && userEmail) {
-      fetchPurchaseHistory();
-    }
+    setDebug({ userRole, userEmail, isCustomer });
+  }, [userRole, userEmail, isCustomer]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Always fetch items regardless of user role
+        await fetchGiftShopItems();
+        
+        // Only fetch purchase history for logged-in customers
+        if (isCustomer && userEmail) {
+          await fetchPurchaseHistory();
+        }
+      } catch (err) {
+        console.error('Error loading gift shop data:', err);
+        setError('Failed to load gift shop data. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
   }, [isCustomer, userEmail]);
 
   const fetchGiftShopItems = async () => {
     try {
-      setLoading(true);
-      const response = await fetch(`${API_URL}/giftshop-items`);
+      const response = await fetch('https://coogzootestbackend-phi.vercel.app/giftshop-items');
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`Failed to fetch items: ${response.status} ${response.statusText}`);
       }
       const data = await response.json();
       const formattedData = data.map(item => ({
@@ -37,17 +58,15 @@ const GiftShopPage = () => {
       setItems(formattedData);
     } catch (err) {
       console.error('Error fetching gift shop items:', err);
-      setError('Failed to load items. Please try again later.');
-    } finally {
-      setLoading(false);
+      throw err;
     }
   };
 
   const fetchPurchaseHistory = async () => {
     try {
-      const response = await fetch(`${API_URL}/giftshop-history?email=${encodeURIComponent(userEmail)}`);
+      const response = await fetch(`https://coogzootestbackend-phi.vercel.app/giftshop-history?email=${encodeURIComponent(userEmail)}`);
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`Failed to fetch history: ${response.status} ${response.statusText}`);
       }
       const data = await response.json();
       const formattedHistory = data.map(item => ({
@@ -57,57 +76,20 @@ const GiftShopPage = () => {
       setPurchasedItems(formattedHistory);
     } catch (err) {
       console.error('Error fetching purchase history:', err);
-      setError('Failed to load purchase history.');
+      throw err;
     }
   };
-  const renderPurchaseHistory = () => {
-    if (historyLoading) {
-      return <div className="loading-message">Loading purchase history...</div>;
-    }
-
-    if (historyError) {
-      return <div className="error-message">{historyError}</div>;
-    }
-
-    if (!purchasedItems.length) {
-      return <div className="no-history-message">No purchase history available.</div>;
-    }
-
-    return (
-      <div className="history-grid">
-        {purchasedItems.map((item, index) => (
-          <div key={`${item.Receipt_ID}-${index}`} className="history-card">
-            <img 
-              src={item.Image_URL} 
-              alt={item.Name}
-              className="history-image"
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.src = '/placeholder-image.jpg';
-              }}
-            />
-            <div className="history-details">
-              <h3>{item.Name}</h3>
-              <p>{item.Item_Description}</p>
-              <p>Category: {item.Category}</p>
-              <p>Quantity: {item.Quantity}</p>
-              <p>Total Price: ${item.Price.toFixed(2)}</p>
-              <p>Purchased: {item.Purchase_Date}</p>
-              <p>Receipt ID: {item.Receipt_ID}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
 
   const handlePurchase = async (e) => {
     e.preventDefault();
-    if (!selectedItem || !isCustomer) return;
+    if (!selectedItem || !isCustomer || !userEmail) {
+      setError('Unable to complete purchase. Please ensure you are logged in as a customer.');
+      return;
+    }
 
     try {
-      const response = await fetch(`${API_URL}/purchase-giftshop-item`, {
+      setError(null);
+      const response = await fetch('https://coogzootestbackend-phi.vercel.app/purchase-giftshop-item', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -127,8 +109,8 @@ const GiftShopPage = () => {
       setPurchaseSuccess(true);
       setSelectedItem(null);
       setQuantity(1);
-      fetchGiftShopItems();
-      fetchPurchaseHistory();
+      await fetchGiftShopItems();
+      await fetchPurchaseHistory();
       
       setTimeout(() => setPurchaseSuccess(false), 3000);
     } catch (err) {
@@ -136,6 +118,21 @@ const GiftShopPage = () => {
       setError(err.message || 'Failed to complete purchase. Please try again.');
     }
   };
+
+  if (loading) {
+    return (
+      <div className="giftshop-container">
+        <div className="loading-message">Loading gift shop data...</div>
+      </div>
+    );
+  }
+
+  const debugInfo = process.env.NODE_ENV === 'development' && (
+    <div className="debug-info" style={{ margin: '10px', padding: '10px', background: '#f0f0f0' }}>
+      <h3>Debug Information</h3>
+      <pre>{JSON.stringify(debug, null, 2)}</pre>
+    </div>
+  );
 
   // Group items by category
   const itemsByCategory = items.reduce((acc, item) => {
@@ -165,11 +162,24 @@ const GiftShopPage = () => {
     <div className="giftshop-container">
       <h1>Gift Shop</h1>
       
-      {error && <div className="error-message">{error}</div>}
+      {debugInfo}
+      
+      {error && (
+        <div className="error-message">
+          {error}
+        </div>
+      )}
       
       {purchaseSuccess && (
         <div className="purchase-success">
           Purchase successful!
+        </div>
+      )}
+
+      {!isCustomer && (
+        <div className="no-access">
+          <p>Please log in as a customer to make purchases.</p>
+          <p>Current role: {userRole || 'Not logged in'}</p>
         </div>
       )}
 
@@ -260,10 +270,36 @@ const GiftShopPage = () => {
         </div>
       )}
 
-      {isCustomer && (
+      {purchasedItems.length > 0 && (
         <div className="purchase-history-section">
           <h2>Purchase History</h2>
-          {renderPurchaseHistory()}
+          <div className="history-grid">
+            {purchasedItems.map((item, index) => (
+              <div key={index} className="history-card">
+                <img 
+                  src={item.Image_URL} 
+                  alt={item.Name}
+                  className="history-image"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = '/placeholder-image.jpg';
+                  }}
+                />
+                <div className="history-details">
+                  <h3>{item.Name}</h3>
+                  <p>{item.Item_Description}</p>
+                  <p>Category: {item.Category}</p>
+                  <p>Quantity: {item.Quantity}</p>
+                  <p>Total Price: ${typeof item.Price === 'number' ? 
+                    item.Price.toFixed(2) : 
+                    parseFloat(item.Price).toFixed(2)}
+                  </p>
+                  <p>Purchased: {new Date(item.Purchase_Date).toLocaleDateString()}</p>
+                  <p>Receipt ID: {item.Receipt_ID}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
