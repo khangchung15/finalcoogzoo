@@ -897,6 +897,47 @@ const fetchHealthReports = (animalId, startDate, endDate, res) => {
   });
 };
 
+const getTicketReport = (startDate, endDate, exhibits, res) => {
+  const exhibitFilter = exhibits && exhibits.length > 0 ? 
+    `AND t.Exhibit_ID IN (${exhibits})` : '';
+  
+  const queries = {
+    ticketTypes: `
+      SELECT 
+        t.Ticket_Type as type,
+        COUNT(*) as count,
+        SUM(t.Price) as revenue
+      FROM Ticket t
+      WHERE t.Purchase_Date BETWEEN ? AND ?
+        ${exhibitFilter}
+      GROUP BY t.Ticket_Type
+      ORDER BY count DESC
+    `,
+    
+    exhibitPopularity: `
+      SELECT 
+        e.Name as name,
+        COUNT(t.ID) as tickets,
+        COALESCE(SUM(t.Price), 0) as revenue
+      FROM Exhibit e
+      LEFT JOIN Ticket t ON e.ID = t.Exhibit_ID 
+        AND t.Purchase_Date BETWEEN ? AND ?
+        ${exhibitFilter}
+      GROUP BY e.ID, e.Name
+      ORDER BY tickets DESC
+    `,
+    
+    totalStats: `
+      SELECT 
+        COUNT(*) as totalTickets,
+        COALESCE(SUM(Price), 0) as totalRevenue
+      FROM Ticket t
+      WHERE t.Purchase_Date BETWEEN ? AND ?
+        ${exhibitFilter}
+    `
+  };
+}
+
 
 // Function to add a user to the database during signup
 const addUser = (userData, res) => {
@@ -1887,6 +1928,50 @@ http.createServer((req, res) => {
     }
   }
   
+  else if (req.method === 'GET' && req.url.startsWith('/ticket-report')){
+    console.log('Received ticket report request:', req.url);
+
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    let startDate = url.searchParams.get('startDate');
+    let endDate = url.searchParams.get('endDate');
+    const exhibits = url.searchParams.get('exhibits');
+    if (!startDate || !endDate) {
+      const today = new Date();
+      const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+      startDate = thirtyDaysAgo.toISOString().split('T')[0];
+      endDate = today.toISOString().split('T')[0];
+    }
+    const exhibitsList = exhibits ? exhibits.split(',').filter(Boolean) : [];
+    getTicketReport(startDate, endDate, exhibitsList, res);
+  }
+
+  else if (req.method === 'GET' && req.url === '/giftshop-items') {
+    return fetchGiftShopItems(res);
+  }
+
+  else if (req.method === 'POST' && req.url === '/purchase-giftshop-item') {
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+  
+    req.on('end', () => {
+      purchaseGiftShopItem(res, body);
+    });
+    return;
+  }
+  else if (req.method === 'GET' && req.url.startsWith('/giftshop-history')) {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const email = url.searchParams.get('email');
+    
+    if (email) {
+      return fetchPurchaseHistory(email, res);
+    } else {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Email is required' }));
+    }
+  }
+
   else {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ message: 'Route not found' }));
