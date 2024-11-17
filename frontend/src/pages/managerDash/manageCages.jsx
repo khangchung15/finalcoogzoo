@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './manageCages.css';
 
-function ManageCages({ cageData, setCageData, addCage, cageId, setCageId, showSidebar }) {
+function ManageCages({ cageData, setCageData, addCage, cageId, setCageId }) {
   const [cages, setCages] = useState([]);
   const [exhibits, setExhibits] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -60,7 +60,6 @@ function ManageCages({ cageData, setCageData, addCage, cageId, setCageId, showSi
       setModalMessage(validationError);
       return;
     }
-
     try {
       const response = await fetch(`https://coogzootestbackend-phi.vercel.app/update-cage?id=${updateData.id}`, {
         method: 'PUT',
@@ -70,7 +69,7 @@ function ManageCages({ cageData, setCageData, addCage, cageId, setCageId, showSi
       const data = await response.json();
       if (response.ok) {
         setModalMessage('Cage updated successfully.');
-        setCages(cages.map((cage) => (cage.id === updateData.id ? { ...cage, ...updateData } : cage)));
+        setCages(cages.map((cag) => (cag.id === updateData.id ? { ...cag, ...updateData } : cag)));
         setShowUpdateForm(false); // Close the update modal on success
       } else {
         setModalMessage(data.message || 'Error updating cage.');
@@ -82,46 +81,21 @@ function ManageCages({ cageData, setCageData, addCage, cageId, setCageId, showSi
   };
 
   const handleDeleteCage = async () => {
-    // Convert cageId to number and validate
-    const id = parseInt(cageId);
-    
-    // Basic validation
-    if (!cageId || isNaN(id)) {
-      setModalMessage('Please enter a valid cage ID');
-      return;
-    }
-
     try {
-      const response = await fetch(`https://coogzootestbackend-phi.vercel.app/remove-cage?id=${id}`, {
+      const response = await fetch(`https://coogzootestbackend-phi.vercel.app/remove-cage?id=${cageId}`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json'
-        }
       });
 
       const data = await response.json();
-      
       if (response.ok) {
-        // Successfully deleted
-        setModalMessage(data.message);
-        // Update local state to remove the cage
-        setCages(prevCages => prevCages.filter(cage => cage.id !== id));
-        // Clear input
-        setCageId('');
-        
-        // Optional: Refresh the cage list from server
-        const refreshResponse = await fetch('https://coogzootestbackend-phi.vercel.app/cages');
-        if (refreshResponse.ok) {
-          const refreshedCages = await refreshResponse.json();
-          setCages(refreshedCages);
-        }
+        setModalMessage('Cage soft-deleted successfully.');
+        setCages(cages.filter(cag => cag.id != parseInt(cageId, 10)));
       } else {
-        // Server returned an error
-        setModalMessage(data.message || 'Error removing cage');
+        setModalMessage(data.message || 'Error deleting cage.');
       }
     } catch (error) {
       console.error('Error:', error);
-      setModalMessage('An error occurred while attempting to remove the cage');
+      setModalMessage('An error occurred while attempting to delete the cage.');
     }
   };
 
@@ -153,13 +127,13 @@ function ManageCages({ cageData, setCageData, addCage, cageId, setCageId, showSi
   };
 
   return (
-    <div className={`manage-cages-container ${showSidebar ? '' : 'sidebar-collapsed'}`}>
+    <div className={`manage-cages-container`}>
       <div className="form-sections-wrapper">
-        {/* cage entry form */}
+        {/* Cage Entry Form */}
         <div className="manage-cages">
             <h2>Cage Entry Form</h2>
             <select
-                value={cageData.size || ""}
+                value={cageData.size}
                 onChange={(e) => setCageData({ ...cageData, size: e.target.value })}
                 required
             >
@@ -169,7 +143,7 @@ function ManageCages({ cageData, setCageData, addCage, cageId, setCageId, showSi
                 <option value="large">Large</option>
             </select>
             <select
-                value={cageData.type || ""}
+                value={cageData.type}
                 onChange={(e) => setCageData({ ...cageData, type: e.target.value })}
                 required
             >
@@ -184,15 +158,14 @@ function ManageCages({ cageData, setCageData, addCage, cageId, setCageId, showSi
             <label>
                 <input
                     type="checkbox"
-                    checked={cageData.inUse || ""}
+                    checked={cageData.inUse}
                     onChange={(e) => setCageData({ ...cageData, inUse: e.target.checked })}
                 />
                 In use?
             </label>
-
             <label>Assign to Exhibit</label>
             <select
-                value={cageData.exhibitID || ""}
+                value={cageData.exhibitID}
                 onChange={(e) => setCageData({...cageData, exhibitID: e.target.value })}
                 required
             >
@@ -207,11 +180,68 @@ function ManageCages({ cageData, setCageData, addCage, cageId, setCageId, showSi
             <button onClick={validateAndAddCage}>Add Cage</button>
         </div>
       </div>
+
+      {/*Display Cage Information */}
+      <div className="cage-list">
+        <h2>Cage Records</h2>
+        <input
+            type="text"
+            placeholder="Search cages..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="search-input"
+        />
+        {loading ? (
+            <p>Loading...</p>
+        ) : error ? (
+            <p className="error">{error}</p>
+        ) : (
+            <>
+                <table className="cage-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Size</th>
+                            <th>Type</th>
+                            <th>In Use?</th>
+                            <th>Exhibit</th>
+                            <th>Edit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {filteredCages.map((cage) => (
+                            <tr key={cage.id}>
+                                <td>{cage.id}</td>
+                                <td>{cage.size}</td>
+                                <td>{cage.type}</td>
+                                <td>{cage.inUse ? "Yes" : "No"}</td>
+                                <td>{cage.exhibitID}</td>
+                                <td><button onClick={() => handleEditClick(cage)}>Edit</button></td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+
+                {/* remove cage section */}
+                <div className="remove-cage-section">
+                  <h2>Remove Cage</h2>
+                  <input
+                    type="number"
+                    placeholder="Cage ID (required)"
+                    value={cageId}
+                    onChange={(e) => setCageId(e.target.value)}
+                    required
+                  />
+                  <button onClick={handleDeleteCage}>Remove Cage</button>
+                </div>
+            </>
+        )}
+      </div>
+
       {/*update cage modal*/}
        {showUpdateForm && (
         <div className="modal">
             <div className="modal-content">
-                <div className="modal-header">
                     <button className="close-button" onClick={() => setShowUpdateForm(false)}></button>
                     <h2>Edit Cage</h2>
                     {/* form fields pre-filled with updateData */}
@@ -262,89 +292,16 @@ function ManageCages({ cageData, setCageData, addCage, cageId, setCageId, showSi
                         ))}
                     </select>
                     <button onClick={updateCage}>Save Changes</button>
-                </div>
             </div>
         </div>
       )}
-      {/*Display Cage Information */}
-      <div className="cage-list">
-        <h2>Cage Records</h2>
-        <input
-            type="text"
-            placeholder="Search cages..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="search-input"
-        />
-        {loading ? (
-            <p>Loading...</p>
-        ) : error ? (
-            <p className="error">{error}</p>
-        ) : (
-            <>
-                <table className="cage-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Size</th>
-                            <th>Type</th>
-                            <th>In Use?</th>
-                            <th>Assigned Exhibit</th>
-                            <th>Edit</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredCages.map((cage) => (
-                            <tr key={cage.id}>
-                                <td>{cage.id}</td>
-                                <td>{cage.size}</td>
-                                <td>{cage.type}</td>
-                                <td>{cage.inUse ? "Yes" : "No"}</td>
-                                <td>{cage.exhibitID}</td>
-                                <td><button onClick={() => handleEditClick(cage)}>Edit</button></td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
 
-                {/* remove cage section */}
-                <div className="remove-cage-section">
-                  <h2>Remove Cage</h2>
-                  <div className="input-group">
-                    <input
-                      type="number"
-                      placeholder="Enter Cage ID"
-                      value={cageId}
-                      onChange={(e) => setCageId(e.target.value)}
-                      min="1"
-                      className="cage-id-input"
-                    />
-                    <button 
-                      onClick={handleDeleteCage}
-                      className="remove-button"
-                    >
-                      Remove Cage
-                    </button>
-                  </div>
-                  {cages.length > 0 && (
-                    <div className="available-cages">
-                      <strong>Available Cage IDs:</strong> {cages.map(cage => cage.id).join(', ')}
-                    </div>
-                  )}
-                </div>
-            </>
-        )}
-      </div>
       {/* Modal with improved visibility */}
       {modalMessage && (
         <div className="modal">
           <div className="modal-content">
-            <h3>Status</h3>
             <p>{modalMessage}</p>
-            <button onClick={() => {
-              setModalMessage('');
-              // Optionally refresh the page or data after closing modal
-            }}>Close</button>
+            <button onClick={closeModal}>Close</button>
           </div>
         </div>
       )}

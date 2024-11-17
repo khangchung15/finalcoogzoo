@@ -497,53 +497,30 @@ const checkEmailExists = (email, callback) => {
 };
 const purchaseTicket = async (ticketData, res) => {
   try {
-    console.log('Processing ticket purchase:', ticketData); // Add debug logging
-
     const customerId = await getCustomerIdByEmail(ticketData.email);
     const purchaseDate = new Date().toISOString().split('T')[0];
 
-    // Begin transaction
-    await connection.promise().beginTransaction();
+    // Insert into Receipt table
+    const insertReceiptQuery = 'INSERT INTO Receipt (Customer_ID, Item_IDs, Total_Amount, Purchase_Date) VALUES (?, ?, ?, ?)';
+    const itemIDs = '1'; // Specify item IDs if needed
+    const totalAmount = ticketData.price;
 
-    try {
-      // Insert into Receipt table
-      const [receiptResult] = await connection.promise().query(
-        'INSERT INTO Receipt (Customer_ID, Item_IDs, Total_Amount, Purchase_Date) VALUES (?, ?, ?, ?)',
-        [customerId, '1', ticketData.price, purchaseDate]
-      );
+    connection.query(insertReceiptQuery, [customerId, itemIDs, totalAmount, purchaseDate], (err, receiptResult) => {
+      if (err) return handleDBError(res, err);
 
       const receiptId = receiptResult.insertId;
 
-      // Insert into Ticket table
-      await connection.promise().query(
-        'INSERT INTO Ticket (Customer_ID, Ticket_Type, Price, Purchase_Date, Receipt_ID, Exhibit_ID) VALUES (?, ?, ?, ?, ?, ?)',
-        [customerId, ticketData.ticketType, ticketData.price, purchaseDate, receiptId, ticketData.exhibitId]
-      );
-
-      // Commit the transaction
-      await connection.promise().commit();
-
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ 
-        message: 'Ticket purchased successfully', 
-        receiptId,
-        success: true 
-      }));
-
-    } catch (err) {
-      // If anything fails, roll back the transaction
-      await connection.promise().rollback();
-      throw err;
-    }
-
+      // Insert into Ticket table with the new Exhibit_ID column
+      const insertTicketQuery = 'INSERT INTO Ticket (Customer_ID, Ticket_Type, Price, Purchase_Date, Receipt_ID, Exhibit_ID) VALUES (?, ?, ?, ?, ?, ?)';
+      
+      connection.query(insertTicketQuery, [customerId, ticketData.ticketType, ticketData.price, purchaseDate, receiptId, ticketData.exhibitId], (err) => {
+        if (err) return handleDBError(res, err);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Ticket purchased successfully', receiptId }));
+      });
+    }); 
   } catch (error) {
-    console.error('Error in purchaseTicket:', error);
-    res.writeHead(500, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ 
-      error: 'Failed to purchase ticket',
-      message: error.message,
-      success: false
-    }));
+    handleDBError(res, error);
   }
 };
 const fetchManageAnimals = (res) => {
@@ -694,32 +671,14 @@ const fetchPurchasedTickets = (email, res) => {
     FROM Ticket t
     JOIN Receipt r ON t.Receipt_ID = r.ID
     JOIN Customer c ON t.Customer_ID = c.ID
-    LEFT JOIN Exhibit e ON t.Exhibit_ID = e.ID
+    LEFT JOIN Exhibit e ON t.Exhibit_ID = e.ID  -- Join with Exhibit to get exhibit details
     WHERE c.email = ?
     ORDER BY t.Purchase_Date DESC`;
 
   connection.query(query, [email], (error, results) => {
-    if (error) {
-      console.error('Database error:', error);
-      res.writeHead(500, { 
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      });
-      return res.end(JSON.stringify({ 
-        error: 'Failed to fetch tickets',
-        details: error.message 
-      }));
-    }
-
-    // Always return an array, even if empty
-    const tickets = results || [];
-    console.log('Fetched tickets for email:', email, tickets);
-
-    res.writeHead(200, { 
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*'
-    });
-    res.end(JSON.stringify(tickets));
+    if (error) return handleDBError(res, error);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(results));
   });
 };
 
@@ -1267,139 +1226,6 @@ const upgradeMembership = (userId, membershipData, res) => {
           res.end(JSON.stringify({ message: 'Membership upgraded successfully' }));
       }
   );
-};
-
-const getTicketReport = (startDate, endDate, exhibits, res) => {
-  const exhibitFilter = exhibits && exhibits.length > 0 ? 
-    `AND t.Exhibit_ID IN (${exhibits})` : '';
-  
-  const queries = {
-    ticketTypes: `
-      SELECT 
-        t.Ticket_Type as type,
-        COUNT(*) as count,
-        SUM(t.Price) as revenue
-      FROM Ticket t
-      WHERE t.Purchase_Date BETWEEN ? AND ?
-        ${exhibitFilter}
-      GROUP BY t.Ticket_Type
-      ORDER BY count DESC
-    `,
-    
-    exhibitPopularity: `
-      SELECT 
-        e.Name as name,
-        COUNT(t.ID) as tickets,
-        COALESCE(SUM(t.Price), 0) as revenue
-      FROM Exhibit e
-      LEFT JOIN Ticket t ON e.ID = t.Exhibit_ID 
-        AND t.Purchase_Date BETWEEN ? AND ?
-        ${exhibitFilter}
-      GROUP BY e.ID, e.Name
-      ORDER BY tickets DESC
-    `,
-    
-    totalStats: `
-      SELECT 
-        COUNT(*) as totalTickets,
-        COALESCE(SUM(Price), 0) as totalRevenue
-      FROM Ticket t
-      WHERE t.Purchase_Date BETWEEN ? AND ?
-        ${exhibitFilter}
-    `
-  };
-
-  const reportData = {
-    ticketTypes: [],
-    exhibitPopularity: [],
-    totalRevenue: 0,
-    totalTickets: 0
-  };
-
-  Promise.all([
-    new Promise((resolve, reject) => {
-      connection.query(queries.ticketTypes, [startDate, endDate], (error, results) => {
-        if (error) {
-          reject(error);
-        } else {
-          reportData.ticketTypes = results.map(type => ({
-            ...type,
-            count: type.count || 0,
-            revenue: type.revenue || 0
-          }));
-          resolve();
-        }
-      });
-    }),
-
-    new Promise((resolve, reject) => {
-      connection.query(queries.exhibitPopularity, [startDate, endDate], (error, results) => {
-        if (error) {
-          reject(error);
-        } else {
-          reportData.exhibitPopularity = results.map(exhibit => ({
-            ...exhibit,
-            tickets: exhibit.tickets || 0,
-            revenue: exhibit.revenue || 0
-          }));
-          resolve();
-        }
-      });
-    }),
-
-    new Promise((resolve, reject) => {
-      connection.query(queries.totalStats, [startDate, endDate], (error, results) => {
-        if (error) {
-          reject(error);
-        } else {
-          if (results && results[0]) {
-            reportData.totalRevenue = results[0].totalRevenue || 0;
-            reportData.totalTickets = results[0].totalTickets || 0;
-          }
-          resolve();
-        }
-      });
-    })
-  ])
-  .then(() => {
-    if (reportData.totalTickets > 0) {
-      reportData.ticketTypes = reportData.ticketTypes.map(type => ({
-        ...type,
-        percentage: ((type.count / reportData.totalTickets) * 100).toFixed(1)
-      }));
-
-      reportData.exhibitPopularity = reportData.exhibitPopularity.map(exhibit => ({
-        ...exhibit,
-        percentage: ((exhibit.tickets / reportData.totalTickets) * 100).toFixed(1)
-      }));
-    } else {
-      reportData.ticketTypes = reportData.ticketTypes.map(type => ({
-        ...type,
-        percentage: '0.0'
-      }));
-
-      reportData.exhibitPopularity = reportData.exhibitPopularity.map(exhibit => ({
-        ...exhibit,
-        percentage: '0.0'
-      }));
-    }
-
-    res.writeHead(200, { 
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*'
-    });
-    res.end(JSON.stringify(reportData));
-  })
-  .catch(error => {
-    res.writeHead(500, { 
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*'
-    });
-    res.end(JSON.stringify({ 
-      error: 'Failed to generate report',
-      details: error.message 
-    }));
-  });
 };
 
 // Function to fetch profile data based on user type
@@ -1956,208 +1782,6 @@ http.createServer((req, res) => {
     }
   }
 
-  else if (req.method === 'GET' && req.url.startsWith('/ticket-report')){
-    console.log('Received ticket report request:', req.url);
-
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    let startDate = url.searchParams.get('startDate');
-    let endDate = url.searchParams.get('endDate');
-    const exhibits = url.searchParams.get('exhibits');
-    if (!startDate || !endDate) {
-      const today = new Date();
-      const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
-      startDate = thirtyDaysAgo.toISOString().split('T')[0];
-      endDate = today.toISOString().split('T')[0];
-    }
-    const exhibitsList = exhibits ? exhibits.split(',').filter(Boolean) : [];
-    getTicketReport(startDate, endDate, exhibitsList, res);
-  }
-
-  else if (req.method === 'GET' && req.url === '/giftshop-items') {
-    return fetchGiftShopItems(res);
-  }
-
-  else if (req.method === 'POST' && req.url === '/purchase-giftshop-item') {
-    let body = '';
-    req.on('data', chunk => {
-      body += chunk.toString();
-    });
-  
-    req.on('end', () => {
-      purchaseGiftShopItem(res, body);
-    });
-    return;
-  }
-  else if (req.method === 'GET' && req.url.startsWith('/giftshop-history')) {
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    const email = url.searchParams.get('email');
-    
-    if (email) {
-      return fetchPurchaseHistory(email, res);
-    } else {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ message: 'Email is required' }));
-    }
-  }
-
-  else if (req.method === 'GET' && req.url === '/showcases') {
-    fetchShowcase(res);
-  } 
-  else if (req.method === 'POST' && req.url === '/add-showcase') {
-    let body = '';
-    req.on('data', (chunk) => {
-      body += chunk.toString();
-    });
-    req.on('end', () => {
-      try {
-        const showcaseData = JSON.parse(body);
-        addShowcase(showcaseData, res);
-      } catch (error) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: 'Invalid JSON' }));
-      }
-    });
-  }
-  else if (req.method === 'PUT' && req.url.startsWith('/update-showcase')) {
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    const showcaseId = url.searchParams.get('id');
-
-    if (showcaseId) {
-      let body = '';
-      req.on('data', (chunk) => {
-        body += chunk.toString();
-      });
-
-      req.on('end', () => {
-        try {
-          const showcaseData = JSON.parse(body);
-          updateShowcase(showcaseId, showcaseData, res);
-        } catch (error) {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ message: 'Invalid JSON' }));
-        }
-      });
-    } else {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ message: 'Showcase ID is required' }));
-    }
-  }
-  else if (req.method === 'DELETE' && req.url.startsWith('/remove-showcase')) {
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    const showcaseId = url.searchParams.get('id');
-
-    if (showcaseId) {
-      removeShowcase(showcaseId, res);
-    } else {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ message: 'Showcase ID is required' }));
-    }
-  }
-
-  else if (req.method === 'POST' && req.url === '/add-animal') {
-    let body = '';
-    req.on('data', (chunk) => {
-      body += chunk.toString();
-    });
-    req.on('end', () => {
-      try {
-        const animalData = JSON.parse(body);
-        addAnimal(animalData, res);
-      } catch (error) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: 'Invalid JSON' }));
-      }
-    });
-  }
-  else if (req.method === 'PUT' && req.url.startsWith('/update-animal')) {
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    const animalId = url.searchParams.get('id');
-
-    if (animalId) {
-      let body = '';
-      req.on('data', (chunk) => {
-        body += chunk.toString();
-      });
-
-      req.on('end', () => {
-        try {
-          const animalData = JSON.parse(body);
-          updateAnimal(animalId, animalData, res);
-        } catch (error) {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ message: 'Invalid JSON' }));
-        }
-      });
-    } else {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ message: 'Animal ID is required' }));
-    }
-  }
-  else if (req.method === 'DELETE' && req.url.startsWith('/remove-animal')) {
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    const animalId = url.searchParams.get('id');
-
-    if (animalId) {
-      removeAnimal(animalId, res);
-    } else {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ message: 'Animal ID is required' }));
-    }
-  } 
-
-  //Membership Section
-  else if(req.method === 'GET' && req.url.startsWith('/membership-details')){
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    const userId = url.searchParams.get('userId');
-
-    if (!userId) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ error: 'User ID is required' }));
-    }
-    fetchMembershipDetails(userId, res);
-  }
-  else if(req.method === 'POST' && req.url === '/upgrade-membership'){
-      let body = '';
-
-      req.on('data', chunk => {
-          body += chunk.toString();
-      });
-
-      req.on('end', () => {
-          try {
-              const { userId, membershipTier, durationType } = JSON.parse(body);
-              
-              if (!userId || !membershipTier || !durationType) {
-                  res.writeHead(400, { 'Content-Type': 'application/json' });
-                  return res.end(JSON.stringify({ error: 'Missing required fields' }));
-              }
-
-              upgradeMembership(userId, { membershipTier, durationType }, res);
-          } catch (error) {
-              console.error('Error processing membership upgrade:', error);
-              res.writeHead(400, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ error: 'Invalid request data' }));
-          }
-      });
-  }
-  else if (req.method === 'GET' && req.url.startsWith('/membership-report')) {
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    let startDate = url.searchParams.get('startDate');
-    let endDate = url.searchParams.get('endDate');
-    const types = url.searchParams.get('types');
-
-    if (!startDate || !endDate) {
-      const today = new Date();
-      const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
-      startDate = thirtyDaysAgo.toISOString().split('T')[0];
-      endDate = today.toISOString().split('T')[0];
-    }
-
-    const typesList = types ? types.split(',').filter(Boolean) : [];
-    getMembershipReport(startDate, endDate, typesList, res);
-
-  }
-  
   else {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ message: 'Route not found' }));
