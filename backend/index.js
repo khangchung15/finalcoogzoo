@@ -898,12 +898,12 @@ const fetchHealthReports = (animalId, startDate, endDate, res) => {
 };
 
 const getTicketReport = (startDate, endDate, exhibits, res) => {
-  const exhibitFilter = exhibits && exhibits.length > 0 ? 
+  const exhibitFilter = exhibits && exhibits.length > 0 ?
     `AND t.Exhibit_ID IN (${exhibits})` : '';
-  
+ 
   const queries = {
     ticketTypes: `
-      SELECT 
+      SELECT
         t.Ticket_Type as type,
         COUNT(*) as count,
         SUM(t.Price) as revenue
@@ -913,23 +913,23 @@ const getTicketReport = (startDate, endDate, exhibits, res) => {
       GROUP BY t.Ticket_Type
       ORDER BY count DESC
     `,
-    
+   
     exhibitPopularity: `
-      SELECT 
+      SELECT
         e.Name as name,
         COUNT(t.ID) as tickets,
         COALESCE(SUM(t.Price), 0) as revenue
       FROM Exhibit e
-      LEFT JOIN Ticket t ON e.ID = t.Exhibit_ID 
+      LEFT JOIN Ticket t ON e.ID = t.Exhibit_ID
         AND t.Purchase_Date BETWEEN ? AND ?
-        ${exhibitFilter}
       WHERE e.is_deleted = 0
+        ${exhibits && exhibits.length > 0 ? `AND e.ID IN (${exhibits})` : ''}
       GROUP BY e.ID, e.Name
       ORDER BY tickets DESC
     `,
-    
+   
     totalStats: `
-      SELECT 
+      SELECT
         COUNT(*) as totalTickets,
         COALESCE(SUM(Price), 0) as totalRevenue
       FROM Ticket t
