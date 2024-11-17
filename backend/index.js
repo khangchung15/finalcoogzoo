@@ -936,7 +936,99 @@ const getTicketReport = (startDate, endDate, exhibits, res) => {
         ${exhibitFilter}
     `
   };
-}
+
+  const reportData = {
+    ticketTypes: [],
+    exhibitPopularity: [],
+    totalRevenue: 0,
+    totalTickets: 0
+  };
+
+  Promise.all([
+    new Promise((resolve, reject) => {
+      connection.query(queries.ticketTypes, [startDate, endDate], (error, results) => {
+        if (error) {
+          reject(error);
+        } else {
+          reportData.ticketTypes = results.map(type => ({
+            ...type,
+            count: type.count || 0,
+            revenue: type.revenue || 0
+          }));
+          resolve();
+        }
+      });
+    }),
+
+    new Promise((resolve, reject) => {
+      connection.query(queries.exhibitPopularity, [startDate, endDate], (error, results) => {
+        if (error) {
+          reject(error);
+        } else {
+          reportData.exhibitPopularity = results.map(exhibit => ({
+            ...exhibit,
+            tickets: exhibit.tickets || 0,
+            revenue: exhibit.revenue || 0
+          }));
+          resolve();
+        }
+      });
+    }),
+
+    new Promise((resolve, reject) => {
+      connection.query(queries.totalStats, [startDate, endDate], (error, results) => {
+        if (error) {
+          reject(error);
+        } else {
+          if (results && results[0]) {
+            reportData.totalRevenue = results[0].totalRevenue || 0;
+            reportData.totalTickets = results[0].totalTickets || 0;
+          }
+          resolve();
+        }
+      });
+    })
+  ])
+  .then(() => {
+    if (reportData.totalTickets > 0) {
+      reportData.ticketTypes = reportData.ticketTypes.map(type => ({
+        ...type,
+        percentage: ((type.count / reportData.totalTickets) * 100).toFixed(1)
+      }));
+
+      reportData.exhibitPopularity = reportData.exhibitPopularity.map(exhibit => ({
+        ...exhibit,
+        percentage: ((exhibit.tickets / reportData.totalTickets) * 100).toFixed(1)
+      }));
+    } else {
+      reportData.ticketTypes = reportData.ticketTypes.map(type => ({
+        ...type,
+        percentage: '0.0'
+      }));
+
+      reportData.exhibitPopularity = reportData.exhibitPopularity.map(exhibit => ({
+        ...exhibit,
+        percentage: '0.0'
+      }));
+    }
+
+    res.writeHead(200, { 
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*'
+    });
+    res.end(JSON.stringify(reportData));
+  })
+  .catch(error => {
+    res.writeHead(500, { 
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*'
+    });
+    res.end(JSON.stringify({ 
+      error: 'Failed to generate report',
+      details: error.message 
+    }));
+  });
+};
 
 
 // Function to add a user to the database during signup
@@ -1224,6 +1316,7 @@ const getMembershipReport = (startDate, endDate, types, res) => {
     }));
   });
 };
+
 const fetchMembershipDetails = (userId, res) => {
   const query = `
       SELECT 

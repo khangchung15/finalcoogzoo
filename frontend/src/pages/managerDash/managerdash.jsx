@@ -348,7 +348,6 @@ function ManagerDash() {
           <li onClick={() => handleSectionChange('animals')}>Manage Animals</li>
           <li onClick={() => handleSectionChange('showcases')}>Manage Animal Showcases</li>
           <li onClick={() => handleSectionChange('events')}>Manage Events</li>
-          <li onClick={() => handleSectionChange('reports')}>Reports</li>
           <li onClick={() => handleSectionChange('manageshop')}>Manage Shop</li>
           <li onClick={() => handleSectionChange('ticketreport')}>Ticket Report</li>
           <li onClick={() => handleSectionChange('memberreport')}>Member Report</li>
