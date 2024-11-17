@@ -1,14 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import './manageEmployees.css';
 
-function ManageEmployees({ employeeData, setEmployeeData, addEmployee, employeeId, setEmployeeId, showSidebar }) {
+function ManageEmployees({employeeId, setEmployeeId, showSidebar }) {
   const [employees, setEmployees] = useState([]);
+  const [employeeData, setEmployeeData] = useState({
+    firstName: '',
+    lastName: '',
+    birthDate: '',
+    email: '',
+    password: '',
+    phone: '',
+    department: '',
+    role: '',
+    startDate: '',
+    exhibitId: '',
+    supervisorId: '',
+    status: 'active',
+    endDate: ''
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [updateData, setUpdateData] = useState({}); // state for storing update form data
-  const [showUpdateForm, setShowUpdateForm] = useState(false); // toggle for showing update form
-  const [modalMessage, setModalMessage] = useState(''); // modal message for feedback
+  const [updateData, setUpdateData] = useState({});
+  const [showUpdateForm, setShowUpdateForm] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
 
   // fetch employee information from the database
   useEffect(() => {
@@ -85,15 +100,30 @@ function ManageEmployees({ employeeData, setEmployeeData, addEmployee, employeeI
   const validateEmployeeData = (data) => {
     const phonePattern = /^\d{3}-\d{3}-\d{4}$/;
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!data.firstName || !data.lastName || !data.birthDate || !data.email || !data.phone || !data.department || !data.role || !data.startDate || !data.status) {
+    
+    if (!data.firstName || !data.lastName || !data.birthDate || !data.email || 
+        !data.phone || !data.department || !data.role || !data.startDate || 
+        !data.status) {
       return "Please fill out all required fields.";
     }
+    
     if (!phonePattern.test(data.phone)) {
-      return "Please enter a valid phone number.";
+      return "Please enter a valid phone number (xxx-xxx-xxxx).";
     }
+    
     if (!emailPattern.test(data.email)) {
       return "Please enter a valid email address.";
     }
+    
+    // Only validate password for new employees or if password is being changed
+    if (!data.id && !data.password) { // New employee
+      return "Password is required for new employees.";
+    }
+    
+    if (data.password && data.password.length < 8) {
+      return "Password must be at least 8 characters long.";
+    }
+    
     return null;
   };
 
@@ -110,13 +140,52 @@ function ManageEmployees({ employeeData, setEmployeeData, addEmployee, employeeI
   const closeModal = () => setModalMessage('');
 
   // validate and add employee
-  const validateAndAddEmployee = () => {
+  const validateAndAddEmployee = async () => {
     const validationError = validateEmployeeData(employeeData);
     if (validationError) {
       setModalMessage(validationError);
       return;
     }
-    addEmployee(); // call your function to add the employee.
+  
+    try {
+      const response = await fetch('https://coogzootestbackend-phi.vercel.app/add-employee', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(employeeData),
+      });
+  
+      const data = await response.json();
+      
+      if (response.ok) {
+        setModalMessage('Employee added successfully');
+        setEmployeeData({
+          firstName: '',
+          lastName: '',
+          birthDate: '',
+          email: '',
+          password: '',
+          phone: '',
+          department: '',
+          role: '',
+          startDate: '',
+          exhibitId: '',
+          supervisorId: '',
+          status: 'active',
+          endDate: ''
+        });
+        // Refresh the employee list
+        const updatedResponse = await fetch('https://coogzootestbackend-phi.vercel.app/employees');
+        const updatedData = await updatedResponse.json();
+        setEmployees(updatedData);
+      } else {
+        setModalMessage(data.message || 'Failed to add employee');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setModalMessage('An error occurred while adding the employee');
+    }
   };
 
   return (
@@ -152,6 +221,13 @@ function ManageEmployees({ employeeData, setEmployeeData, addEmployee, employeeI
             placeholder="Email (required)"
             value={employeeData.email}
             onChange={(e) => setEmployeeData({ ...employeeData, email: e.target.value })}
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password (required)"
+            value={employeeData.password}
+            onChange={(e) => setEmployeeData({ ...employeeData, password: e.target.value })}
             required
           />
           <input
@@ -318,6 +394,12 @@ function ManageEmployees({ employeeData, setEmployeeData, addEmployee, employeeI
               placeholder="Email"
               value={updateData.email}
               onChange={(e) => setUpdateData({ ...updateData, email: e.target.value })}
+            />
+            <input
+              type="password"
+              placeholder="New Password (leave blank to keep current)"
+              value={updateData.password || ''}
+              onChange={(e) => setUpdateData({ ...updateData, password: e.target.value })}
             />
             <input
               type="text"

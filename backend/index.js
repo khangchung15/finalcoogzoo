@@ -70,9 +70,7 @@ const fetchEmployees = (res) => {
   });
 };
 const addEmployee = (employeeData, res) => {
-  const { firstName, lastName, birthDate, email, phone, department, role, startDate, exhibitID, status, supervisorID, endDate, is_deleted } = employeeData;
-
-  // check if the email already exists
+  const { firstName, lastName, birthDate, email, password, phone, department, role, startDate, exhibitID, status, supervisorID, endDate, is_deleted } = employeeData;
   checkEmailExists(email, (err, exists) => {
     if (err) return handleDBError(res, err);
     if (exists) {
@@ -80,33 +78,80 @@ const addEmployee = (employeeData, res) => {
       return res.end(JSON.stringify({ message: 'Email already exists' }));
     }
 
-    // insert the employee into the Employee table
-    connection.query(
-      `INSERT INTO Employee (First_Name, Last_Name, Birth_Date, Email, Phone, Department, Role, Start_Date, Exhibit_ID, Supervisor_ID, Status, End_Date) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [firstName, lastName, birthDate, email, phone, department, role, startDate, exhibitID || null, status, supervisorID || null, endDate || null],
-      (err) => {
-        if (err) return handleDBError(res, err);
+    // Begin transaction
+    connection.beginTransaction(async (err) => {
+      if (err) return handleDBError(res, err);
+
+      try {
+        // First insert the employee
+        const [employeeResult] = await connection.promise().query(
+          `INSERT INTO Employee (First_Name, Last_Name, Birth_Date, Email, Phone, Department, Role, Start_Date, Exhibit_ID, Supervisor_ID, Status, End_Date) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [firstName, lastName, birthDate, email, phone, department, role, startDate, exhibitID || null, supervisorID || null, status, endDate || null]
+        );
+
+        // Then insert the password
+        await connection.promise().query(
+          'INSERT INTO Passwords (email, password) VALUES (?, ?)',
+          [email, password]
+        );
+
+        // If both queries succeed, commit the transaction
+        await connection.promise().commit();
+        
         res.writeHead(201, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ message: 'Employee added successfully' }));
+
+      } catch (error) {
+        // If any error occurs, rollback the transaction
+        await connection.promise().rollback();
+        handleDBError(res, error);
       }
-    );
+    });
   });
 };
 const removeEmployee = (employeeId, res) => {
-  connection.query('UPDATE Employee SET is_deleted = 1 WHERE ID = ?',
-    [employeeId],
-    (err, result) => {
-      if (err) return handleDBError(res, err);
-      if (result.affectedRows > 0) {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: 'Employee removed successfully (soft-deleted)' }));
-      } else {
+  connection.beginTransaction(async (err) => {
+    if (err) return handleDBError(res, err);
+
+    try {
+      // First get the employee's email
+      const [employee] = await connection.promise().query(
+        'SELECT Email FROM Employee WHERE ID = ?',
+        [employeeId]
+      );
+
+      if (employee.length === 0) {
         res.writeHead(404, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: 'Employee not found' }));
+        return res.end(JSON.stringify({ message: 'Employee not found' }));
       }
+
+      const email = employee[0].Email;
+
+      // Soft delete the employee
+      await connection.promise().query(
+        'UPDATE Employee SET is_deleted = 1 WHERE ID = ?',
+        [employeeId]
+      );
+
+      // Soft delete the password
+      await connection.promise().query(
+        'UPDATE Passwords SET is_deleted = 1 WHERE email = ?',
+        [email]
+      );
+
+      // If both queries succeed, commit the transaction
+      await connection.promise().commit();
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Employee removed successfully (soft-deleted)' }));
+
+    } catch (error) {
+      // If any error occurs, rollback the transaction
+      await connection.promise().rollback();
+      handleDBError(res, error);
     }
-  );
+  });
 };
 const updateEmployee = (employeeId, employeeData, res) => {
   const normalizedData = {
@@ -123,32 +168,46 @@ const updateEmployee = (employeeId, employeeData, res) => {
     Status: employeeData.status,
     End_Date: employeeData.endDate || null
   };
-  connection.query(
-    `UPDATE Employee 
-     SET First_Name = ?, Last_Name = ?, Birth_Date = ?, Email = ?, Phone = ?, 
-         Department = ?, Role = ?, Start_Date = ?, Exhibit_ID = ?, Supervisor_ID = ?, 
-         Status = ?, End_Date = ? 
-     WHERE ID = ?`,
-    [
-      normalizedData.First_Name,
-      normalizedData.Last_Name,
-      normalizedData.Birth_Date,
-      normalizedData.Email,
-      normalizedData.Phone,
-      normalizedData.Department,
-      normalizedData.Role,
-      normalizedData.Start_Date,
-      normalizedData.Exhibit_ID,
-      normalizedData.Supervisor_ID,
-      normalizedData.Status,
-      normalizedData.End_Date,
-      employeeId
-    ],
-    (err, result) => {
-      if (err) {
-        console.error("Update error:", err);
-        return handleDBError(res, err);
+
+  connection.beginTransaction(async (err) => {
+    if (err) return handleDBError(res, err);
+
+    try {
+      // First update the employee
+      const [result] = await connection.promise().query(
+        `UPDATE Employee 
+         SET First_Name = ?, Last_Name = ?, Birth_Date = ?, Email = ?, Phone = ?, 
+             Department = ?, Role = ?, Start_Date = ?, Exhibit_ID = ?, Supervisor_ID = ?, 
+             Status = ?, End_Date = ? 
+         WHERE ID = ?`,
+        [
+          normalizedData.First_Name,
+          normalizedData.Last_Name,
+          normalizedData.Birth_Date,
+          normalizedData.Email,
+          normalizedData.Phone,
+          normalizedData.Department,
+          normalizedData.Role,
+          normalizedData.Start_Date,
+          normalizedData.Exhibit_ID,
+          normalizedData.Supervisor_ID,
+          normalizedData.Status,
+          normalizedData.End_Date,
+          employeeId
+        ]
+      );
+
+      // If password is provided, update it
+      if (employeeData.password) {
+        await connection.promise().query(
+          'UPDATE Passwords SET password = ? WHERE email = ?',
+          [employeeData.password, normalizedData.Email]
+        );
       }
+
+      // If both queries succeed, commit the transaction
+      await connection.promise().commit();
+
       if (result.affectedRows > 0) {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ 
@@ -159,10 +218,14 @@ const updateEmployee = (employeeId, employeeData, res) => {
         res.writeHead(404, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ message: 'Employee not found' }));
       }
-    }
-  );
-};
 
+    } catch (error) {
+      // If any error occurs, rollback the transaction
+      await connection.promise().rollback();
+      handleDBError(res, error);
+    }
+  });
+};
 //Exhibit Section
 const fetchExhibits = (res) => {
   connection.query('SELECT * FROM Exhibit WHERE is_deleted = 0', (error, results) => {
@@ -199,12 +262,12 @@ const fetchExhibits = (res) => {
   });
 };
 const addExhibit = (exhibitData, res) => {
-  const { name, location, description, hours, type, is_closed, closure_reason, closure_start, closure_end, image_link } = exhibitData;
+  const { name, location, description, hours, type, isClosed, closureReason, closureStart, closureEnd, imageLink } = exhibitData;
   
   connection.query(
     `INSERT INTO Exhibit (Name, Location, Description, Hours, Type, is_closed, closure_reason, closure_start, closure_end, Image_Link) 
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [name, location, description, hours, type, is_closed || 0, closure_reason || null, closure_start || null, closure_end || null, image_link],
+    [name, location, description, hours, type, isClosed || 0, closureReason || null, closureStart || null, closureEnd || null, imageLink],
     (err) => {
       if (err) return handleDBError(res, err);
       res.writeHead(201, { 'Content-Type': 'application/json' });
@@ -336,7 +399,6 @@ const removeCage = (cageId, res) => {
     res.writeHead(400, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify({ message: 'Invalid cage ID format' }));
   }
-
   // First check if the cage exists and isn't already deleted
   connection.query(
     'SELECT * FROM Cage WHERE ID = ? AND is_deleted = 0',
@@ -461,8 +523,130 @@ const purchaseTicket = async (ticketData, res) => {
     handleDBError(res, error);
   }
 };
+const fetchManageAnimals = (res) => {
+  connection.query('SELECT * FROM Animal WHERE is_deleted = 0', (error, results) => {
+    if (error) {
+      console.error('Database error:', error);
+      return handleDBError(res, error);
+    }
 
-// Ticket System Finished //
+    const animals = results.map(animal => ({
+      id: animal.ID,
+      name: animal.Name,
+      scientificName: animal.Scientific_Name,
+      species: animal.Species,
+      birthDate: animal.Date_Of_Birth ? new Date(animal.Date_Of_Birth).toISOString().split('T')[0] : null,
+      height: animal.Height,
+      weight: animal.Weight,
+      status: animal.Status,
+      statusReason: animal.Status_Reason,
+      cageID: animal.Cage_ID,
+      exhibitID: animal.Exhibit_ID,
+    }));
+
+    try {
+      const responseData = JSON.stringify(animals);
+      console.log('Fetched animals:', responseData);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(responseData);
+    } catch (jsonError) {
+      console.error('Error serializing JSON:', jsonError);
+      res.writeHead(500, { 'Content-Type': 'text/plain' });
+      res.end('Internal Server Error: Unable to process response.');
+    }
+  });
+};
+
+const addAnimal = (animalData, res) => {
+  const { name, scientificName, species, birthDate, height, weight, status, statusReason, cageID, exhibitID } = animalData;
+
+  connection.query(
+    `INSERT INTO Animal (Name, Scientific_Name, Species, Date_Of_Birth, Height, Weight, Status, Status_Reason, Cage_ID, Exhibit_ID) 
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [name, scientificName, species, birthDate, height, weight, status, statusReason, cageID, exhibitID],
+    (err) => {
+      if (err) return handleDBError(res, err);
+      res.writeHead(201, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Animal added successfully.' }));
+    }
+  );
+}
+
+// function to remove an animal (soft delete)
+const removeAnimal = (animalId, res) => {
+  connection.query(
+    'UPDATE Animal SET is_deleted = 1 WHERE ID = ?',
+    [animalId],
+    (err, result) => {
+      if (err) return handleDBError(res, err);
+      if (result.affectedRows > 0) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Animal removed successfully (soft-deleted).' }));
+      } else {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Animal not found' }));
+      }
+    }
+  );
+};
+
+// function to update an animal
+const updateAnimal = (animalId, animalData, res) => {
+
+  const normalizedData = {
+    Name: animalData.name,
+    Scientific_Name: animalData.scientificName,
+    Species: animalData.species,
+    Date_Of_Birth: animalData.birthDate,
+    Height: animalData.height,
+    Weight: animalData.weight,
+    Status: animalData.status,
+    Status_Reason: animalData.statusReason,
+    Cage_ID: animalData.cageID,
+    Exhibit_ID: animalData.exhibitID,
+  };
+
+  connection.query(
+    `UPDATE Animal SET 
+      Name = ?, 
+      Scientific_Name = ?, 
+      Species = ?,
+      Date_Of_Birth = ?, 
+      Height = ?, 
+      Weight = ?, 
+      Status = ?, 
+      Status_Reason = ?,
+      Cage_ID = ?, 
+      Exhibit_ID = ?
+    WHERE ID = ?`,
+    [
+      normalizedData.Name, 
+      normalizedData.Scientific_Name, 
+      normalizedData.Species, 
+      normalizedData.Date_Of_Birth, 
+      normalizedData.Height, 
+      normalizedData.Weight, 
+      normalizedData.Status,
+      normalizedData.Status_Reason,
+      normalizedData.Cage_ID,
+      normalizedData.Exhibit_ID,
+      animalId
+    ],
+    (err, result) => {
+      if (err) {
+        console.error("Update error:", err);
+        return handleDBError(res, err);
+      }
+      if (result.affectedRows > 0) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Animal updated successfully', updatedAnimal: normalizedData }));
+      } else {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Animal not found' }));
+      }
+    }
+  );
+};
 
 const getCustomerIdByEmail = (email) => {
   return new Promise((resolve, reject) => {
@@ -547,6 +731,115 @@ const fetchExhibitIDByEmail = (email, res) => {
 };
 
 // Fetch all animals from the database
+const fetchShowcase = (res) => {
+  connection.query('SELECT * FROM AnimalShowcase', (error, results) => {
+    if (error) {
+      console.error('Database error:', error);
+      return handleDBError(res, error);
+    }
+
+    // map database fields
+    const showcases = results.map(showcase => ({
+      id: showcase.ID,
+      name: showcase.Name,
+      scientificName: showcase.Scientific_Name,
+      habitat: showcase.Habitat,
+      funFact: showcase.Fun_Fact,
+      location: showcase.Location,
+      imageLink: showcase.Image_Link,
+    }));
+
+    try {
+      const responseData = JSON.stringify(showcases);
+      console.log('Fetched animals:', responseData);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(responseData);
+    } catch (jsonError) {
+      console.error('Error serializing JSON:', jsonError);
+      res.writeHead(500, { 'Content-Type': 'text/plain' });
+      res.end('Internal Server Error: Unable to process response.');
+    }
+  });
+};
+// function to add a showcase
+const addShowcase = (showcaseData, res) => {
+  const { name, scientificName, habitat, funFact, location, imageLink } = showcaseData;
+
+  connection.query(
+    `INSERT INTO AnimalShowcase (Name, Scientific_Name, Habitat, Fun_Fact, Location, Image_Link) 
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [name, scientificName, habitat, funFact, location, imageLink],
+    (err) => {
+        if (err) return handleDBError(res, err);
+        res.writeHead(201, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Showcase added successfully' }));
+    }
+  );
+};
+
+// function to remove an exhibit (soft delete)
+const removeShowcase = (showcaseId, res) => {
+  connection.query(
+    'DELETE FROM AnimalShowcase WHERE ID = ?',
+    [showcaseId],
+    (err, result) => {
+      if (err) return handleDBError(res, err);
+      if (result.affectedRows > 0) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Showcase removed successfully.' }));
+      } else {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Showcase not found' }));
+      }
+    }
+  );
+};
+
+// update showcase
+const updateShowcase = (showcaseId, showcaseData, res) => {
+  
+  const normalizedData = {
+    Name: showcaseData.name,
+    Scientific_Name: showcaseData.scientificName,
+    Habitat: showcaseData.habitat,
+    Fun_Fact: showcaseData.funFact,
+    Location: showcaseData.location,
+    Image_Link: showcaseData.imageLink,
+  };
+
+  connection.query(
+    `UPDATE AnimalShowcase SET 
+      Name = ?, 
+      Scientific_Name = ?, 
+      Habitat = ?,
+      Fun_Fact = ?, 
+      Location = ?, 
+      Image_Link = ?
+    WHERE ID = ?`,
+    [
+      normalizedData.Name, 
+      normalizedData.Scientific_Name, 
+      normalizedData.Habitat, 
+      normalizedData.Fun_Fact, 
+      normalizedData.Location, 
+      normalizedData.Image_Link,
+      showcaseId
+    ],
+    (err, result) => {
+      if (err) {
+        console.error("Update error:", err);
+        return handleDBError(res, err);
+      }
+      if (result.affectedRows > 0) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Showcase updated successfully', updatedShowcase: normalizedData }));
+      } else {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Showcase not found' }));
+      }
+    }
+  );
+};
 const fetchAnimals = (res) => {
   connection.query('SELECT * FROM AnimalShowcase', (error, results) => {
     if (error) return handleDBError(res, error);
@@ -705,6 +998,191 @@ const checkUser = (email, password, callback) => {
 };
 
 //Membership Section
+const getMembershipReport = (startDate, endDate, types, res) => {
+  const typeFilter = types && types.length > 0 ? 
+    `AND m.Member_Type IN (${types.map(type => `'${type}'`).join(',')})` : '';
+
+  const queries = {
+    // Basic membership stats
+    membershipTypes: `
+      SELECT 
+        m.Member_Type as type,
+        COUNT(*) as count,
+        COALESCE(
+          SUM(CASE 
+            WHEN m.Member_Type = 'vip' THEN 20
+            WHEN m.Member_Type = 'premium' THEN 70
+            ELSE 0
+          END), 0
+        ) as revenue,
+        (COUNT(*) * 100.0 / (SELECT COUNT(*) FROM Membership)) as percentage
+      FROM Membership m
+      GROUP BY m.Member_Type
+    `,
+
+    // Member activity
+    memberActivity: `
+      SELECT 
+        m.Member_Type as Member_Type,
+        COUNT(DISTINCT m.ID) as active_members,
+        COUNT(t.ID) as tickets_purchased,
+        COALESCE(SUM(t.Price), 0) as ticket_revenue
+      FROM Membership m
+      LEFT JOIN Customer c ON m.ID = c.ID
+      LEFT JOIN Ticket t ON c.ID = t.Customer_ID
+        AND t.Purchase_Date BETWEEN ? AND ?
+      GROUP BY m.Member_Type
+    `,
+
+    // Popular exhibits
+    exhibitPopularity: `
+      SELECT 
+        m.Member_Type as Member_Type,
+        COALESCE(e.Name, 'No Exhibit') as exhibit_name,
+        COUNT(t.ID) as visit_count
+      FROM Membership m
+      INNER JOIN Customer c ON m.ID = c.ID
+      LEFT JOIN Ticket t ON t.Customer_ID = c.ID 
+        AND t.Purchase_Date BETWEEN ? AND ?
+      LEFT JOIN Exhibit e ON t.Exhibit_ID = e.ID
+      WHERE t.Exhibit_ID IS NOT NULL
+      GROUP BY m.Member_Type, e.Name, e.ID
+      HAVING visit_count > 0
+      ORDER BY m.Member_Type, visit_count DESC
+    `,
+
+    // Demographics
+    demographics: `
+      SELECT 
+        m.Member_Type as Member_Type,
+        ROUND(AVG(TIMESTAMPDIFF(YEAR, c.DateOfBirth, CURDATE()))) as avg_age,
+        COUNT(CASE WHEN TIMESTAMPDIFF(YEAR, c.DateOfBirth, CURDATE()) < 25 THEN 1 END) as under_25,
+        COUNT(CASE WHEN TIMESTAMPDIFF(YEAR, c.DateOfBirth, CURDATE()) BETWEEN 25 AND 40 THEN 1 END) as age_25_40,
+        COUNT(CASE WHEN TIMESTAMPDIFF(YEAR, c.DateOfBirth, CURDATE()) > 40 THEN 1 END) as over_40
+      FROM Membership m
+      JOIN Customer c ON m.ID = c.ID
+      GROUP BY m.Member_Type
+    `,
+
+    // Total stats
+    totalStats: `
+      SELECT 
+        COUNT(DISTINCT m.ID) as totalMembers,
+        COUNT(DISTINCT CASE 
+          WHEN (m.Exp_Date >= CURDATE() OR m.Exp_Date IS NULL) 
+          AND m.Member_Type != 'basic'
+          THEN m.ID 
+        END) as activeMembers,
+        COUNT(DISTINCT CASE 
+          WHEN m.Exp_Date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+          THEN m.ID 
+        END) as expiringMembers,
+        COALESCE(
+          SUM(CASE 
+            WHEN m.Member_Type = 'vip' THEN 20
+            WHEN m.Member_Type = 'premium' THEN 70
+            ELSE 0
+          END), 0
+        ) as totalRevenue
+      FROM Membership m
+    `
+  };
+
+  const reportData = {
+    membershipTypes: [],
+    memberActivity: [],
+    exhibitPopularity: [],
+    demographics: [],
+    totalRevenue: 0,
+    totalMembers: 0,
+    activeMembers: 0,
+    expiringMembers: 0
+  };
+
+  Promise.all([
+    // Get membership types distribution
+    new Promise((resolve, reject) => {
+      connection.query(queries.membershipTypes, [], (error, results) => {
+        if (error) {
+          reject(error);
+        } else {
+          reportData.membershipTypes = results;
+          resolve();
+        }
+      });
+    }),
+
+    // Get member activity
+    new Promise((resolve, reject) => {
+      connection.query(queries.memberActivity, [startDate, endDate], (error, results) => {
+        if (error) {
+          reject(error);
+        } else {
+          reportData.memberActivity = results;
+          resolve();
+        }
+      });
+    }),
+
+    // Get exhibit popularity
+    new Promise((resolve, reject) => {
+      connection.query(queries.exhibitPopularity, [startDate, endDate], (error, results) => {
+        if (error) {
+          reject(error);
+        } else {
+          reportData.exhibitPopularity = results;
+          resolve();
+        }
+      });
+    }),
+
+    // Get demographics
+    new Promise((resolve, reject) => {
+      connection.query(queries.demographics, [], (error, results) => {
+        if (error) {
+          reject(error);
+        } else {
+          reportData.demographics = results;
+          resolve();
+        }
+      });
+    }),
+
+    // Get total stats
+    new Promise((resolve, reject) => {
+      connection.query(queries.totalStats, [], (error, results) => {
+        if (error) {
+          reject(error);
+        } else {
+          if (results && results[0]) {
+            reportData.totalRevenue = results[0].totalRevenue || 0;
+            reportData.totalMembers = results[0].totalMembers || 0;
+            reportData.activeMembers = results[0].activeMembers || 0;
+            reportData.expiringMembers = results[0].expiringMembers || 0;
+          }
+          resolve();
+        }
+      });
+    })
+  ])
+  .then(() => {
+    res.writeHead(200, { 
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*'
+    });
+    res.end(JSON.stringify(reportData));
+  })
+  .catch(error => {
+    res.writeHead(500, { 
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*'
+    });
+    res.end(JSON.stringify({ 
+      error: 'Failed to generate report',
+      details: error.message 
+    }));
+  });
+};
 const fetchMembershipDetails = (userId, res) => {
   const query = `
       SELECT 
@@ -749,6 +1227,7 @@ const upgradeMembership = (userId, membershipData, res) => {
       }
   );
 };
+
 const getTicketReport = (startDate, endDate, exhibits, res) => {
   const exhibitFilter = exhibits && exhibits.length > 0 ? 
     `AND t.Exhibit_ID IN (${exhibits})` : '';
@@ -934,6 +1413,158 @@ const fetchProfileData = (user, res) => {
     );
   }
 };
+const fetchGiftShopItems = (res) => {
+  const query = `
+    SELECT 
+      Item_ID,
+      Name,
+      Item_Description,
+      Category,
+      Price,
+      Stock_Level,
+      Reorder_Level,
+      Image_URL,
+      Is_Active
+    FROM Gift_Shop_Item
+    WHERE Is_Active = 1
+    ORDER BY Category, Name
+  `;
+
+  connection.query(query, (error, results) => {
+    if (error) {
+      console.error('Database error:', error);
+      return handleDBError(res, error);
+    }
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(results));
+  });
+};
+
+// Purchase gift shop item
+const purchaseGiftShopItem = (res, body) => {
+  const { email, itemId, quantity } = JSON.parse(body);
+
+  // First get customer ID
+  connection.query('SELECT ID FROM Customer WHERE email = ?', [email], (err, customerResults) => {
+    if (err || customerResults.length === 0) {
+      console.error('Customer not found or query error:', err);
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: 'Customer not found' }));
+    }
+
+    const customerId = customerResults[0].ID;
+
+    // Check item and stock
+    connection.query(
+      'SELECT * FROM Gift_Shop_Item WHERE Item_ID = ? AND Is_Active = 1',
+      [itemId],
+      (err, itemResults) => {
+        if (err || itemResults.length === 0) {
+          console.error('Item not found or query error:', err);
+          res.writeHead(404, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'Item not found' }));
+        }
+
+        const item = itemResults[0];
+        
+        // Check stock level
+        if (item.Stock_Level < quantity) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'Insufficient stock' }));
+        }
+
+        // Begin transaction
+        connection.beginTransaction((err) => {
+          if (err) {
+            console.error('Transaction error:', err);
+            return handleDBError(res, err);
+          }
+
+          // 1. Create receipt
+          const totalAmount = item.Price * quantity;
+          connection.query(
+            'INSERT INTO Receipt (Customer_ID, Item_IDs, Total_Amount, Purchase_Date) VALUES (?, ?, ?, CURDATE())',
+            [customerId, itemId.toString(), totalAmount],
+            (err, receiptResult) => {
+              if (err) {
+                return connection.rollback(() => handleDBError(res, err));
+              }
+
+              const receiptId = receiptResult.insertId;
+
+              // 2. Record in GiftShop table
+              connection.query(
+                'INSERT INTO GiftShop (Customer_ID, Item_ID, Quantity, Price, Purchase_Date, Receipt_ID) VALUES (?, ?, ?, ?, CURDATE(), ?)',
+                [customerId, itemId, quantity, totalAmount, receiptId],
+                (err) => {
+                  if (err) {
+                    return connection.rollback(() => handleDBError(res, err));
+                  }
+
+                  // 3. Update stock level
+                  connection.query(
+                    'UPDATE Gift_Shop_Item SET Stock_Level = Stock_Level - ? WHERE Item_ID = ?',
+                    [quantity, itemId],
+                    (err) => {
+                      if (err) {
+                        return connection.rollback(() => handleDBError(res, err));
+                      }
+
+                      // Commit transaction
+                      connection.commit((err) => {
+                        if (err) {
+                          return connection.rollback(() => handleDBError(res, err));
+                        }
+
+                        res.writeHead(200, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({
+                          message: 'Purchase successful',
+                          receiptId: receiptId
+                        }));
+                      });
+                    }
+                  );
+                }
+              );
+            }
+          );
+        });
+      }
+    );
+  });
+};
+
+// Fetch purchase history
+const fetchPurchaseHistory = (email, res) => {
+  const query = `
+    SELECT 
+      g.Customer_ID,
+      g.Item_ID,
+      g.Quantity,
+      g.Price,
+      g.Purchase_Date,
+      g.Receipt_ID,
+      i.Name,
+      i.Item_Description,
+      i.Category,
+      i.Image_URL
+    FROM GiftShop g
+    JOIN Gift_Shop_Item i ON g.Item_ID = i.Item_ID
+    JOIN Customer c ON g.Customer_ID = c.ID
+    WHERE c.email = ?
+    ORDER BY g.Purchase_Date DESC`;
+
+  connection.query(query, [email], (error, results) => {
+    if (error) {
+      console.error('Database error:', error);
+      return handleDBError(res, error);
+    }
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(results));
+  });
+};
 
 // HTTP Server to handle both login, signup, and profile requests
 http.createServer((req, res) => {
@@ -1024,12 +1655,12 @@ http.createServer((req, res) => {
     }
   });
   }
-  else if (req.method === 'GET' && req.url === '/animals'){
-    fetchAnimals(res);
-  }
   else if (req.method === 'GET' && req.url === '/events'){
     fetchEvents(res);
   }
+  else if (req.method === 'GET' && req.url === '/animals') {
+    fetchManageAnimals(res);
+  } 
 
   else if (req.method === 'GET' && req.url.startsWith('/purchased-tickets')){
     const url = new URL(req.url, `http://${req.headers.host}`);
@@ -1183,8 +1814,9 @@ http.createServer((req, res) => {
     fetchExhibits(res);
   }
 
-  else if(req.method === 'POST' && req.url === '/add-exhibit'){
+  else if (req.method === 'POST' && req.url === '/add-exhibit') {
     let body = '';
+
     req.on('data', (chunk) => {
       body += chunk.toString();
     });
@@ -1198,7 +1830,6 @@ http.createServer((req, res) => {
       }
     });
   }
-
   else if (req.method === 'DELETE' && req.url.startsWith('/remove-exhibit')){
     const url = new URL(req.url, `http://${req.headers.host}`);
     const exhibitId = url.searchParams.get('id');
@@ -1301,6 +1932,191 @@ http.createServer((req, res) => {
     getTicketReport(startDate, endDate, exhibitsList, res);
   }
 
+  else if (req.method === 'GET' && req.url === '/giftshop-items') {
+    return fetchGiftShopItems(res);
+  }
+
+  else if (req.method === 'POST' && req.url === '/purchase-giftshop-item') {
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+  
+    req.on('end', () => {
+      purchaseGiftShopItem(res, body);
+    });
+    return;
+  }
+  else if (req.method === 'GET' && req.url.startsWith('/giftshop-history')) {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const email = url.searchParams.get('email');
+    
+    if (email) {
+      return fetchPurchaseHistory(email, res);
+    } else {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Email is required' }));
+    }
+  }
+
+  else if (req.method === 'GET' && req.url === '/showcases') {
+    fetchShowcase(res);
+  } 
+  else if (req.method === 'POST' && req.url === '/add-showcase') {
+    let body = '';
+    req.on('data', (chunk) => {
+      body += chunk.toString();
+    });
+    req.on('end', () => {
+      try {
+        const showcaseData = JSON.parse(body);
+        addShowcase(showcaseData, res);
+      } catch (error) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Invalid JSON' }));
+      }
+    });
+  }
+  else if (req.method === 'PUT' && req.url.startsWith('/update-showcase')) {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const showcaseId = url.searchParams.get('id');
+
+    if (showcaseId) {
+      let body = '';
+      req.on('data', (chunk) => {
+        body += chunk.toString();
+      });
+
+      req.on('end', () => {
+        try {
+          const showcaseData = JSON.parse(body);
+          updateShowcase(showcaseId, showcaseData, res);
+        } catch (error) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ message: 'Invalid JSON' }));
+        }
+      });
+    } else {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Showcase ID is required' }));
+    }
+  }
+  else if (req.method === 'DELETE' && req.url.startsWith('/remove-showcase')) {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const showcaseId = url.searchParams.get('id');
+
+    if (showcaseId) {
+      removeShowcase(showcaseId, res);
+    } else {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Showcase ID is required' }));
+    }
+  }
+
+  else if (req.method === 'POST' && req.url === '/add-animal') {
+    let body = '';
+    req.on('data', (chunk) => {
+      body += chunk.toString();
+    });
+    req.on('end', () => {
+      try {
+        const animalData = JSON.parse(body);
+        addAnimal(animalData, res);
+      } catch (error) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Invalid JSON' }));
+      }
+    });
+  }
+  else if (req.method === 'PUT' && req.url.startsWith('/update-animal')) {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const animalId = url.searchParams.get('id');
+
+    if (animalId) {
+      let body = '';
+      req.on('data', (chunk) => {
+        body += chunk.toString();
+      });
+
+      req.on('end', () => {
+        try {
+          const animalData = JSON.parse(body);
+          updateAnimal(animalId, animalData, res);
+        } catch (error) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ message: 'Invalid JSON' }));
+        }
+      });
+    } else {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Animal ID is required' }));
+    }
+  }
+  else if (req.method === 'DELETE' && req.url.startsWith('/remove-animal')) {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const animalId = url.searchParams.get('id');
+
+    if (animalId) {
+      removeAnimal(animalId, res);
+    } else {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Animal ID is required' }));
+    }
+  } 
+
+  //Membership Section
+  else if(req.method === 'GET' && req.url.startsWith('/membership-details')){
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const userId = url.searchParams.get('userId');
+
+    if (!userId) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: 'User ID is required' }));
+    }
+    fetchMembershipDetails(userId, res);
+  }
+  else if(req.method === 'POST' && req.url === '/upgrade-membership'){
+      let body = '';
+
+      req.on('data', chunk => {
+          body += chunk.toString();
+      });
+
+      req.on('end', () => {
+          try {
+              const { userId, membershipTier, durationType } = JSON.parse(body);
+              
+              if (!userId || !membershipTier || !durationType) {
+                  res.writeHead(400, { 'Content-Type': 'application/json' });
+                  return res.end(JSON.stringify({ error: 'Missing required fields' }));
+              }
+
+              upgradeMembership(userId, { membershipTier, durationType }, res);
+          } catch (error) {
+              console.error('Error processing membership upgrade:', error);
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Invalid request data' }));
+          }
+      });
+  }
+  else if (req.method === 'GET' && req.url.startsWith('/membership-report')) {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    let startDate = url.searchParams.get('startDate');
+    let endDate = url.searchParams.get('endDate');
+    const types = url.searchParams.get('types');
+
+    if (!startDate || !endDate) {
+      const today = new Date();
+      const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+      startDate = thirtyDaysAgo.toISOString().split('T')[0];
+      endDate = today.toISOString().split('T')[0];
+    }
+
+    const typesList = types ? types.split(',').filter(Boolean) : [];
+    getMembershipReport(startDate, endDate, typesList, res);
+
+  }
+  
   else {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ message: 'Route not found' }));

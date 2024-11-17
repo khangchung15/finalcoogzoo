@@ -245,7 +245,7 @@ function Employeedash() {
                       <th>Employee ID</th>
                       <th>Diagnosis</th>
                       <th>Treatment</th>
-                      <th>Current Height (cm)</th>
+                      <th>Current Height (m)</th>
                       <th>Current Weight (kg)</th>
                       <th>Report Date</th>
                     </tr>
@@ -273,7 +273,7 @@ function Employeedash() {
                     <h4>Basic Measurements</h4>
                     <div className="emp-summary-item">
                       <label>Original Height:</label>
-                      <span>{metrics.originalHeight} cm</span>
+                      <span>{metrics.originalHeight} m</span>
                     </div>
                     <div className="emp-summary-item">
                       <label>Original Weight:</label>
@@ -281,7 +281,7 @@ function Employeedash() {
                     </div>
                     <div className="emp-summary-item">
                       <label>Average Height:</label>
-                      <span>{metrics.heightAverage} cm</span>
+                      <span>{metrics.heightAverage} m</span>
                     </div>
                     <div className="emp-summary-item">
                       <label>Average Weight:</label>
@@ -297,7 +297,7 @@ function Employeedash() {
                     </div>
                     <div className="emp-summary-item">
                       <label>Total Height Gain:</label>
-                      <span>{metrics.totalHeightGain} cm ({metrics.heightGrowthPercent}%)</span>
+                      <span>{metrics.totalHeightGain} m ({metrics.heightGrowthPercent}%)</span>
                     </div>
                     <div className="emp-summary-item">
                       <label>Daily Weight Growth:</label>
@@ -305,7 +305,7 @@ function Employeedash() {
                     </div>
                     <div className="emp-summary-item">
                       <label>Daily Height Growth:</label>
-                      <span>{metrics.dailyHeightGrowth} cm/day</span>
+                      <span>{metrics.dailyHeightGrowth} m/day</span>
                     </div>
                   </div>
 
@@ -317,7 +317,7 @@ function Employeedash() {
                     </div>
                     <div className="emp-summary-item">
                       <label>Height Range:</label>
-                      <span>{metrics.minHeight} - {metrics.maxHeight} cm</span>
+                      <span>{metrics.minHeight} - {metrics.maxHeight} m</span>
                     </div>
                     <div className="emp-summary-item">
                       <label>Weight Trend:</label>
@@ -440,7 +440,7 @@ function Employeedash() {
     />
   </div>
   <div className="emp-form-group">
-    <label>Height (cm):</label>
+    <label>Height (m):</label>
     <input
       type="number"
       step="0.01"

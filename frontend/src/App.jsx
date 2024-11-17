@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage';
 import Animal from './pages/animals';
 import Exhibits from './pages/exhibits';
 import Tickets from './pages/tickets';
+import GiftShopPage from './pages/giftshop';
 import Account from './pages/Account';
 import EmployeeDash from './pages/employeedash';
 import Membership from './pages/membership';
@@ -27,7 +28,7 @@ function App() {
         <Route path='/' element={<Home/>} />
         <Route path='/animals' element={<Animal />} />
         <Route path='/exhibits' element={<Exhibits />} />
-
+        <Route path='/giftshop-items' element={<GiftShopPage />} />
         <Route element={<PrivateRoutes />}>
           <Route path='/tickets' element={<Tickets />} />
           <Route path='/membership' element={<Membership />} />

@@ -160,7 +160,7 @@ function ManageExhibits({ exhibitData, setExhibitData, addExhibit, exhibitId, se
             onChange={(e) => setExhibitData({ ...exhibitData, type: e.target.value })}
             required
           >
-            <option value="">Select Type (required)</option>
+            <option value="">Select Type</option>
             <option value="Aviary">Aviary</option>
             <option value="Aquarium">Aquarium</option>
             <option value="Petting Zoo">Petting Zoo</option>
@@ -208,7 +208,7 @@ function ManageExhibits({ exhibitData, setExhibitData, addExhibit, exhibitId, se
       
       {/* display employee information */}
       <div className="exhibit-list">
-        <h2>Exhibit List</h2>
+        <h2>Exhibit Records</h2>
         <input
           type="text"
           placeholder="Search exhibits..."
@@ -355,6 +355,7 @@ function ManageExhibits({ exhibitData, setExhibitData, addExhibit, exhibitId, se
               placeholder="Image Link"
               value={updateData.imageLink}
               onChange={(e) => setUpdateData({ ...updateData, imageLink: e.target.value })}
+              required
             />
             <button onClick={updateExhibit}>Save Changes</button>
           </div>

@@ -4,7 +4,7 @@ import { useAuth } from '../components/AuthContext';
 
 const TicketsPage = () => {
   const { userRole, userEmail } = useAuth();
-  const isCustomer = userRole === 'Customer' ? true : false;
+  const isCustomer = userRole === 'Customer';
 
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
@@ -12,7 +12,6 @@ const TicketsPage = () => {
   const [loading, setLoading] = useState(false);
   const [exhibits, setExhibits] = useState([]);
   const [selectedExhibit, setSelectedExhibit] = useState('');
-  const [loadingExhibits, setLoadingExhibits] = useState(true);
 
   const ticketOptions = [
     { type: 'Child', price: 10, description: 'Ages 3-12' },
@@ -29,17 +28,16 @@ const TicketsPage = () => {
 
   const fetchExhibits = async () => {
     try {
-      setLoadingExhibits(true);
       const response = await fetch('https://coogzootestbackend-phi.vercel.app/exhibits');
-      if (!response.ok) {
-        throw new Error('Failed to fetch exhibits');
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Fetched exhibits:', data); // For debugging
+        setExhibits(data);
+      } else {
+        console.error('Failed to fetch exhibits');
       }
-      const data = await response.json();
-      setExhibits(data);
     } catch (error) {
       console.error('Error fetching exhibits:', error);
-    } finally {
-      setLoadingExhibits(false);
     }
   };
 
@@ -65,14 +63,15 @@ const TicketsPage = () => {
   };
 
   const handleExhibitSelection = (e) => {
-    setSelectedExhibit(e.target.value);
+    const selectedValue = e.target.value ? parseInt(e.target.value, 10) : '';
+    setSelectedExhibit(selectedValue);
   };
 
   const handlePurchase = async (e) => {
     e.preventDefault();
 
     if (!selectedTicket || !selectedExhibit) {
-      alert('Please select both a ticket type and an exhibit.');
+      alert('Please select a ticket type and an exhibit.');
       return;
     }
 
@@ -86,7 +85,7 @@ const TicketsPage = () => {
           email: userEmail,
           ticketType: selectedTicket.type,
           price: selectedTicket.price,
-          exhibitId: selectedExhibit
+          exhibitId: selectedExhibit,
         }),
       });
 
@@ -139,32 +138,22 @@ const TicketsPage = () => {
             <form className="customer-info-form" onSubmit={handlePurchase}>
               <h3>Anyday Access to the Zoo</h3>
               <p>Selected Ticket: {selectedTicket.type} - ${selectedTicket.price}</p>
-              
+
               <label htmlFor="exhibitSelect">Choose an Exhibit:</label>
               <select
                 id="exhibitSelect"
-                value={selectedExhibit}
+                value={selectedExhibit || ''}  // Use empty string when no value is selected
                 onChange={handleExhibitSelection}
                 required
-                className="exhibit-select"
               >
                 <option value="">Select an Exhibit</option>
-                {loadingExhibits ? (
-                  <option disabled>Loading exhibits...</option>
-                ) : (
-                  exhibits.map((exhibit) => (
-                    <option key={exhibit.id} value={exhibit.id}>
-                      {exhibit.name}
-                    </option>
-                  ))
-                )}
+                {exhibits.map((exhibit) => (
+                  <option key={exhibit.id} value={exhibit.id}>
+                    {exhibit.name}
+                  </option>
+                ))}
               </select>
-
-              <button 
-                type="submit" 
-                className="purchase-button"
-                disabled={!selectedExhibit || loadingExhibits}
-              >
+              <button type="submit" className="purchase-button">
                 Purchase Ticket
               </button>
             </form>

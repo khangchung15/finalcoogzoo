@@ -1,5 +1,5 @@
-/* Manage Employees Styles */
-.manage-employees-container {
+/* Manage Animals Styles */
+.manage-animals-container {
     padding: 2%;
     transition: margin-left 0.3s ease;
     margin-left: -8%;
@@ -10,12 +10,13 @@
     max-width: 80%;
 }
 
-.manage-employees-container.sidebar-collapsed {
+
+.manage-animals-container.sidebar-collapsed {
     margin-left: -27%;
     gap: 0.5%;
 }
 
-.manage-employees {
+.manage-animals {
     position: relative;
     flex: 1;
     width: 250px;
@@ -27,10 +28,11 @@
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     margin-bottom: 5%;
-    left: 5%;
+    left: 0%;
 }
 
-.employee-list {
+/* Animal list and table styling */
+.animal-list {
     flex: 2;
     padding: 1%;
     background-color: #f9f9f9;
@@ -46,7 +48,6 @@
     justify-content: space-between;
     gap: 0px;
 }
-
 .form-sections-wrapper.sidebar-collapse {
     display: flex;
     justify-content: space-between;
@@ -60,14 +61,18 @@
 /* Ensure consistency for form containers */
 .update-form-section {
     flex: 1;
-    width: 100%;
-    box-sizing: border-box;
-    margin: 0; /* Avoid unintended spacing */
+    max-width: 400px;
+    height: 100%; /* Ensure forms stretch to fill the available height */
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px; /* Ensure spacing between different form sections */
 }
 
 /* Input fields and select dropdown */
-.manage-employees input, 
-.manage-employees select, 
+.manage-animals input, 
+.manage-animals select, 
 .update-form-section input, 
 .update-form-section select {
     display: block;
@@ -81,7 +86,7 @@
 }
 
 /* Button styling */
-.manage-employees button, 
+.manage-animals button, 
 .update-form-section button, 
 .remove-button {
     padding: 10px 20px;
@@ -97,15 +102,28 @@
     margin-top: 10px; /* Add space between buttons */
 }
 
-.manage-employees button:hover, 
+/* Checkbox and label styling */
+.manage-animals label {
+    display: block;
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+.manage-animals input,
+.manage-animals select,
+.manage-animals button {
+    margin-top: 5px;
+}
+
+.manage-animals button:hover, 
 .update-form-section button:hover, 
 .remove-button:hover {
     background-color: #7C000F;
 }
 
 /* Section headers */
-.employee-list h2,
-.manage-employees h2, 
+.animal-list h2,
+.manage-animals h2, 
 .update-form-section h2 {
     margin-top: 10px;
     margin-bottom: 15px; /* Consistent spacing below headers */
@@ -123,38 +141,35 @@
     box-sizing: border-box;
 }
 
-/* Employee table */
-.employee-table {
+/* Animal table */
+.animal-table {
     width: 100%;
     border-collapse: collapse;
+    min-width: 800px;
 }
 
-.employee-table td {
+.animal-table td {
     padding: 10px; /* Increased padding for a more spacious feel */
-    text-align: center;
+    text-align: left;
     border-bottom: 1px solid #ddd;
-    font-size: 14px;
-    border: 1px solid #ddd; 
 }
 
 /* Table header styling */
-.employee-table th {
+.animal-table th {
     background-color: #C8102E;
     color: white;
     padding: 10px; /* Increased padding for a more spacious feel */
-    text-align: center;
+    text-align: left;
     border-bottom: 1px solid #ddd;
-    font-size: 15px;
-    border: 1px solid #ddd; 
 }
 
 /* Hover effect for table rows */
-.employee-table tr:hover {
+.animal-table tr:hover {
     background-color: #f1f1f1;
 }
 
 /* Error message styling */
-.employee-table .error {
+.animal-table .error {
     color: red;
 }
 
@@ -183,40 +198,22 @@
 .modal-content {
     background: #fff;
     padding: 20px;
-    width: 80%; /* Reduce width to fit better */
-    max-width: 400px; /* Further reduced max-width for better fit */
+    width: 90%;
+    max-width: 500px;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     position: relative;
-    max-height: 90vh; /* Limit height to avoid cutting off */
-    overflow-y: auto; /* Enable vertical scrolling if content overflows */
-    box-sizing: border-box;
-}
-
-.modal-content label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-    text-align: left; /* Align labels to the left */
 }
 
 .modal-content .close-button {
     position: absolute;
     top: 10px;
     right: 10px;
-    background: #C8102E; /* Set background color for visibility */
-    color: white;
+    background: none;
     border: none;
     font-size: 20px;
+    color: #333;
     cursor: pointer;
-    border-radius: 50%; /* Circular button */
-    width: 30px; /* Adjust as needed */
-    height: 30px; /* Adjust as needed */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0; /* Remove any padding */
-    line-height: 1;
 }
 
 .modal-content h2 {
@@ -258,10 +255,18 @@
     cursor: pointer;
 }
 
-/* General container height adjustments */
-.update-form-section {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    height: auto; /* Ensure they adapt to the content */
+.required-field {
+    border: 1px solid #ff0000;
+}
+  
+.status-reason-input {
+    margin-top: 10px;
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+  
+.status-reason-input.required {
+    border-color: #ff0000;
 }
