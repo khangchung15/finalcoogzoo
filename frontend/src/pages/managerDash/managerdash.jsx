@@ -5,7 +5,7 @@ import ManageExhibits from './manageExhibits';
 import ManageAnimals from './manageAnimals';
 import ManageCages from './manageCages';
 import ManageShowcases from './manageShowcases'
-import GiftShopManager from '../giftshopmanager';
+import GiftShopManager from '../giftmanager';
 import TicketReport from '../ticketreport';
 import MembershipReport from '../membershipreport';
 
