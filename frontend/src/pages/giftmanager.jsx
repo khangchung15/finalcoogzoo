@@ -27,18 +27,26 @@ const GiftManager = () => {
   const fetchItems = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5000/giftshop-items-all');
-      if (!response.ok) throw new Error('Failed to fetch items');
+      const response = await fetch('http://localhost:5000/giftshop-items-all', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
-      // Format the price as a number for each item
       const formattedData = data.map(item => ({
         ...item,
         Price: parseFloat(item.Price)
       }));
       setItems(formattedData);
     } catch (err) {
+      console.error('Fetch error:', err);
       setError('Failed to load items');
-      console.error(err);
     } finally {
       setLoading(false);
     }

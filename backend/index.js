@@ -20,8 +20,9 @@ connection.connect((err) => {
 // Set CORS headers
 const setCORSHeaders = (res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, POST, OPTIONS, DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Max-Age', '3600');
 };
 
 // Function to handle database errors
@@ -1561,7 +1562,7 @@ const fetchAllGiftShopItems = (res) => {
       console.error('Database error:', error);
       return handleDBError(res, error);
     }
-
+    setCORSHeaders(res);
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(results));
   });
@@ -1600,6 +1601,7 @@ const addGiftShopItem = (res, body) => {
       return handleDBError(res, error);
     }
 
+    setCORSHeaders(res);
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ 
       message: 'Item added successfully',
@@ -1643,6 +1645,7 @@ const updateGiftShopItem = (res, itemId, body) => {
       return handleDBError(res, error);
     }
 
+    setCORSHeaders(res);
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ message: 'Item updated successfully' }));
   });
@@ -1663,6 +1666,7 @@ const toggleItemActive = (res, itemId, body) => {
       return handleDBError(res, error);
     }
 
+    setCORSHeaders(res);
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ message: 'Item status updated successfully' }));
   });
@@ -1704,8 +1708,10 @@ http.createServer((req, res) => {
   setCORSHeaders(res);
 
   if (req.method === 'OPTIONS') {
+    setCORSHeaders(res);
     res.writeHead(204);
-    return res.end();
+    res.end();
+    return;
   }
 
   if (req.method === 'POST' && req.url === '/login') {
