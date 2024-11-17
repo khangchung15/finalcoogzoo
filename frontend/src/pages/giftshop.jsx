@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../components/AuthContext';
-import './giftshop.css';
 
 const GiftShopPage = () => {
   const { userRole, userEmail } = useAuth();
@@ -14,6 +13,8 @@ const GiftShopPage = () => {
   const [error, setError] = useState(null);
   const [quantity, setQuantity] = useState(1);
 
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://coogzootestbackend-phi.vercel.app';
+
   useEffect(() => {
     fetchGiftShopItems();
     if (isCustomer && userEmail) {
@@ -24,10 +25,11 @@ const GiftShopPage = () => {
   const fetchGiftShopItems = async () => {
     try {
       setLoading(true);
-      const response = await fetch('https://coogzootestbackend-phi.vercel.app/giftshop-items');
-      if (!response.ok) throw new Error('Failed to fetch items');
+      const response = await fetch(`${API_URL}/giftshop-items`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const data = await response.json();
-      // Format the price as a number
       const formattedData = data.map(item => ({
         ...item,
         Price: parseFloat(item.Price)
@@ -35,7 +37,7 @@ const GiftShopPage = () => {
       setItems(formattedData);
     } catch (err) {
       console.error('Error fetching gift shop items:', err);
-      setError('Failed to load items');
+      setError('Failed to load items. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -43,17 +45,19 @@ const GiftShopPage = () => {
 
   const fetchPurchaseHistory = async () => {
     try {
-      const response = await fetch(`https://coogzootestbackend-phi.vercel.app/giftshop-history?email=${userEmail}`);
-      if (!response.ok) throw new Error('Failed to fetch history');
+      const response = await fetch(`${API_URL}/giftshop-history?email=${encodeURIComponent(userEmail)}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const data = await response.json();
-      // Format the price as a number in purchase history
       const formattedHistory = data.map(item => ({
         ...item,
         Price: parseFloat(item.Price)
       }));
       setPurchasedItems(formattedHistory);
     } catch (err) {
-      console.error('Error fetching history:', err);
+      console.error('Error fetching purchase history:', err);
+      setError('Failed to load purchase history.');
     }
   };
 
@@ -62,7 +66,7 @@ const GiftShopPage = () => {
     if (!selectedItem || !isCustomer) return;
 
     try {
-      const response = await fetch('https://coogzootestbackend-phi.vercel.app/purchase-giftshop-item', {
+      const response = await fetch(`${API_URL}/purchase-giftshop-item`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -74,7 +78,10 @@ const GiftShopPage = () => {
         }),
       });
 
-      if (!response.ok) throw new Error('Purchase failed');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Purchase failed');
+      }
 
       setPurchaseSuccess(true);
       setSelectedItem(null);
@@ -85,7 +92,7 @@ const GiftShopPage = () => {
       setTimeout(() => setPurchaseSuccess(false), 3000);
     } catch (err) {
       console.error('Error purchasing item:', err);
-      setError('Failed to complete purchase. Please try again.');
+      setError(err.message || 'Failed to complete purchase. Please try again.');
     }
   };
 
