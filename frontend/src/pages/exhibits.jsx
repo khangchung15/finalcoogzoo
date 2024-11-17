@@ -9,7 +9,7 @@ const Exhibits = () => {
   useEffect(() => {
     const fetchExhibits = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/exhibits`);
+        const response = await fetch(`https://coogzootestbackend-phi.vercel.app//exhibits`);
         if (!response.ok) throw new Error('Failed to fetch exhibits');
         const data = await response.json();
         
