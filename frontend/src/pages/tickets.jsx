@@ -140,57 +140,35 @@ const TicketsPage = () => {
     <div className="tickets-container">
       <h1>Purchase Tickets</h1>
 
-      {error && (
-        <div className="error-message">
-          {error}
-          <button className="close-error" onClick={() => setError(null)}>×</button>
-        </div>
-      )}
-
-      {purchaseSuccess && (
-        <div className="purchase-success">
-          Ticket purchased successfully!
-        </div>
-      )}
-
-      <div className="ticket-selection">
-        {ticketOptions.map((ticket) => (
-          <div 
-            key={ticket.type} 
-            className={`ticket-card ${selectedTicket?.type === ticket.type ? 'selected' : ''}`}
-          >
-            <h3>{ticket.type} Ticket</h3>
-            <p className="ticket-price">Price: <span>${ticket.price.toFixed(2)}</span></p>
-            <p className="ticket-description">{ticket.description}</p>
-            <button
-              className={`purchase-button ${selectedTicket?.type === ticket.type ? 'selected' : ''}`}
-              onClick={() => handleTicketSelection(ticket)}
-              disabled={loading}
-            >
-              {selectedTicket?.type === ticket.type ? 'Selected' : `Select ${ticket.type} Ticket`}
-            </button>
-          </div>
-        ))}
-      </div>
-
-      {selectedTicket && (
-        <form className="customer-info-form" onSubmit={handlePurchase}>
-          <h3>Select Your Exhibit</h3>
-          <div className="selected-ticket-info">
-            <p>Selected Ticket: {selectedTicket.type} - ${selectedTicket.price.toFixed(2)}</p>
+      {isCustomer ? (
+        <>
+          <div className="ticket-selection">
+            {ticketOptions.map((ticket) => (
+              <div key={ticket.type} className="ticket-card">
+                <h3>{ticket.type} Ticket</h3>
+                <p>Price: <span>${ticket.price}</span></p>
+                <p>{ticket.description}</p>
+                <button
+                  className="purchase-button"
+                  onClick={() => handleTicketSelection(ticket)}
+                >
+                  Select {ticket.type} Ticket
+                </button>
+              </div>
+            ))}
           </div>
 
-          <div className="exhibit-selection">
-            <label htmlFor="exhibitSelect">Choose an Exhibit:</label>
-            {exhibitsLoading ? (
-              <div className="loading-spinner">Loading exhibits...</div>
-            ) : (
+          {selectedTicket && (
+            <form className="customer-info-form" onSubmit={handlePurchase}>
+              <h3>Anyday Access to the Zoo</h3>
+              <p>Selected Ticket: {selectedTicket.type} - ${selectedTicket.price}</p>
+
+              <label htmlFor="exhibitSelect">Choose an Exhibit:</label>
               <select
                 id="exhibitSelect"
-                value={selectedExhibit || ''}
+                value={selectedExhibit || ''}  // Use empty string when no value is selected
                 onChange={handleExhibitSelection}
                 required
-                disabled={loading}
               >
                 <option value="">Select an Exhibit</option>
                 {exhibits.map((exhibit) => (
@@ -199,41 +177,46 @@ const TicketsPage = () => {
                   </option>
                 ))}
               </select>
+              <button type="submit" className="purchase-button">
+                Purchase Ticket
+              </button>
+            </form>
+          )}
+
+          {purchaseSuccess && (
+            <div className="purchase-success">
+              Ticket purchased successfully!
+            </div>
+          )}
+
+          <div className="purchased-tickets-section">
+            <h2>Your Purchased Tickets</h2>
+            {loading ? (
+              <p>Loading your tickets...</p>
+            ) : purchasedTickets.length > 0 ? (
+              <div className="tickets-grid">
+                {purchasedTickets.map((ticket) => (
+                  <div key={ticket.Ticket_ID} className="purchased-ticket-card">
+                    <h3>{ticket.Ticket_Type} Ticket</h3>
+                    <div className="ticket-details">
+                      <p><strong>Purchase Date:</strong> {formatDate(ticket.Purchase_Date)}</p>
+                      <p><strong>Price:</strong> ${ticket.Price}</p>
+                      <p><strong>Receipt ID:</strong> {ticket.Receipt_ID}</p>
+                      <p><strong>Exhibit:</strong> {ticket.Exhibit_Name || 'N/A'}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p>No tickets purchased yet.</p>
             )}
           </div>
-
-          <button 
-            type="submit" 
-            className="purchase-button submit"
-            disabled={loading || exhibitsLoading || !selectedExhibit}
-          >
-            {loading ? 'Processing...' : 'Purchase Ticket'}
-          </button>
-        </form>
+        </>
+      ) : (
+        <div className="no-access">
+          Please create a customer account to purchase tickets.
+        </div>
       )}
-
-      <div className="purchased-tickets-section">
-        <h2>Your Purchased Tickets</h2>
-        {loading ? (
-          <div className="loading-spinner">Loading your tickets...</div>
-        ) : purchasedTickets.length > 0 ? (
-          <div className="tickets-grid">
-            {purchasedTickets.map((ticket) => (
-              <div key={ticket.Ticket_ID} className="purchased-ticket-card">
-                <h3>{ticket.Ticket_Type} Ticket</h3>
-                <div className="ticket-details">
-                  <p><strong>Purchase Date:</strong> {formatDate(ticket.Purchase_Date)}</p>
-                  <p><strong>Price:</strong> ${parseFloat(ticket.Price).toFixed(2)}</p>
-                  <p><strong>Receipt ID:</strong> {ticket.Receipt_ID}</p>
-                  <p><strong>Exhibit:</strong> {ticket.Exhibit_Name || 'N/A'}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="no-tickets">No tickets purchased yet.</p>
-        )}
-      </div>
     </div>
   );
 };
