@@ -4,7 +4,7 @@ import { useAuth } from '../components/AuthContext';
 
 const TicketsPage = () => {
   const { userRole, userEmail } = useAuth();
-  const isCustomer = userRole?.toLowerCase() === 'customer';
+  const isCustomer = userRole === 'Customer'; // Changed to match the working version
 
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
@@ -12,9 +12,6 @@ const TicketsPage = () => {
   const [loading, setLoading] = useState(false);
   const [exhibits, setExhibits] = useState([]);
   const [selectedExhibit, setSelectedExhibit] = useState('');
-  const [exhibitsLoading, setExhibitsLoading] = useState(true);
-  const [error, setError] = useState(null);
-
 
   const ticketOptions = [
     { type: 'Child', price: 10, description: 'Ages 3-12' },
@@ -27,92 +24,83 @@ const TicketsPage = () => {
       fetchPurchasedTickets();
       fetchExhibits();
     }
-  }, [isCustomer, userEmail]);
+  }, [isCustomer, userEmail, purchaseSuccess]); // Added purchaseSuccess dependency back
 
   const fetchExhibits = async () => {
     try {
-      setExhibitsLoading(true);
-      setError(null);
       const response = await fetch('https://coogzootestbackend-phi.vercel.app/exhibits');
-      if (!response.ok) {
-        throw new Error('Failed to fetch exhibits');
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Fetched exhibits:', data);
+        setExhibits(data);
+      } else {
+        console.error('Failed to fetch exhibits');
       }
-      const data = await response.json();
-      console.log('Fetched exhibits:', data);
-      setExhibits(data.filter(exhibit => !exhibit.isClosed));
     } catch (error) {
       console.error('Error fetching exhibits:', error);
-      setError('Failed to load exhibits. Please try again later.');
-    } finally {
-      setExhibitsLoading(false);
     }
   };
 
   const fetchPurchasedTickets = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`https://coogzootestbackend-phi.vercel.app/purchased-tickets?email=${encodeURIComponent(userEmail)}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch purchased tickets');
+      const response = await fetch(`https://coogzootestbackend-phi.vercel.app/purchased-tickets?email=${userEmail}`);
+      if (response.ok) {
+        const data = await response.json();
+        setPurchasedTickets(data);
+      } else {
+        console.error('Failed to fetch purchased tickets');
       }
-      const data = await response.json();
-      console.log('Fetched purchased tickets:', data);
-      setPurchasedTickets(data);
     } catch (error) {
       console.error('Error fetching purchased tickets:', error);
-      setError('Failed to load purchase history. Please try again later.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleTicketSelection = (ticketType) => {
+    setSelectedTicket(ticketType);
+  };
+
+  const handleExhibitSelection = (e) => {
+    const selectedValue = e.target.value ? parseInt(e.target.value, 10) : '';
+    setSelectedExhibit(selectedValue);
   };
 
   const handlePurchase = async (e) => {
     e.preventDefault();
 
     if (!selectedTicket || !selectedExhibit) {
-      setError('Please select both a ticket type and an exhibit.');
+      alert('Please select a ticket type and an exhibit.');
       return;
     }
 
     try {
-      setLoading(true);
-      setError(null);
-      
-      const purchaseData = {
-        email: userEmail,
-        ticketType: selectedTicket.type,
-        price: selectedTicket.price,
-        exhibitId: selectedExhibit,
-      };
-
-      console.log('Sending purchase request:', purchaseData);
-
       const response = await fetch('https://coogzootestbackend-phi.vercel.app/tickets', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(purchaseData),
+        body: JSON.stringify({
+          email: userEmail,
+          ticketType: selectedTicket.type,
+          price: selectedTicket.price,
+          exhibitId: selectedExhibit,
+        }),
       });
 
-      const responseData = await response.json();
-      console.log('Purchase response:', responseData);
-
-      if (!response.ok) {
-        throw new Error(responseData.message || 'Failed to purchase ticket');
+      if (response.ok) {
+        setSelectedTicket(null);
+        setSelectedExhibit('');
+        setPurchaseSuccess(true);
+        await fetchPurchasedTickets();
+        setTimeout(() => setPurchaseSuccess(false), 5000);
+      } else {
+        throw new Error('Purchase failed');
       }
-
-      setSelectedTicket(null);
-      setSelectedExhibit('');
-      setPurchaseSuccess(true);
-      await fetchPurchasedTickets();
-      
-      setTimeout(() => setPurchaseSuccess(false), 5000);
     } catch (error) {
       console.error('Error purchasing ticket:', error);
-      setError(error.message || 'Failed to purchase ticket. Please try again.');
-    } finally {
-      setLoading(false);
+      alert('Failed to purchase ticket. Please try again.');
     }
   };
 
@@ -124,22 +112,9 @@ const TicketsPage = () => {
     });
   };
 
-  if (!isCustomer) {
-    return (
-      <div className="tickets-container">
-        <h1>Purchase Tickets</h1>
-        <div className="no-access">
-          <p>Please log in as a customer to purchase tickets.</p>
-          <p>Current role: {userRole || 'Not logged in'}</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="tickets-container">
       <h1>Purchase Tickets</h1>
-
       {isCustomer ? (
         <>
           <div className="ticket-selection">
@@ -166,7 +141,7 @@ const TicketsPage = () => {
               <label htmlFor="exhibitSelect">Choose an Exhibit:</label>
               <select
                 id="exhibitSelect"
-                value={selectedExhibit || ''}  // Use empty string when no value is selected
+                value={selectedExhibit || ''}
                 onChange={handleExhibitSelection}
                 required
               >
