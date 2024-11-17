@@ -64,6 +64,113 @@ const handleDBError = (res, error) => {
   }));
 };
 
+const initializeDatabase = () => {
+  return new Promise((resolve, reject) => {
+    const queries = [
+      // Drop triggers individually
+      `DROP TRIGGER IF EXISTS after_event_insert`,
+      `DROP TRIGGER IF EXISTS after_exhibit_insert`,
+      
+      // Create EventNotifications table
+      `CREATE TABLE IF NOT EXISTS EventNotifications (
+        notification_id INT PRIMARY KEY AUTO_INCREMENT,
+        event_id INT,
+        customer_id INT,
+        message TEXT,
+        notification_sent BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (event_id) REFERENCES Event(Event_ID),
+        FOREIGN KEY (customer_id) REFERENCES Customer(ID)
+      )`,
+
+      // Create ExhibitNotifications table
+      `CREATE TABLE IF NOT EXISTS ExhibitNotifications (
+        notification_id INT PRIMARY KEY AUTO_INCREMENT,
+        exhibit_id INT,
+        message VARCHAR(255),
+        notification_sent BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (exhibit_id) REFERENCES Exhibit(ID)
+      )`,
+
+      // Create event trigger with plain text
+      `CREATE TRIGGER after_event_insert
+      AFTER INSERT ON Event
+      FOR EACH ROW
+      BEGIN
+        INSERT INTO EventNotifications (event_id, customer_id, message, notification_sent)
+        SELECT 
+          NEW.Event_ID,
+          Customer.ID,
+          CONCAT(
+            'Dear ', Customer.First_name, ',\n\n',
+            'New Event at CoogZoo!\n\n',
+            'Event: ', NEW.Name, '\n',
+            'Date: ', DATE_FORMAT(NEW.Date, '%W, %M %D, %Y'), '\n',
+            'Time: ', TIME_FORMAT(NEW.StartTime, '%h:%i %p'), ' - ', TIME_FORMAT(NEW.EndTime, '%h:%i %p'), '\n',
+            'Location: ', NEW.Location, '\n',
+            CASE 
+              WHEN NEW.Description IS NOT NULL 
+              THEN CONCAT('\nDetails:\n', NEW.Description)
+              ELSE ''
+            END,
+            '\n\nWe look forward to seeing you there!\n\n',
+            'Best regards,\n',
+            'The CoogZoo Team'
+          ),
+          FALSE
+        FROM Customer;
+      END`,
+
+      // Create exhibit trigger with plain text
+      `CREATE TRIGGER after_exhibit_insert
+      AFTER INSERT ON Exhibit
+      FOR EACH ROW
+      BEGIN
+        INSERT INTO ExhibitNotifications (exhibit_id, message, notification_sent)
+        VALUES (
+          NEW.ID,
+          CONCAT(
+            'New Exhibit Alert!\n\n',
+            'Name: ', NEW.Name, '\n',
+            'Location: ', NEW.Location,
+            CASE 
+              WHEN NEW.Hours IS NOT NULL 
+              THEN CONCAT('\nHours: ', NEW.Hours)
+              ELSE ''
+            END,
+            CASE 
+              WHEN NEW.Description IS NOT NULL 
+              THEN CONCAT('\n\nDescription:\n', NEW.Description)
+              ELSE ''
+            END,
+            '\n\nCome visit us to explore this exciting new addition!'
+          ),
+          FALSE
+        );
+      END`
+    ];
+
+    // Execute queries sequentially
+    const executeQueries = async (index) => {
+      if (index >= queries.length) {
+        console.log('Database initialization completed successfully');
+        return resolve();
+      }
+
+      try {
+        await connection.promise().query(queries[index]);
+        console.log(`Successfully executed query ${index + 1}`);
+        await executeQueries(index + 1);
+      } catch (error) {
+        console.error(`Error executing query ${index + 1}:`, error);
+        reject(error);
+      }
+    };
+
+    executeQueries(0);
+  });
+};
 
 //Employee Section
 const fetchEmployees = (res) => {
