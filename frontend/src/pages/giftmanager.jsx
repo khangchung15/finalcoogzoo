@@ -25,7 +25,7 @@ const GiftManager = () => {
       setLoading(true);
       setError(null);
       
-      const response = await fetch('http://localhost:5000/giftshop-items-all', {
+      const response = await fetch('https://coogzootestbackend-phi.vercel.app/giftshop-items-all', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -68,8 +68,8 @@ const GiftManager = () => {
     e.preventDefault();
     try {
       const endpoint = editingItem 
-        ? `http://localhost:5000/giftshop-items/${editingItem.Item_ID}` 
-        : 'http://localhost:5000/giftshop-items';
+        ? `https://coogzootestbackend-phi.vercel.app/giftshop-items/${editingItem.Item_ID}` 
+        : 'https://coogzootestbackend-phi.vercel.app/giftshop-items';
       
       const submissionData = {
         ...formData,
@@ -94,7 +94,7 @@ const GiftManager = () => {
 
   const handleToggleActive = async (itemId, currentStatus) => {
     try {
-      const response = await fetch(`http://localhost:5000/giftshop-items/${itemId}/toggle-active`, {
+      const response = await fetch(`https://coogzootestbackend-phi.vercel.app/giftshop-items/${itemId}/toggle-active`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_active: !currentStatus })
