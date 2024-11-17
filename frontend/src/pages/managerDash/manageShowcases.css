@@ -1,24 +1,63 @@
 /* Manage Showcase Styles */
 .manage-showcases-container {
+    padding: 2%;
+    transition: margin-left 0.3s ease;
+    margin-left: -10%;
+    margin-top: -2%;
+    width: 126%;
     display: flex;
-    justify-content: space-between;
-    padding: 20px;
-    gap: 20px;
-    width: 100%;
-    min-width: 0;
+    gap: 1%;
+    max-width: 80%;
+}
+
+.manage-showcases-container.sidebar-collapsed {
+    margin-left: -27%;
+    gap: 0.5%;
+}
+
+.manage-showcases {
+    position: relative;
+    flex: 1;
+    width: 250px;
+    height: 100%;
+    max-height: 900px;
+    max-width: 800px;
+    background-color: #f9f9f9;
+    padding: 2%;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 5%;
+    left: -2%;
+}
+
+.showcase-list {
+    flex: 2;
+    padding: 1%;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    max-width: 105%;
+    margin-left: 1%;
 }
 
 /* Arrange forms side by side and ensure equal height */
 .form-sections-wrapper {
     display: flex;
     justify-content: space-between;
+    gap: 0px;
+}
+.form-sections-wrapper.sidebar-collapse {
+    display: flex;
+    justify-content: space-between;
     gap: 20px;
-    align-items: stretch; /* Ensure both forms have the same height */
-    flex: 1;
+    align-items: stretch;
+
+    position: relative;
+    top:50px;
 }
 
 /* Ensure consistency for form containers */
-.manage-showcases, .update-form-section {
+.update-form-section {
     flex: 1;
     max-width: 400px;
     height: 100%; /* Ensure forms stretch to fill the available height */
@@ -81,16 +120,7 @@
 }
 
 /* showcase list and table styling */
-.showcase-list {
-    flex: 3;
-    padding: 20px;
-    background-color: #f9f9f9;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    overflow-y: auto;
-    min-width: 0;
-    width: calc(100% - 420px);
-}
+
 
 /* Section headers */
 .showcase-list h2,
@@ -118,17 +148,23 @@
     border-collapse: collapse;
     min-width: 800px;
 }
-
-.showcase-table th, .showcase-table td {
-    padding: 10px; /* Increased padding for a more spacious feel */
+.showcase-table td {
+    padding: 10px;
     text-align: left;
     border-bottom: 1px solid #ddd;
+    max-width: 200px; /* Set a maximum width for cells */
+    word-wrap: break-word; /* Allow long words to break and wrap */
+    border: 1px solid #ddd; 
 }
 
 /* Table header styling */
 .showcase-table th {
     background-color: #C8102E;
     color: white;
+    padding: 10px; /* Increased padding for a more spacious feel */
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    border: 1px solid #ddd; 
 }
 
 /* Hover effect for table rows */

@@ -4,7 +4,7 @@ import ManageEmployees from './manageEmployees';
 import ManageExhibits from './manageExhibits';
 import ManageAnimals from './manageAnimals';
 import ManageCages from './manageCages';
-import ManageShowcases from './manageShowcases';
+import ManageShowcases from './manageShowcases'
 
 function ManagerDash() {
   const [showSidebar, setShowSidebar] = useState(true);
@@ -343,7 +343,7 @@ function ManagerDash() {
           <li onClick={() => handleSectionChange('exhibits')}>Manage Exhibits</li>
           <li onClick={() => handleSectionChange('cages')}>Manage Cages</li>
           <li onClick={() => handleSectionChange('animals')}>Manage Animals</li>
-          <li onClick={() => handleSectionChange('animalShowcases')}>Manage Animal Showcases</li>
+          <li onClick={() => handleSectionChange('showcases')}>Manage Animal Showcases</li>
           <li onClick={() => handleSectionChange('events')}>Manage Events</li>
           <li onClick={() => handleSectionChange('reports')}>Reports</li>
         </ul>

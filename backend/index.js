@@ -1406,12 +1406,12 @@ http.createServer((req, res) => {
     }
   });
   }
-  else if (req.method === 'GET' && req.url === '/animals'){
-    fetchShowcase(res);
-  }
   else if (req.method === 'GET' && req.url === '/events'){
     fetchEvents(res);
   }
+  else if (req.method === 'GET' && req.url === '/animals') {
+    fetchManageAnimals(res);
+  } 
 
   else if (req.method === 'GET' && req.url.startsWith('/purchased-tickets')){
     const url = new URL(req.url, `http://${req.headers.host}`);
@@ -1698,7 +1698,6 @@ http.createServer((req, res) => {
     });
     return;
   }
-
   else if (req.method === 'GET' && req.url.startsWith('/giftshop-history')) {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const email = url.searchParams.get('email');
@@ -1710,9 +1709,112 @@ http.createServer((req, res) => {
       res.end(JSON.stringify({ message: 'Email is required' }));
     }
   }
+
   else if (req.method === 'GET' && req.url === '/showcases') {
-    return fetchShowcase(res);
+    fetchShowcase(res);
   } 
+  else if (req.method === 'POST' && req.url === '/add-showcase') {
+    let body = '';
+    req.on('data', (chunk) => {
+      body += chunk.toString();
+    });
+    req.on('end', () => {
+      try {
+        const showcaseData = JSON.parse(body);
+        addShowcase(showcaseData, res);
+      } catch (error) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Invalid JSON' }));
+      }
+    });
+  }
+  else if (req.method === 'PUT' && req.url.startsWith('/update-showcase')) {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const showcaseId = url.searchParams.get('id');
+
+    if (showcaseId) {
+      let body = '';
+      req.on('data', (chunk) => {
+        body += chunk.toString();
+      });
+
+      req.on('end', () => {
+        try {
+          const showcaseData = JSON.parse(body);
+          updateShowcase(showcaseId, showcaseData, res);
+        } catch (error) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ message: 'Invalid JSON' }));
+        }
+      });
+    } else {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Showcase ID is required' }));
+    }
+  }
+  else if (req.method === 'DELETE' && req.url.startsWith('/remove-showcase')) {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const showcaseId = url.searchParams.get('id');
+
+    if (showcaseId) {
+      removeShowcase(showcaseId, res);
+    } else {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Showcase ID is required' }));
+    }
+  }
+
+  else if (req.method === 'POST' && req.url === '/add-animal') {
+    let body = '';
+    req.on('data', (chunk) => {
+      body += chunk.toString();
+    });
+    req.on('end', () => {
+      try {
+        const animalData = JSON.parse(body);
+        addAnimal(animalData, res);
+      } catch (error) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Invalid JSON' }));
+      }
+    });
+  }
+  else if (req.method === 'PUT' && req.url.startsWith('/update-animal')) {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const animalId = url.searchParams.get('id');
+
+    if (animalId) {
+      let body = '';
+      req.on('data', (chunk) => {
+        body += chunk.toString();
+      });
+
+      req.on('end', () => {
+        try {
+          const animalData = JSON.parse(body);
+          updateAnimal(animalId, animalData, res);
+        } catch (error) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ message: 'Invalid JSON' }));
+        }
+      });
+    } else {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Animal ID is required' }));
+    }
+  }
+  else if (req.method === 'DELETE' && req.url.startsWith('/remove-animal')) {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const animalId = url.searchParams.get('id');
+
+    if (animalId) {
+      removeAnimal(animalId, res);
+    } else {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Animal ID is required' }));
+    }
+  } 
+
   else {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ message: 'Route not found' }));
