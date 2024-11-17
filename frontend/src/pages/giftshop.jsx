@@ -60,6 +60,47 @@ const GiftShopPage = () => {
       setError('Failed to load purchase history.');
     }
   };
+  const renderPurchaseHistory = () => {
+    if (historyLoading) {
+      return <div className="loading-message">Loading purchase history...</div>;
+    }
+
+    if (historyError) {
+      return <div className="error-message">{historyError}</div>;
+    }
+
+    if (!purchasedItems.length) {
+      return <div className="no-history-message">No purchase history available.</div>;
+    }
+
+    return (
+      <div className="history-grid">
+        {purchasedItems.map((item, index) => (
+          <div key={`${item.Receipt_ID}-${index}`} className="history-card">
+            <img 
+              src={item.Image_URL} 
+              alt={item.Name}
+              className="history-image"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = '/placeholder-image.jpg';
+              }}
+            />
+            <div className="history-details">
+              <h3>{item.Name}</h3>
+              <p>{item.Item_Description}</p>
+              <p>Category: {item.Category}</p>
+              <p>Quantity: {item.Quantity}</p>
+              <p>Total Price: ${item.Price.toFixed(2)}</p>
+              <p>Purchased: {item.Purchase_Date}</p>
+              <p>Receipt ID: {item.Receipt_ID}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
 
   const handlePurchase = async (e) => {
     e.preventDefault();
@@ -219,36 +260,10 @@ const GiftShopPage = () => {
         </div>
       )}
 
-      {purchasedItems.length > 0 && (
+      {isCustomer && (
         <div className="purchase-history-section">
           <h2>Purchase History</h2>
-          <div className="history-grid">
-            {purchasedItems.map((item, index) => (
-              <div key={index} className="history-card">
-                <img 
-                  src={item.Image_URL} 
-                  alt={item.Name}
-                  className="history-image"
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = '/placeholder-image.jpg';
-                  }}
-                />
-                <div className="history-details">
-                  <h3>{item.Name}</h3>
-                  <p>{item.Item_Description}</p>
-                  <p>Category: {item.Category}</p>
-                  <p>Quantity: {item.Quantity}</p>
-                  <p>Total Price: ${typeof item.Price === 'number' ? 
-                    item.Price.toFixed(2) : 
-                    parseFloat(item.Price).toFixed(2)}
-                  </p>
-                  <p>Purchased: {new Date(item.Purchase_Date).toLocaleDateString()}</p>
-                  <p>Receipt ID: {item.Receipt_ID}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          {renderPurchaseHistory()}
         </div>
       )}
     </div>
