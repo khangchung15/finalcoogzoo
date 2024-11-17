@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './manageExhibits.css';
 
-function ManageExhibits({ exhibitData, setExhibitData, addExhibit, exhibitId, setExhibitId, showSidebar}) {
+function ManageExhibits({ exhibitData, setExhibitData, addExhibit, exhibitId, setExhibitId, showSidebar }) {
   const [exhibits, setExhibits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

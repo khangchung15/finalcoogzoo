@@ -199,12 +199,12 @@ const fetchExhibits = (res) => {
   });
 };
 const addExhibit = (exhibitData, res) => {
-  const { name, location, description, hours, type, is_closed, closure_reason, closure_start, closure_end, image_link } = exhibitData;
+  const { name, location, description, hours, type, isClosed, closureReason, closureStart, closureEnd, imageLink } = exhibitData;
   
   connection.query(
     `INSERT INTO Exhibit (Name, Location, Description, Hours, Type, is_closed, closure_reason, closure_start, closure_end, Image_Link) 
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [name, location, description, hours, type, is_closed || 0, closure_reason || null, closure_start || null, closure_end || null, image_link],
+    [name, location, description, hours, type, isClosed || 0, closureReason || null, closureStart || null, closureEnd || null, imageLink],
     (err) => {
       if (err) return handleDBError(res, err);
       res.writeHead(201, { 'Content-Type': 'application/json' });
@@ -336,7 +336,6 @@ const removeCage = (cageId, res) => {
     res.writeHead(400, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify({ message: 'Invalid cage ID format' }));
   }
-
   // First check if the cage exists and isn't already deleted
   connection.query(
     'SELECT * FROM Cage WHERE ID = ? AND is_deleted = 0',
@@ -1582,7 +1581,6 @@ http.createServer((req, res) => {
       }
     });
   }
-
   else if (req.method === 'DELETE' && req.url.startsWith('/remove-exhibit')){
     const url = new URL(req.url, `http://${req.headers.host}`);
     const exhibitId = url.searchParams.get('id');
