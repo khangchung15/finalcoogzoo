@@ -36,11 +36,10 @@ function App() {
           <Route path='/manager-dashboard/*' element={<ManagerDash />} />
           <Route path='/manager-dashboard/manage-employees' element={<ManageEmployees />} />
           <Route path='/manager-dashboard/manage-exhibits' element={<ManageExhibits />} /> {/* Add the ManageExhibits route */}
+          <Route path='/employee-dashboard' element={<EmployeeDash/>} />
         </Route>
         <Route path='/events' element={<Events />} />
         <Route path='/login' element={<LoginPage />} />
-        <Route path='/employee-dashboard' element={<EmployeeDash/>} />
-
       </Routes>
       <Footer /> 
     </Router>
