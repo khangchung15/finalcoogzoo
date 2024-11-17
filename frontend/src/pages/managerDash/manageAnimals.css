@@ -148,7 +148,7 @@
     min-width: 800px;
 }
 
-.animal-table th, .animal-table td {
+.animal-table td {
     padding: 10px; /* Increased padding for a more spacious feel */
     text-align: left;
     border-bottom: 1px solid #ddd;
@@ -158,6 +158,9 @@
 .animal-table th {
     background-color: #C8102E;
     color: white;
+    padding: 10px; /* Increased padding for a more spacious feel */
+    text-align: left;
+    border-bottom: 1px solid #ddd;
 }
 
 /* Hover effect for table rows */

@@ -935,6 +935,191 @@ const checkUser = (email, password, callback) => {
 };
 
 //Membership Section
+const getMembershipReport = (startDate, endDate, types, res) => {
+  const typeFilter = types && types.length > 0 ? 
+    `AND m.Member_Type IN (${types.map(type => `'${type}'`).join(',')})` : '';
+
+  const queries = {
+    // Basic membership stats
+    membershipTypes: `
+      SELECT 
+        m.Member_Type as type,
+        COUNT(*) as count,
+        COALESCE(
+          SUM(CASE 
+            WHEN m.Member_Type = 'vip' THEN 20
+            WHEN m.Member_Type = 'premium' THEN 70
+            ELSE 0
+          END), 0
+        ) as revenue,
+        (COUNT(*) * 100.0 / (SELECT COUNT(*) FROM Membership)) as percentage
+      FROM Membership m
+      GROUP BY m.Member_Type
+    `,
+
+    // Member activity
+    memberActivity: `
+      SELECT 
+        m.Member_Type as Member_Type,
+        COUNT(DISTINCT m.ID) as active_members,
+        COUNT(t.ID) as tickets_purchased,
+        COALESCE(SUM(t.Price), 0) as ticket_revenue
+      FROM Membership m
+      LEFT JOIN Customer c ON m.ID = c.ID
+      LEFT JOIN Ticket t ON c.ID = t.Customer_ID
+        AND t.Purchase_Date BETWEEN ? AND ?
+      GROUP BY m.Member_Type
+    `,
+
+    // Popular exhibits
+    exhibitPopularity: `
+      SELECT 
+        m.Member_Type as Member_Type,
+        COALESCE(e.Name, 'No Exhibit') as exhibit_name,
+        COUNT(t.ID) as visit_count
+      FROM Membership m
+      INNER JOIN Customer c ON m.ID = c.ID
+      LEFT JOIN Ticket t ON t.Customer_ID = c.ID 
+        AND t.Purchase_Date BETWEEN ? AND ?
+      LEFT JOIN Exhibit e ON t.Exhibit_ID = e.ID
+      WHERE t.Exhibit_ID IS NOT NULL
+      GROUP BY m.Member_Type, e.Name, e.ID
+      HAVING visit_count > 0
+      ORDER BY m.Member_Type, visit_count DESC
+    `,
+
+    // Demographics
+    demographics: `
+      SELECT 
+        m.Member_Type as Member_Type,
+        ROUND(AVG(TIMESTAMPDIFF(YEAR, c.DateOfBirth, CURDATE()))) as avg_age,
+        COUNT(CASE WHEN TIMESTAMPDIFF(YEAR, c.DateOfBirth, CURDATE()) < 25 THEN 1 END) as under_25,
+        COUNT(CASE WHEN TIMESTAMPDIFF(YEAR, c.DateOfBirth, CURDATE()) BETWEEN 25 AND 40 THEN 1 END) as age_25_40,
+        COUNT(CASE WHEN TIMESTAMPDIFF(YEAR, c.DateOfBirth, CURDATE()) > 40 THEN 1 END) as over_40
+      FROM Membership m
+      JOIN Customer c ON m.ID = c.ID
+      GROUP BY m.Member_Type
+    `,
+
+    // Total stats
+    totalStats: `
+      SELECT 
+        COUNT(DISTINCT m.ID) as totalMembers,
+        COUNT(DISTINCT CASE 
+          WHEN (m.Exp_Date >= CURDATE() OR m.Exp_Date IS NULL) 
+          AND m.Member_Type != 'basic'
+          THEN m.ID 
+        END) as activeMembers,
+        COUNT(DISTINCT CASE 
+          WHEN m.Exp_Date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+          THEN m.ID 
+        END) as expiringMembers,
+        COALESCE(
+          SUM(CASE 
+            WHEN m.Member_Type = 'vip' THEN 20
+            WHEN m.Member_Type = 'premium' THEN 70
+            ELSE 0
+          END), 0
+        ) as totalRevenue
+      FROM Membership m
+    `
+  };
+
+  const reportData = {
+    membershipTypes: [],
+    memberActivity: [],
+    exhibitPopularity: [],
+    demographics: [],
+    totalRevenue: 0,
+    totalMembers: 0,
+    activeMembers: 0,
+    expiringMembers: 0
+  };
+
+  Promise.all([
+    // Get membership types distribution
+    new Promise((resolve, reject) => {
+      connection.query(queries.membershipTypes, [], (error, results) => {
+        if (error) {
+          reject(error);
+        } else {
+          reportData.membershipTypes = results;
+          resolve();
+        }
+      });
+    }),
+
+    // Get member activity
+    new Promise((resolve, reject) => {
+      connection.query(queries.memberActivity, [startDate, endDate], (error, results) => {
+        if (error) {
+          reject(error);
+        } else {
+          reportData.memberActivity = results;
+          resolve();
+        }
+      });
+    }),
+
+    // Get exhibit popularity
+    new Promise((resolve, reject) => {
+      connection.query(queries.exhibitPopularity, [startDate, endDate], (error, results) => {
+        if (error) {
+          reject(error);
+        } else {
+          reportData.exhibitPopularity = results;
+          resolve();
+        }
+      });
+    }),
+
+    // Get demographics
+    new Promise((resolve, reject) => {
+      connection.query(queries.demographics, [], (error, results) => {
+        if (error) {
+          reject(error);
+        } else {
+          reportData.demographics = results;
+          resolve();
+        }
+      });
+    }),
+
+    // Get total stats
+    new Promise((resolve, reject) => {
+      connection.query(queries.totalStats, [], (error, results) => {
+        if (error) {
+          reject(error);
+        } else {
+          if (results && results[0]) {
+            reportData.totalRevenue = results[0].totalRevenue || 0;
+            reportData.totalMembers = results[0].totalMembers || 0;
+            reportData.activeMembers = results[0].activeMembers || 0;
+            reportData.expiringMembers = results[0].expiringMembers || 0;
+          }
+          resolve();
+        }
+      });
+    })
+  ])
+  .then(() => {
+    res.writeHead(200, { 
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*'
+    });
+    res.end(JSON.stringify(reportData));
+  })
+  .catch(error => {
+    res.writeHead(500, { 
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*'
+    });
+    res.end(JSON.stringify({ 
+      error: 'Failed to generate report',
+      details: error.message 
+    }));
+  });
+};
 const fetchMembershipDetails = (userId, res) => {
   const query = `
       SELECT 
@@ -979,6 +1164,7 @@ const upgradeMembership = (userId, membershipData, res) => {
       }
   );
 };
+
 const getTicketReport = (startDate, endDate, exhibits, res) => {
   const exhibitFilter = exhibits && exhibits.length > 0 ? 
     `AND t.Exhibit_ID IN (${exhibits})` : '';
@@ -1815,6 +2001,59 @@ http.createServer((req, res) => {
     }
   } 
 
+  //Membership Section
+  else if(req.method === 'GET' && req.url.startsWith('/membership-details')){
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const userId = url.searchParams.get('userId');
+
+    if (!userId) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: 'User ID is required' }));
+    }
+    fetchMembershipDetails(userId, res);
+  }
+  else if(req.method === 'POST' && req.url === '/upgrade-membership'){
+      let body = '';
+
+      req.on('data', chunk => {
+          body += chunk.toString();
+      });
+
+      req.on('end', () => {
+          try {
+              const { userId, membershipTier, durationType } = JSON.parse(body);
+              
+              if (!userId || !membershipTier || !durationType) {
+                  res.writeHead(400, { 'Content-Type': 'application/json' });
+                  return res.end(JSON.stringify({ error: 'Missing required fields' }));
+              }
+
+              upgradeMembership(userId, { membershipTier, durationType }, res);
+          } catch (error) {
+              console.error('Error processing membership upgrade:', error);
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Invalid request data' }));
+          }
+      });
+  }
+  else if (req.method === 'GET' && req.url.startsWith('/membership-report')) {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    let startDate = url.searchParams.get('startDate');
+    let endDate = url.searchParams.get('endDate');
+    const types = url.searchParams.get('types');
+
+    if (!startDate || !endDate) {
+      const today = new Date();
+      const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+      startDate = thirtyDaysAgo.toISOString().split('T')[0];
+      endDate = today.toISOString().split('T')[0];
+    }
+
+    const typesList = types ? types.split(',').filter(Boolean) : [];
+    getMembershipReport(startDate, endDate, typesList, res);
+
+  }
+  
   else {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ message: 'Route not found' }));
