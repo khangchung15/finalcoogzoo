@@ -4,7 +4,7 @@ import { useAuth } from '../components/AuthContext';
 
 const TicketsPage = () => {
   const { userRole, userEmail } = useAuth();
-  const isCustomer = userRole === 'Customer'; // Changed to match the working version
+  const isCustomer = userRole === 'Customer';
 
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
@@ -12,6 +12,7 @@ const TicketsPage = () => {
   const [loading, setLoading] = useState(false);
   const [exhibits, setExhibits] = useState([]);
   const [selectedExhibit, setSelectedExhibit] = useState('');
+  const [exhibitsLoading, setExhibitsLoading] = useState(true);
 
   const ticketOptions = [
     { type: 'Child', price: 10, description: 'Ages 3-12' },
@@ -20,24 +21,41 @@ const TicketsPage = () => {
   ];
 
   useEffect(() => {
+    fetchExhibits();
+  }, []);
+
+  useEffect(() => {
     if (isCustomer && userEmail) {
       fetchPurchasedTickets();
-      fetchExhibits();
     }
-  }, [isCustomer, userEmail, purchaseSuccess]); // Added purchaseSuccess dependency back
+  }, [isCustomer, userEmail, purchaseSuccess]);
 
   const fetchExhibits = async () => {
     try {
+      setExhibitsLoading(true);
       const response = await fetch('https://coogzootestbackend-phi.vercel.app/exhibits');
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Fetched exhibits:', data);
-        setExhibits(data);
-      } else {
-        console.error('Failed to fetch exhibits');
+      if (!response.ok) {
+        throw new Error('Failed to fetch exhibits');
       }
+      const data = await response.json();
+      console.log('Fetched exhibits:', data); // Debug log
+      
+      // Ensure data is in the correct format
+      const formattedData = data.map(exhibit => ({
+        id: exhibit.id || exhibit.ID, // Handle both cases
+        name: exhibit.name || exhibit.Name, // Handle both cases
+        isClosed: exhibit.isClosed || exhibit.is_closed // Handle both cases
+      }));
+      
+      // Filter out closed exhibits
+      const openExhibits = formattedData.filter(exhibit => !exhibit.isClosed);
+      console.log('Formatted exhibits:', openExhibits); // Debug log
+      
+      setExhibits(openExhibits);
     } catch (error) {
       console.error('Error fetching exhibits:', error);
+    } finally {
+      setExhibitsLoading(false);
     }
   };
 
@@ -63,7 +81,10 @@ const TicketsPage = () => {
   };
 
   const handleExhibitSelection = (e) => {
-    const selectedValue = e.target.value ? parseInt(e.target.value, 10) : '';
+    const value = e.target.value;
+    console.log('Selected exhibit value:', value); // Debug log
+    const selectedValue = value ? parseInt(value, 10) : '';
+    console.log('Parsed exhibit value:', selectedValue); // Debug log
     setSelectedExhibit(selectedValue);
   };
 
@@ -112,6 +133,7 @@ const TicketsPage = () => {
     });
   };
 
+  
   return (
     <div className="tickets-container">
       <h1>Purchase Tickets</h1>
@@ -138,21 +160,34 @@ const TicketsPage = () => {
               <h3>Anyday Access to the Zoo</h3>
               <p>Selected Ticket: {selectedTicket.type} - ${selectedTicket.price}</p>
 
-              <label htmlFor="exhibitSelect">Choose an Exhibit:</label>
-              <select
-                id="exhibitSelect"
-                value={selectedExhibit || ''}
-                onChange={handleExhibitSelection}
-                required
+              <div className="exhibit-selection">
+                <label htmlFor="exhibitSelect">Choose an Exhibit:</label>
+                {exhibitsLoading ? (
+                  <p>Loading exhibits...</p>
+                ) : exhibits.length > 0 ? (
+                  <select
+                    id="exhibitSelect"
+                    value={selectedExhibit || ''}
+                    onChange={handleExhibitSelection}
+                    required
+                  >
+                    <option value="">Select an Exhibit</option>
+                    {exhibits.map((exhibit) => (
+                      <option key={exhibit.id} value={exhibit.id}>
+                        {exhibit.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <p>No exhibits available</p>
+                )}
+              </div>
+
+              <button 
+                type="submit" 
+                className="purchase-button"
+                disabled={!selectedExhibit || exhibitsLoading}
               >
-                <option value="">Select an Exhibit</option>
-                {exhibits.map((exhibit) => (
-                  <option key={exhibit.id} value={exhibit.id}>
-                    {exhibit.name}
-                  </option>
-                ))}
-              </select>
-              <button type="submit" className="purchase-button">
                 Purchase Ticket
               </button>
             </form>
