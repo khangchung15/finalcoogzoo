@@ -32,6 +32,79 @@
   border-radius: 8px; /* Optional: adds rounded corners to the image */
 }
 
+.new-badge {
+  background-color: #ff5722;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-weight: bold;
+  font-size: 0.875rem;
+}
+
+.banner-content h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.2em;
+}
+
+.banner-content p {
+  margin: 0;
+  color: #555;
+}
+
+.latest-exhibit-banner {
+  position: absolute;
+  top: 110px;
+  left: 0px;
+  background-color: #d73f58;
+  color: #333;
+  padding: 10px 25px;
+  border-radius: 0; /* Removed border radius for full-width banner */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  width: 100%; /* Full width */
+  max-width: none;
+}
+
+.banner-content {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  position: relative;
+  max-width: 1200px; /* Keep content width controlled */
+  margin: 0 auto; /* Center the content */
+  padding: 0 20px; 
+}
+
+.close-banner {
+  position: absolute;
+  right: 20px; /* Adjust based on the content padding */
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #333;
+  font-size: 24px;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+  padding: 0;
+}
+
+.close-banner:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.close-banner:focus {
+  outline: none;
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
 .exhibit-card h4 {
   margin: 10px 0; /* Spacing for the heading */
   font-size: 1.2em; /* Slightly larger font for the name */

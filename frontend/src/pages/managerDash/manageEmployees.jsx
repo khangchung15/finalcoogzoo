@@ -3,6 +3,7 @@ import './manageEmployees.css';
 
 function ManageEmployees({employeeId, setEmployeeId, showSidebar }) {
   const [employees, setEmployees] = useState([]);
+  const [exhibits, setExhibits] = useState([]);
   const [employeeData, setEmployeeData] = useState({
     firstName: '',
     lastName: '',
@@ -42,6 +43,24 @@ function ManageEmployees({employeeId, setEmployeeId, showSidebar }) {
       }
     };
     fetchEmployees();
+  }, []);
+
+  useEffect(() => {
+    const fetchExhibits = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/exhibits');
+        if (!response.ok) {
+          throw new Error('Failed to fetch exhibits');
+        }
+        const data = await response.json();
+        setExhibits(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchExhibits();
   }, []);
 
   const handleEditClick = (employee) => {
@@ -101,7 +120,52 @@ function ManageEmployees({employeeId, setEmployeeId, showSidebar }) {
   const validateEmployeeData = (data) => {
     const phonePattern = /^\d{3}-\d{3}-\d{4}$/;
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const namePattern = /^[A-Za-z-]+$/;
+    const deptRolePattern = /^[A-Za-z\s]+$/;
     
+    if (!namePattern.test(data.firstName)) {
+      return "First name can only contain letters and hyphens.";
+    }
+    if (data.firstName.length < 2 || data.firstName.length > 50) {
+      return "First name must be between 2 and 50 characters.";
+    }
+
+    if (!deptRolePattern.test(data.department)) {
+      return "Department can only contain letters and spaces.";
+    }
+    if (data.department.trim().length < 2 || data.department.trim().length > 50) {
+      return "Department must be between 2 and 50 characters.";
+    }
+  
+    if (!deptRolePattern.test(data.role)) {
+      return "Role can only contain letters and spaces.";
+    }
+    if (data.role.trim().length < 2 || data.role.trim().length > 50) {
+      return "Role must be between 2 and 50 characters.";
+    }
+
+    const birthDate = new Date(data.birthDate);
+    const today = new Date();
+    
+    if (isNaN(birthDate.getTime())) {
+      return "Invalid birth date";
+    }
+  
+    if (birthDate > today) {
+      return "Birth date cannot be in the future";
+    }
+  
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    if (age < 18) {
+      return "Employee must be at least 18 years old.";
+    }
+
     if (!data.firstName || !data.lastName || !data.birthDate || !data.email || 
         !data.phone || !data.department || !data.role || !data.startDate || 
         !data.status) {
@@ -115,7 +179,22 @@ function ManageEmployees({employeeId, setEmployeeId, showSidebar }) {
     if (!emailPattern.test(data.email)) {
       return "Please enter a valid email address.";
     }
-    
+
+    const startDate = new Date(data.startDate);
+    if (isNaN(startDate.getTime())) {
+      return "Invalid start date";
+    }
+  
+    if (data.endDate) {
+      const endDate = new Date(data.endDate);
+      if (isNaN(endDate.getTime())) {
+        return "Invalid end date";
+      }
+      if (endDate < startDate) {
+        return "End date cannot be before start date";
+      }
+    }
+  
     // Only validate password for new employees or if password is being changed
     if (!data.id && !data.password) { // New employee
       return "Password is required for new employees.";
@@ -160,7 +239,16 @@ function ManageEmployees({employeeId, setEmployeeId, showSidebar }) {
       const data = await response.json();
       
       if (response.ok) {
-        setModalMessage('Employee added successfully');
+        const credentialsMessage = `Employee added successfully!
+      
+        LOGIN CREDENTIALS:
+        Email: ${data.loginCredentials.email}
+        Password: ${data.loginCredentials.password}
+        
+        Please provide these credentials to the employee.
+        The employee should change their password upon first login.`;
+        
+        setModalMessage(credentialsMessage);
         setEmployeeData({
           firstName: '',
           lastName: '',
@@ -260,18 +348,32 @@ function ManageEmployees({employeeId, setEmployeeId, showSidebar }) {
             onChange={(e) => setEmployeeData({ ...employeeData, startDate: e.target.value })}
             required
           />
-          <input
-            type="number"
-            placeholder="Exhibit ID (optional)"
-            value={employeeData.exhibitId}
-            onChange={(e) => setEmployeeData({ ...employeeData, exhibitId: e.target.value ? parseInt(e.target.value, 10) : null })}
-          />
-          <input
-            type="number"
-            placeholder="Supervisor ID (optional)"
-            value={employeeData.supervisorId}
-            onChange={(e) => setEmployeeData({ ...employeeData, supervisorId: e.target.value ? parseInt(e.target.value, 10) : null })}
-          />
+          <label>Assign to Exhibit</label>
+          <select
+              value={employeeData.exhibitID}
+              onChange={(e) => setEmployeeData({...employeeData, exhibitID: e.target.value })}
+          >
+              <option value="">Select Exhibit</option>
+              {exhibits.map((exhibit) => (
+                  <option key={exhibit.id} value={exhibit.id}>
+                      {exhibit.name}
+                  </option>
+              ))}
+          </select>
+          <label>Assign to Supervisor</label>
+          <select
+              value={employeeData.supervisorID}
+              onChange={(e) => setEmployeeData({...employeeData, supervisorID: e.target.value })}
+          >
+              <option value="">Select Supervisor</option>
+              {employees
+                .filter(emp => emp.role.toLowerCase() === "manager")
+                .map((manager) => (
+                  <option key={manager.id} value={manager.id}>
+                    ID: {manager.id}, {manager.lastName}
+                  </option>
+                ))}
+          </select>
           <select
             value={employeeData.status}
             onChange={(e) => setEmployeeData({ ...employeeData, status: e.target.value })}
@@ -295,7 +397,7 @@ function ManageEmployees({employeeId, setEmployeeId, showSidebar }) {
 
       {/* display employee information */}
       <div className="employee-list">
-        <h2>Employee List</h2>
+        <h2>Employee Records</h2>
         <input
           type="text"
           placeholder="Search employees..."
@@ -426,18 +528,32 @@ function ManageEmployees({employeeId, setEmployeeId, showSidebar }) {
               value={updateData.startDate}
               onChange={(e) => setUpdateData({ ...updateData, startDate: e.target.value })}
             />
-            <input
-              type="number"
-              placeholder="Exhibit ID (optional)"
-              value={updateData.exhibitID || ''}
-              onChange={(e) => setUpdateData({ ...updateData, exhibitID: e.target.value ? parseInt(e.target.value, 10) : null })}
-            />
-            <input
-              type="number"
-              placeholder="Supervisor ID (optional)"
-              value={updateData.supervisorID || ''}
-              onChange={(e) => setUpdateData({ ...updateData, supervisorID: e.target.value ? parseInt(e.target.value, 10) : null })}
-            />
+            <label>Assign to Exhibit</label>
+              <select
+                  value={updateData.exhibitID}
+                  onChange={(e) => setUpdateData({...updateData, exhibitID: e.target.value })}
+              >
+                  <option value="">Select Exhibit</option>
+                  {exhibits.map((exhibit) => (
+                      <option key={exhibit.id} value={exhibit.id}>
+                          {exhibit.name}
+                      </option>
+                  ))}
+              </select>
+            <label>Assign to Supervisor</label>
+            <select
+                value={updateData.supervisorID}
+                onChange={(e) => setEmployeeData({...updateData, supervisorID: e.target.value })}
+            >
+                <option value="">Select Supervisor</option>
+                {employees
+                  .filter(emp => emp.role.toLowerCase() === "manager")
+                  .map((manager) => (
+                    <option key={manager.id} value={manager.id}>
+                      ID: {manager.id}, {manager.lastName}
+                    </option>
+                  ))}
+            </select>
             <select
               value={updateData.status}
               onChange={(e) => setUpdateData({ ...updateData, status: e.target.value })}
@@ -461,7 +577,7 @@ function ManageEmployees({employeeId, setEmployeeId, showSidebar }) {
       {modalMessage && (
         <div className="modal">
           <div className="modal-content">
-            <p>{modalMessage}</p>
+            <p className="modal-message">{modalMessage}</p>
             <button onClick={closeModal}>Close</button>
           </div>
         </div>

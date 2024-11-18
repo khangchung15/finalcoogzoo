@@ -9,7 +9,7 @@ const Events = () => {
 
   useEffect(() => {
     const fetchEvents = async () => {
-      try { 
+      try {
         const response = await fetch('http://localhost:5000/events');
         if (!response.ok) {
           throw new Error('Failed to fetch events');
@@ -124,29 +124,28 @@ const Events = () => {
             {events.map(event => {
   // Format the time string (assuming the input format is 'HH:MM:SS')
   const formatTime = (timeString) => {
-    if (!timeString) {
-      return "N/A";  // Return "N/A" if timeString is null, empty, or invalid
-    }
-    const [hours, minutes, seconds] = timeString.split(':');
-    const date = new Date();
-    date.setHours(hours, minutes, seconds);
-  
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+    const [hours, minutes, seconds] = timeString.split(':'); // Split the time string
+    const date = new Date(); // Create a new date object
+    date.setHours(hours, minutes, seconds); // Set the time on the date object
+    
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }); // 12-hour format with AM/PM
   };
 
   return (
-    <tr key={event.Id}>
-      {/* Keep the date the same as before */}
-      <td>{formatDate(event.Date)}</td>
-      {/* Format StartTime and EndTime */}
-      <td>{formatTime(event.StartTime)}</td>
-      <td>{formatTime(event.EndTime)}</td>
-      <td>{event.Name}</td>
-      <td>{event.Location}</td>
-    </tr>
-  );
-})}
-
+        <tr key={event.id}>
+        {/* Change from event.Date to event.date */}
+        <td>{formatDate(event.date)}</td>
+        {/* Change from event.StartTime to event.startTime */}
+        <td>{formatTime(event.startTime)}</td>
+        {/* Change from event.EndTime to event.endTime */}
+        <td>{formatTime(event.endTime)}</td>
+        {/* Change from event.Name to event.name */}
+        <td>{event.name}</td>
+        {/* Change from event.Location to event.location */}
+        <td>{event.location}</td>
+        </tr>
+        );
+      })}
             </tbody>
           </table>
         </div>

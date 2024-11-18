@@ -8,6 +8,7 @@ import ManageShowcases from './manageShowcases'
 import GiftManager from '../giftmanager';
 import TicketReport from '../ticketreport';
 import MembershipReport from '../membershipreport';
+import ManageEvents from './manageEvents'
 
 function ManagerDash() {
   const [showSidebar, setShowSidebar] = useState(true);
@@ -69,6 +70,15 @@ function ManagerDash() {
     location: '',
     imageLink: '',
   });
+
+  const [eventData, setEventData] = useState({
+    name: '',
+    description: '',
+    date: '',
+    startTime: '',
+    endTime: '',
+    location: '',
+  });
   
   const [managerEmail] = useState("manager@example.com");
   const [employeeId, setEmployeeId] = useState('');
@@ -76,6 +86,7 @@ function ManagerDash() {
   const [animalId, setAnimalId] = useState('');
   const [cageId, setCageId] = useState('');
   const [showcaseId, setShowcaseId] = useState('');
+  const [eventId, setEventId] = useState('');
   
   const showModalMessage = (message) => {
     setModalMessage(message);
@@ -332,6 +343,49 @@ function ManagerDash() {
     }
   };
 
+  const addEvent = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/add-event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(eventData),
+      });
+      if (response.ok) {
+        showModalMessage('Event added successfully!');
+        setEventData({
+          name: '',
+          description: '',
+          date: '',
+          startTime: '',
+          endTime: '',
+          location: '',
+        });
+      } else {
+        showModalMessage('Failed to add event.');
+      }
+    } catch (error) {
+      console.error(error);
+      showModalMessage('Error adding event.');
+    }
+  };
+  const deleteEvent = async () => {
+    try {
+      const response = await fetch(`http://localhost:5000/remove-event?id=${eventId}`, {
+        method: 'DELETE',
+      });
+      if (response.ok) {
+        showModalMessage('Event removed successfully!');
+        setEventId('');
+      } else {
+        showModalMessage('Failed to remove event.');
+      }
+    } catch (error) {
+      console.error(error);
+      showModalMessage('Error removing event.');
+    }
+  };
+
+
   return (
     <div className="manager-dash">
       <button className="toggle-sidebar" onClick={toggleSidebar}>
@@ -431,6 +485,19 @@ function ManagerDash() {
         {activeSection === 'memberreport' && (
           <MembershipReport />
         )}
+        
+        {activeSection === 'events' && (
+          <ManageEvents
+            eventData={eventData}
+            setEventData={setEventData}
+            addEvent={addEvent}
+            eventId={eventId}
+            setEventId={setEventId}
+            deleteEvent={deleteEvent}
+            showSidebar={showSidebar}
+          />
+        )}
+
         {/* Similar sections for Animal Showcases, etc. */}
       </div>
 

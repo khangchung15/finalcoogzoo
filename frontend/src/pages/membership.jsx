@@ -13,11 +13,19 @@ const Membership = () => {
   const [currentUserMembership, setCurrentUserMembership] = useState('basic');
   const [loading, setLoading] = useState(false);
   const [showExpirationWarning, setShowExpirationWarning] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [selectedMembership, setSelectedMembership] = useState(null);
   const [membershipDetails, setMembershipDetails] = useState({
     expiryDate: null,
     daysUntilExpiry: null,
     memberType: 'basic'
   });
+
+  const membershipLevels = {
+    'basic': 1,
+    'vip': 2,
+    'premium': 3
+  };
 
   useEffect(() => {
     if (isCustomer && userEmail) {
@@ -52,6 +60,11 @@ const Membership = () => {
       fetchMembershipDetails();
     }
   }, [isCustomer, userEmail]);
+
+  const handleMembershipChange = (membership) => {
+    setSelectedMembership(membership);
+    setShowConfirmModal(true);
+  };
 
   const handleUpgrade = async (tier) => {
     setLoading(true);
@@ -92,6 +105,23 @@ const Membership = () => {
     }
   };
 
+  const handleConfirm = async () => {
+    await handleUpgrade(selectedMembership.tier.toLowerCase());
+    setShowConfirmModal(false);
+    setSelectedMembership(null);
+  };
+
+  const getButtonText = (currentPlan, targetPlan) => {
+    if (currentPlan === targetPlan.toLowerCase()) return 'Current Plan';
+    
+    const currentLevel = membershipLevels[currentPlan];
+    const targetLevel = membershipLevels[targetPlan.toLowerCase()];
+
+    return currentLevel > targetLevel ? 
+      `Downgrade to ${targetPlan}` : 
+      `Upgrade to ${targetPlan}`;
+  };
+
   const memberships = [
     {
       tier: 'Basic',
@@ -106,7 +136,7 @@ const Membership = () => {
       monthlyPrice: 20,
       annualPrice: 200,
       description: 'Enhanced benefits for regular visitors',
-      benefits: ['Basic access', 'Free Parking', '10% Shop Discount'],
+      benefits: ['Basic access', 'Free Parking', '10% In-Store Discounts'],
       image: image2
     },
     {
@@ -117,7 +147,7 @@ const Membership = () => {
       benefits: [
         'All VIP benefits',
         'Entry to exclusive exhibits',
-        '20% Shop Discount',
+        '20% In-Store Discount',
         'Guest Passes'
       ],
       image: image3
@@ -133,6 +163,44 @@ const Membership = () => {
   return (
     <div className="memberships-container">
       <h1>Membership Options</h1>
+
+      {showConfirmModal && (
+        <div className="modal-overlay">
+          <div className="confirmation-modal">
+            <h3>Confirm Membership Change</h3>
+            <p>
+              {currentUserMembership === selectedMembership.tier.toLowerCase() 
+                ? "You're already on this plan."
+                : `Are you sure you want to ${membershipLevels[currentUserMembership] > membershipLevels[selectedMembership.tier.toLowerCase()] ? 'downgrade' : 'upgrade'} 
+                   from ${currentUserMembership.toUpperCase()} to ${selectedMembership.tier}?`
+              }
+            </p>
+            {selectedDuration === 'monthly' ? (
+              <p>Monthly price: ${selectedMembership.monthlyPrice}/month</p>
+            ) : (
+              <p>Annual price: ${selectedMembership.annualPrice}/year</p>
+            )}
+            <div className="modal-buttons">
+              <button 
+                className="confirm-button"
+                onClick={handleConfirm}
+                disabled={currentUserMembership === selectedMembership.tier.toLowerCase()}
+              >
+                Confirm
+              </button>
+              <button 
+                className="cancel-button"
+                onClick={() => {
+                  setShowConfirmModal(false);
+                  setSelectedMembership(null);
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isCustomer ? (
         <>
@@ -221,9 +289,9 @@ const Membership = () => {
                     <button
                       className={`upgrade-button ${isCurrentPlan ? 'current-plan' : ''}`}
                       disabled={isCurrentPlan || loading}
-                      onClick={() => handleUpgrade(membership.tier.toLowerCase())}
+                      onClick={() => handleMembershipChange(membership)}
                     >
-                      {isCurrentPlan ? 'Current Plan' : `Upgrade to ${membership.tier}`}
+                      {getButtonText(currentUserMembership, membership.tier)}
                     </button>
                   </div>
                 </div>

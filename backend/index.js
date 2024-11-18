@@ -6,11 +6,7 @@ const connection = mysql.createConnection({
   host: 'database-1.cpia0w4c2ec6.us-east-2.rds.amazonaws.com',
   user: 'admin',
   password: 'zoodatabase1',
-  database: 'ZooManagement',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  connectTimeout: 60000,
+  database: 'ZooManagement'
 });
 
 connection.connect((err) => {
@@ -21,63 +17,26 @@ connection.connect((err) => {
   console.log('Connected to the ZooManagement database.');
 });
 
-function handleDisconnect() {
-  connection.connect((err) => {
-    if (err) {
-      console.error('Error connecting to the database:', err);
-      setTimeout(handleDisconnect, 2000);
-    } else {
-      console.log('Connected to the ZooManagement database.');
-    }
-  });
-
-  connection.on('error', (err) => {
-    console.error('Database error:', err);
-    if (err.code === 'PROTOCOL_CONNECTION_LOST' || 
-        err.code === 'ECONNRESET' || 
-        err.code === 'PROTOCOL_ENQUEUE_AFTER_FATAL_ERROR') {
-      handleDisconnect();
-    } else {
-      throw err;
-    }
-  });
-}
-handleDisconnect();
-
 // Set CORS headers
 const setCORSHeaders = (res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Max-Age', '3600');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, POST, OPTIONS, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 };
 
 // Function to handle database errors
 const handleDBError = (res, error) => {
-  console.error('Database error:', error);
-  setCORSHeaders(res);
+  console.error('Error executing query:', error);
   res.writeHead(500, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({ 
-    error: 'Error processing the request',
-    details: error.message,
-    stack: error.stack 
-  }));
+  res.end(JSON.stringify({ error: 'Error processing the request' }));
 };
 
 const initializeDatabase = () => {
   return new Promise((resolve, reject) => {
     const queries = [
-      // Drop existing triggers
+      // Drop triggers individually
       `DROP TRIGGER IF EXISTS after_event_insert`,
       `DROP TRIGGER IF EXISTS after_exhibit_insert`,
-      `DROP TRIGGER IF EXISTS exhibit_status_change`,
-      `DROP TRIGGER IF EXISTS new_exhibit_flag`,
-      `DROP TRIGGER IF EXISTS exhibit_update`,
-      
-      // Add columns to Exhibit table if they don't exist
-      `ALTER TABLE Exhibit
-       ADD COLUMN IF NOT EXISTS is_new BOOLEAN DEFAULT FALSE,
-       ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`,
       
       // Create EventNotifications table
       `CREATE TABLE IF NOT EXISTS EventNotifications (
@@ -101,7 +60,7 @@ const initializeDatabase = () => {
         FOREIGN KEY (exhibit_id) REFERENCES Exhibit(ID)
       )`,
 
-      // Create event insert trigger
+      // Create event trigger with plain text
       `CREATE TRIGGER after_event_insert
       AFTER INSERT ON Event
       FOR EACH ROW
@@ -130,7 +89,7 @@ const initializeDatabase = () => {
         FROM Customer;
       END`,
 
-      // Create exhibit insert trigger
+      // Create exhibit trigger with plain text
       `CREATE TRIGGER after_exhibit_insert
       AFTER INSERT ON Exhibit
       FOR EACH ROW
@@ -155,115 +114,6 @@ const initializeDatabase = () => {
             '\n\nCome visit us to explore this exciting new addition!'
           ),
           FALSE
-        );
-      END`,
-
-      // Create exhibit status change trigger
-      `CREATE TRIGGER exhibit_status_change
-      AFTER UPDATE ON Exhibit
-      FOR EACH ROW
-      BEGIN
-        IF NEW.is_closed != OLD.is_closed THEN
-          INSERT INTO ExhibitNotifications (exhibit_id, message, notification_sent)
-          VALUES (
-            NEW.ID,
-            CASE 
-              WHEN NEW.is_closed = 1 
-              THEN CONCAT(
-                'Exhibit Closure: ', NEW.Name, '\n',
-                'Location: ', NEW.Location, '\n',
-                'Reason: ', COALESCE(NEW.closure_reason, 'Maintenance'), '\n',
-                'From: ', DATE_FORMAT(NEW.closure_start, '%M %D, %Y'), 
-                ' To: ', DATE_FORMAT(NEW.closure_end, '%M %D, %Y')
-              )
-              ELSE CONCAT(
-                'Exhibit Reopening: ', NEW.Name, '\n',
-                'Location: ', NEW.Location, '\n',
-                'Regular Hours: ', COALESCE(NEW.Hours, 'Standard Zoo Hours')
-              )
-            END,
-            FALSE
-          );
-        END IF;
-      END`,
-
-      // Create new exhibit flag trigger
-      `CREATE TRIGGER new_exhibit_flag
-      BEFORE INSERT ON Exhibit
-      FOR EACH ROW
-      BEGIN
-        UPDATE Exhibit SET is_new = FALSE WHERE is_new = TRUE;
-        SET NEW.is_new = TRUE;
-        SET NEW.created_at = CURRENT_TIMESTAMP;
-      END`,
-
-      // Create exhibit update trigger
-      `CREATE TRIGGER exhibit_update
-      AFTER UPDATE ON Exhibit
-      FOR EACH ROW
-      BEGIN
-        IF NEW.Name != OLD.Name 
-          OR NEW.Location != OLD.Location 
-          OR NEW.Hours != OLD.Hours 
-          OR NEW.Type != OLD.Type 
-        THEN
-          INSERT INTO ExhibitNotifications (exhibit_id, message, notification_sent)
-          VALUES (
-            NEW.ID,
-            CONCAT(
-              'Exhibit Update: ', NEW.Name, '\n',
-              CASE 
-                WHEN NEW.Name != OLD.Name 
-                THEN CONCAT('Name updated from ', OLD.Name, ' to ', NEW.Name, '\n')
-                ELSE ''
-              END,
-              CASE 
-                WHEN NEW.Location != OLD.Location 
-                THEN CONCAT('Location updated from ', OLD.Location, ' to ', NEW.Location, '\n')
-                ELSE ''
-              END,
-              CASE 
-                WHEN NEW.Hours != OLD.Hours 
-                THEN CONCAT('Hours updated from ', OLD.Hours, ' to ', NEW.Hours, '\n')
-                ELSE ''
-              END,
-              CASE 
-                WHEN NEW.Type != OLD.Type 
-                THEN CONCAT('Type updated from ', OLD.Type, ' to ', NEW.Type)
-                ELSE ''
-              END
-            ),
-            FALSE
-          );
-        END IF;
-      END`,
-
-      // Create audit log table
-      `CREATE TABLE IF NOT EXISTS AuditLog (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        table_name VARCHAR(50),
-        record_id INT,
-        action_type ENUM('INSERT', 'UPDATE', 'DELETE'),
-        changed_fields JSON,
-        changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )`,
-
-      // Create exhibit audit trigger
-      `CREATE TRIGGER exhibit_audit
-      AFTER UPDATE ON Exhibit
-      FOR EACH ROW
-      BEGIN
-        INSERT INTO AuditLog (table_name, record_id, action_type, changed_fields)
-        VALUES (
-          'Exhibit',
-          NEW.ID,
-          'UPDATE',
-          JSON_OBJECT(
-            'name', CASE WHEN NEW.Name != OLD.Name THEN JSON_ARRAY(OLD.Name, NEW.Name) ELSE NULL END,
-            'location', CASE WHEN NEW.Location != OLD.Location THEN JSON_ARRAY(OLD.Location, NEW.Location) ELSE NULL END,
-            'hours', CASE WHEN NEW.Hours != OLD.Hours THEN JSON_ARRAY(OLD.Hours, NEW.Hours) ELSE NULL END,
-            'status', CASE WHEN NEW.is_closed != OLD.is_closed THEN JSON_ARRAY(OLD.is_closed, NEW.is_closed) ELSE NULL END
-          )
         );
       END`
     ];
@@ -328,6 +178,14 @@ const fetchEmployees = (res) => {
 };
 const addEmployee = (employeeData, res) => {
   const { firstName, lastName, birthDate, email, password, phone, department, role, startDate, exhibitID, status, supervisorID, endDate, is_deleted } = employeeData;
+  
+  // validate employee data
+  const validationError = validateEmployeeData(employeeData);
+  if (validationError) {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ message: validationError }));
+  }
+
   checkEmailExists(email, (err, exists) => {
     if (err) return handleDBError(res, err);
     if (exists) {
@@ -357,7 +215,13 @@ const addEmployee = (employeeData, res) => {
         await connection.promise().commit();
         
         res.writeHead(201, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: 'Employee added successfully' }));
+        res.end(JSON.stringify({ 
+          message: 'Employee added successfully',
+          loginCredentials: {
+            email: email,
+            password: password
+          } 
+        }));
 
       } catch (error) {
         // If any error occurs, rollback the transaction
@@ -411,6 +275,12 @@ const removeEmployee = (employeeId, res) => {
   });
 };
 const updateEmployee = (employeeId, employeeData, res) => {
+  // Validate employee data
+  const validationError = validateEmployeeData(employeeData);
+  if (validationError) {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ message: validationError }));
+  }
   const normalizedData = {
     First_Name: employeeData.firstName,
     Last_Name: employeeData.lastName,
@@ -483,7 +353,92 @@ const updateEmployee = (employeeId, employeeData, res) => {
     }
   });
 };
+const validateEmployeeData = (employeeData) => {
+  const namePattern = /^[A-Za-z-]+$/;
+  
+  // Validate first name
+  if (!employeeData.firstName || !namePattern.test(employeeData.firstName)) {
+    return "First name can only contain letters and hyphens";
+  }
+
+  // Validate last name
+  if (!employeeData.lastName || !namePattern.test(employeeData.lastName)) {
+    return "Last name can only contain letters and hyphens";
+  }
+
+  // Validate age
+  if (!employeeData.birthDate) {
+    return "Birth date is required";
+  }
+
+  const birthDate = new Date(employeeData.birthDate);
+  const today = new Date();
+  
+  // Check if birth date is valid
+  if (isNaN(birthDate.getTime())) {
+    return "Invalid birth date";
+  }
+
+  // Check if birth date is in the future
+  if (birthDate > today) {
+    return "Birth date cannot be in the future";
+  }
+
+  // Calculate age
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+
+  if (age < 18) {
+    return "Employee must be at least 18 years old";
+  }
+
+  const deptRolePattern = /^[A-Za-z\s]+$/;
+  
+  // Validate department
+  if (!deptRolePattern.test(employeeData.department)) {
+    return "Department can only contain letters and spaces";
+  }
+  
+  // Validate role
+  if (!deptRolePattern.test(employeeData.role)) {
+    return "Role can only contain letters and spaces";
+  }
+  
+  return null;
+};
 //Exhibit Section
+const updateExhibitNewStatus = (exhibitId, isNew, res) => {
+  connection.query(
+    'UPDATE Exhibit SET is_new = ? WHERE ID = ?',
+    [isNew, exhibitId],
+    (err) => {
+      if (err) return handleDBError(res, err);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Exhibit status updated successfully' }));
+    }
+  );
+};
+const fetchLatestNewExhibit = (res) => {
+  const query = `
+    SELECT 
+      *,
+      DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as formatted_date
+    FROM Exhibit 
+    WHERE is_new = TRUE 
+    ORDER BY created_at DESC 
+    LIMIT 1
+  `;
+
+  connection.query(query, (error, results) => {
+    if (error) return handleDBError(res, error);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(results[0] || null));
+  });
+};
 const fetchExhibits = (res) => {
   connection.query('SELECT * FROM Exhibit WHERE is_deleted = 0', (error, results) => {
     if (error) {
@@ -508,7 +463,46 @@ const fetchExhibits = (res) => {
 
     try {
       const responseData = JSON.stringify(exhibits);
-      console.log('Fetched exhibits:', responseData);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(responseData);
+    } catch (jsonError) {
+      console.error('Error serializing JSON:', jsonError);
+      res.writeHead(500, { 'Content-Type': 'text/plain' });
+      res.end('Internal Server Error: Unable to process response.');
+    }
+  });
+};
+
+const fetchPublicExhibits = (res) => {
+  const query = `
+    SELECT 
+      ID,
+      Name as name,
+      Location as location,
+      Description as description,
+      Hours as hours,
+      Type as type,
+      is_closed,
+      closure_reason,
+      closure_start,
+      closure_end,
+      Image_Link as imageLink,
+      is_new,
+      created_at,
+      DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as formatted_date
+    FROM Exhibit 
+    WHERE is_deleted = 0
+    ORDER BY created_at DESC
+  `;
+
+  connection.query(query, (error, results) => {
+    if (error) {
+      console.error('Database error:', error);
+      return handleDBError(res, error);
+    }
+
+    try {
+      const responseData = JSON.stringify(results);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(responseData);
     } catch (jsonError) {
@@ -521,16 +515,53 @@ const fetchExhibits = (res) => {
 const addExhibit = (exhibitData, res) => {
   const { name, location, description, hours, type, isClosed, closureReason, closureStart, closureEnd, imageLink } = exhibitData;
   
-  connection.query(
-    `INSERT INTO Exhibit (Name, Location, Description, Hours, Type, is_closed, closure_reason, closure_start, closure_end, Image_Link) 
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [name, location, description, hours, type, isClosed || 0, closureReason || null, closureStart || null, closureEnd || null, imageLink],
-    (err) => {
+  // Disable safe mode for update
+  connection.query('SET SQL_SAFE_UPDATES = 0', (err) => {
+    if (err) return handleDBError(res, err);
+
+    // First, update all existing exhibits to not be new
+    connection.query('UPDATE Exhibit SET is_new = FALSE WHERE is_new = TRUE', (err) => {
       if (err) return handleDBError(res, err);
-      res.writeHead(201, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ message: 'Exhibit added successfully.' }));
-    }
-  );
+
+      // Then insert the new exhibit
+      connection.query(
+        `INSERT INTO Exhibit (
+          Name, 
+          Location, 
+          Description,
+          Hours, 
+          Type, 
+          is_closed, 
+          closure_reason, 
+          closure_start, 
+          closure_end, 
+          Image_Link,
+          is_new,
+          created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE, CURRENT_TIMESTAMP)`,
+        [
+          name, 
+          location,
+          description, 
+          hours, 
+          type, 
+          isClosed || 0, 
+          closureReason || null, 
+          closureStart || null, 
+          closureEnd || null, 
+          imageLink
+        ],
+        (err) => {
+          // Re-enable safe mode
+          connection.query('SET SQL_SAFE_UPDATES = 1', () => {
+            if (err) return handleDBError(res, err);
+            res.writeHead(201, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ message: 'Exhibit added successfully.' }));
+          });
+        }
+      );
+    });
+  });
 };
 const updateExhibit = (exhibitId, exhibitData, res) => {
   
@@ -1105,21 +1136,111 @@ const fetchAnimals = (res) => {
   });
 };
 
-// Fetch all events from the database
+//Event Section
 const fetchEvents = (res) => {
   connection.query('SELECT * FROM Event', (error, results) => {
-    if (error) return handleDBError(res, error);
-
-    if (results.length === 0) {
+    if (error) {
+      console.error('Database error:', error);
+      return handleDBError(res, error);
+    }
+    try {
+      // Map database fields
+      const events = results.map(event => ({
+        id: event.Event_ID,
+        name: event.Name,
+        description: event.Description,
+        date: event.Date ? new Date(event.Date).toISOString().split('T')[0] : null,
+        startTime: event.StartTime,
+        endTime: event.EndTime,
+        location: event.Location
+      }));
+      // Single response with data
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify([])); // Return empty array if no events
-    } else {
-      console.log('Fetched events:', JSON.stringify(results, null, 2));
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(results));
+      res.end(JSON.stringify(events));
+    } catch (jsonError) {
+      console.error('Error serializing JSON:', jsonError);
+      if (!res.headersSent) {
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        res.end('Internal Server Error: Unable to process response.');
+      }
     }
   });
 };
+const addEvent = (eventData, res) => {
+  const { name, description, date, startTime, endTime, location } = eventData;
+    connection.query(
+      `INSERT INTO Event (Name, Description, Date, StartTime, EndTime, Location) 
+      VALUES (?, ?, ?, ?, ?, ?)`,
+      [ name, description, date, startTime, endTime, location ],
+      (err) => {
+        if (err) return handleDBError(res, err);
+        res.writeHead(201, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Event added successfully.' }));
+      }
+    );
+};
+// function to remove an event (soft delete)
+const removeEvent = (eventId, res) => {
+  connection.query(
+    'DELETE FROM Event WHERE Event_ID = ?',
+    [eventId],
+    (err, result) => {
+      if (err) return handleDBError(res, err);
+      if (result.affectedRows > 0) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Event removed successfully.' }));
+      } else {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Event not found' }));
+      }
+    }
+  );
+};
+// update event
+const updateEvent = (eventId, eventData, res) => {
+  
+  const normalizedData = {
+    Name: eventData.name,
+    Description: eventData.description,
+    Date: eventData.date,
+    StartTime: eventData.startTime,
+    EndTime: eventData.endTime,
+    Location: eventData.location,
+  };
+  connection.query(
+    `UPDATE Event SET 
+      Name = ?, 
+      Description = ?, 
+      Date = ?,
+      StartTime = ?, 
+      EndTime = ?, 
+      Location = ?
+    WHERE Event_ID = ?`,
+    [
+      normalizedData.Name, 
+      normalizedData.Description, 
+      normalizedData.Date, 
+      normalizedData.StartTime, 
+      normalizedData.EndTime, 
+      normalizedData.Location,
+      eventId
+    ],
+    (err, result) => {
+      if (err) {
+        console.error("Update error:", err);
+        return handleDBError(res, err);
+      }
+      if (result.affectedRows > 0) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Event updated successfully', updatedEvent: normalizedData }));
+      } else {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Event not found' }));
+      }
+    }
+  );
+};
+
 
 
 // Get Animal Health Reports for Employee Dash
@@ -1154,171 +1275,6 @@ const fetchHealthReports = (animalId, startDate, endDate, res) => {
   });
 };
 
-const getTicketReport = async (startDate, endDate, exhibits, res) => {
-  try {
-    // Check connection state and wait for reconnection if needed
-    if (connection.state === 'disconnected') {
-      await new Promise((resolve, reject) => {
-        setTimeout(() => {
-          handleDisconnect();
-          resolve();
-        }, 1000);
-      });
-    }
-
-    console.log('Getting ticket report with:', { startDate, endDate, exhibits });
-
-    // Validate inputs
-    if (!startDate || !endDate) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      return res.end(JSON.stringify({ error: 'Start date and end date are required' }));
-    }
-
-    const exhibitFilter = exhibits && exhibits.length > 0 ?
-      `AND t.Exhibit_ID IN (${exhibits.map(id => parseInt(id, 10)).join(',')})` : '';
-    
-    console.log('Using exhibit filter:', exhibitFilter);
-
-    const queries = {
-    ticketTypes: `
-      SELECT
-        t.Ticket_Type as type,
-        COUNT(*) as count,
-        COALESCE(SUM(t.Price), 0) as revenue
-      FROM Ticket t
-      WHERE t.Purchase_Date BETWEEN ? AND ?
-        ${exhibitFilter}
-      GROUP BY t.Ticket_Type
-      ORDER BY count DESC
-    `,
-   
-    exhibitPopularity: `
-      SELECT
-        e.Name as name,
-        COUNT(t.ID) as tickets,
-        COALESCE(SUM(t.Price), 0) as revenue
-      FROM Exhibit e
-      LEFT JOIN Ticket t ON e.ID = t.Exhibit_ID
-        AND t.Purchase_Date BETWEEN ? AND ?
-      WHERE e.is_deleted = 0
-        ${exhibits && exhibits.length > 0 ? `AND e.ID IN (${exhibits.map(id => parseInt(id, 10)).join(',')})` : ''}
-      GROUP BY e.ID, e.Name
-      ORDER BY tickets DESC
-    `,
-   
-    totalStats: `
-      SELECT
-        COUNT(*) as totalTickets,
-        COALESCE(SUM(Price), 0) as totalRevenue
-      FROM Ticket t
-      WHERE t.Purchase_Date BETWEEN ? AND ?
-        ${exhibitFilter}
-    `
-  };
-
-  const reportData = {
-    ticketTypes: [],
-    exhibitPopularity: [],
-    totalRevenue: 0,
-    totalTickets: 0
-  };
-
-  await Promise.all([
-    new Promise((resolve, reject) => {
-      connection.query(queries.ticketTypes, [startDate, endDate], (error, results) => {
-        if (error) {
-          console.error('Error in ticketTypes query:', error);
-          reject(error);
-        } else {
-          console.log('Ticket types results:', results);
-          reportData.ticketTypes = results.map(type => ({
-            ...type,
-            count: type.count || 0,
-            revenue: type.revenue || 0
-          }));
-          resolve();
-        }
-      });
-    }),
-
-    new Promise((resolve, reject) => {
-      connection.query(queries.exhibitPopularity, [startDate, endDate], (error, results) => {
-        if (error) {
-          console.error('Error in exhibitPopularity query:', error);
-          reject(error);
-        } else {
-          console.log('Exhibit popularity results:', results);
-          reportData.exhibitPopularity = results.map(exhibit => ({
-            ...exhibit,
-            tickets: exhibit.tickets || 0,
-            revenue: exhibit.revenue || 0
-          }));
-          resolve();
-        }
-      });
-    }),
-
-    new Promise((resolve, reject) => {
-      connection.query(queries.totalStats, [startDate, endDate], (error, results) => {
-        if (error) {
-          console.error('Error in totalStats query:', error);
-          reject(error);
-        } else {
-          console.log('Total stats results:', results);
-          if (results && results[0]) {
-            reportData.totalRevenue = results[0].totalRevenue || 0;
-            reportData.totalTickets = results[0].totalTickets || 0;
-          }
-          resolve();
-        }
-      });
-    })
-  ]);
-
-  // Calculate percentages
-  if (reportData.totalTickets > 0) {
-    reportData.ticketTypes = reportData.ticketTypes.map(type => ({
-      ...type,
-      percentage: ((type.count / reportData.totalTickets) * 100).toFixed(1)
-    }));
-
-    reportData.exhibitPopularity = reportData.exhibitPopularity.map(exhibit => ({
-      ...exhibit,
-      percentage: ((exhibit.tickets / reportData.totalTickets) * 100).toFixed(1)
-    }));
-  } else {
-    reportData.ticketTypes = reportData.ticketTypes.map(type => ({
-      ...type,
-      percentage: '0.0'
-    }));
-
-    reportData.exhibitPopularity = reportData.exhibitPopularity.map(exhibit => ({
-      ...exhibit,
-      percentage: '0.0'
-    }));
-  }
-
-  console.log('Sending report data:', reportData);
-
-  res.writeHead(200, { 
-    'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*'
-  });
-  res.end(JSON.stringify(reportData));
-
-} catch (error) {
-  console.error('Error generating report:', error);
-  res.writeHead(500, { 
-    'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*'
-  });
-  res.end(JSON.stringify({ 
-    error: 'Failed to generate report',
-    details: error.message,
-    stack: error.stack
-  }));
-}
-};
 
 // Function to add a user to the database during signup
 const addUser = (userData, res) => {
@@ -1605,15 +1561,20 @@ const getMembershipReport = (startDate, endDate, types, res) => {
     }));
   });
 };
-
 const fetchMembershipDetails = (userId, res) => {
   const query = `
       SELECT 
           m.Member_Type as memberType,
           m.Exp_Date as expiryDate,
-          DATEDIFF(m.Exp_Date, CURDATE()) as daysUntilExpiry
+          DATEDIFF(m.Exp_Date, CURDATE()) as daysUntilExpiry,
+          mn.message as notificationMessage
       FROM Membership m
+      LEFT JOIN MembershipNotifications mn ON m.ID = mn.customer_id
+          AND mn.notification_type = 'MEMBERSHIP_EXPIRY'
+          AND mn.date_created >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
       WHERE m.ID = ?
+      ORDER BY mn.date_created DESC
+      LIMIT 1
   `;
 
   connection.query(query, [userId], (err, results) => {
@@ -1628,10 +1589,12 @@ const fetchMembershipDetails = (userId, res) => {
       res.end(JSON.stringify({
           memberType: results[0].memberType,
           expiryDate: results[0].expiryDate,
-          daysUntilExpiry: results[0].daysUntilExpiry || null
+          daysUntilExpiry: results[0].daysUntilExpiry || null,
+          notificationMessage: results[0].notificationMessage
       }));
   });
 };
+
 const upgradeMembership = (userId, membershipData, res) => {
   const { membershipTier, durationType } = membershipData;
 
@@ -1649,6 +1612,139 @@ const upgradeMembership = (userId, membershipData, res) => {
           res.end(JSON.stringify({ message: 'Membership upgraded successfully' }));
       }
   );
+};
+
+const getTicketReport = (startDate, endDate, exhibits, res) => {
+  const exhibitFilter = exhibits && exhibits.length > 0 ? 
+    `AND t.Exhibit_ID IN (${exhibits})` : '';
+  
+  const queries = {
+    ticketTypes: `
+      SELECT 
+        t.Ticket_Type as type,
+        COUNT(*) as count,
+        SUM(t.Price) as revenue
+      FROM Ticket t
+      WHERE t.Purchase_Date BETWEEN ? AND ?
+        ${exhibitFilter}
+      GROUP BY t.Ticket_Type
+      ORDER BY count DESC
+    `,
+    
+    exhibitPopularity: `
+      SELECT 
+        e.Name as name,
+        COUNT(t.ID) as tickets,
+        COALESCE(SUM(t.Price), 0) as revenue
+      FROM Exhibit e
+      LEFT JOIN Ticket t ON e.ID = t.Exhibit_ID 
+        AND t.Purchase_Date BETWEEN ? AND ?
+        ${exhibitFilter}
+      GROUP BY e.ID, e.Name
+      ORDER BY tickets DESC
+    `,
+    
+    totalStats: `
+      SELECT 
+        COUNT(*) as totalTickets,
+        COALESCE(SUM(Price), 0) as totalRevenue
+      FROM Ticket t
+      WHERE t.Purchase_Date BETWEEN ? AND ?
+        ${exhibitFilter}
+    `
+  };
+
+  const reportData = {
+    ticketTypes: [],
+    exhibitPopularity: [],
+    totalRevenue: 0,
+    totalTickets: 0
+  };
+
+  Promise.all([
+    new Promise((resolve, reject) => {
+      connection.query(queries.ticketTypes, [startDate, endDate], (error, results) => {
+        if (error) {
+          reject(error);
+        } else {
+          reportData.ticketTypes = results.map(type => ({
+            ...type,
+            count: type.count || 0,
+            revenue: type.revenue || 0
+          }));
+          resolve();
+        }
+      });
+    }),
+
+    new Promise((resolve, reject) => {
+      connection.query(queries.exhibitPopularity, [startDate, endDate], (error, results) => {
+        if (error) {
+          reject(error);
+        } else {
+          reportData.exhibitPopularity = results.map(exhibit => ({
+            ...exhibit,
+            tickets: exhibit.tickets || 0,
+            revenue: exhibit.revenue || 0
+          }));
+          resolve();
+        }
+      });
+    }),
+
+    new Promise((resolve, reject) => {
+      connection.query(queries.totalStats, [startDate, endDate], (error, results) => {
+        if (error) {
+          reject(error);
+        } else {
+          if (results && results[0]) {
+            reportData.totalRevenue = results[0].totalRevenue || 0;
+            reportData.totalTickets = results[0].totalTickets || 0;
+          }
+          resolve();
+        }
+      });
+    })
+  ])
+  .then(() => {
+    if (reportData.totalTickets > 0) {
+      reportData.ticketTypes = reportData.ticketTypes.map(type => ({
+        ...type,
+        percentage: ((type.count / reportData.totalTickets) * 100).toFixed(1)
+      }));
+
+      reportData.exhibitPopularity = reportData.exhibitPopularity.map(exhibit => ({
+        ...exhibit,
+        percentage: ((exhibit.tickets / reportData.totalTickets) * 100).toFixed(1)
+      }));
+    } else {
+      reportData.ticketTypes = reportData.ticketTypes.map(type => ({
+        ...type,
+        percentage: '0.0'
+      }));
+
+      reportData.exhibitPopularity = reportData.exhibitPopularity.map(exhibit => ({
+        ...exhibit,
+        percentage: '0.0'
+      }));
+    }
+
+    res.writeHead(200, { 
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*'
+    });
+    res.end(JSON.stringify(reportData));
+  })
+  .catch(error => {
+    res.writeHead(500, { 
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*'
+    });
+    res.end(JSON.stringify({ 
+      error: 'Failed to generate report',
+      details: error.message 
+    }));
+  });
 };
 
 // Function to fetch profile data based on user type
@@ -1703,8 +1799,6 @@ const fetchProfileData = (user, res) => {
     );
   }
 };
-
-//Giftshop Section
 const fetchGiftShopItems = (res) => {
   const query = `
     SELECT 
@@ -1732,81 +1826,6 @@ const fetchGiftShopItems = (res) => {
     res.end(JSON.stringify(results));
   });
 };
-const purchaseGiftShopItem = (res, body) => {
-  const { email, itemId, quantity } = JSON.parse(body);
-
-  // First get customer ID
-  connection.query('SELECT ID FROM Customer WHERE email = ?', [email], (err, customerResults) => {
-    if (err || customerResults.length === 0) {
-      console.error('Customer not found or query error:', err);
-      res.writeHead(404, { 'Content-Type': 'application/json' });
-      return res.end(JSON.stringify({ error: 'Customer not found' }));
-    }
-    const customerId = customerResults[0].ID;
-    connection.query(
-      'SELECT * FROM Gift_Shop_Item WHERE Item_ID = ? AND Is_Active = 1',
-      [itemId],
-      (err, itemResults) => {
-        if (err || itemResults.length === 0) {
-          console.error('Item not found or query error:', err);
-          res.writeHead(404, { 'Content-Type': 'application/json' });
-          return res.end(JSON.stringify({ error: 'Item not found' }));
-        }
-        const item = itemResults[0];
-        if (item.Stock_Level < quantity) {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          return res.end(JSON.stringify({ error: 'Insufficient stock' }));
-        }
-        connection.beginTransaction((err) => {
-          if (err) {
-            console.error('Transaction error:', err);
-            return handleDBError(res, err);
-          }
-          const totalAmount = item.Price * quantity;
-          connection.query(
-            'INSERT INTO Receipt (Customer_ID, Item_IDs, Total_Amount, Purchase_Date) VALUES (?, ?, ?, CURDATE())',
-            [customerId, itemId.toString(), totalAmount],
-            (err, receiptResult) => {
-              if (err) {
-                return connection.rollback(() => handleDBError(res, err));
-              }
-              const receiptId = receiptResult.insertId;
-              connection.query(
-                'INSERT INTO GiftShop (Customer_ID, Item_ID, Quantity, Price, Purchase_Date, Receipt_ID) VALUES (?, ?, ?, ?, CURDATE(), ?)',
-                [customerId, itemId, quantity, totalAmount, receiptId],
-                (err) => {
-                  if (err) {
-                    return connection.rollback(() => handleDBError(res, err));
-                  }
-                  connection.query(
-                    'UPDATE Gift_Shop_Item SET Stock_Level = Stock_Level - ? WHERE Item_ID = ?',
-                    [quantity, itemId],
-                    (err) => {
-                      if (err) {
-                        return connection.rollback(() => handleDBError(res, err));
-                      }
-                      connection.commit((err) => {
-                        if (err) {
-                          return connection.rollback(() => handleDBError(res, err));
-                        }
-
-                        res.writeHead(200, { 'Content-Type': 'application/json' });
-                        res.end(JSON.stringify({
-                          message: 'Purchase successful',
-                          receiptId: receiptId
-                        }));
-                      });
-                    }
-                  );
-                }
-              );
-            }
-          );
-        });
-      }
-    );
-  });
-};
 
 const fetchAllGiftShopItems = (res) => {
   const query = `
@@ -1829,12 +1848,11 @@ const fetchAllGiftShopItems = (res) => {
       console.error('Database error:', error);
       return handleDBError(res, error);
     }
-    setCORSHeaders(res);
+
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(results));
   });
 };
-
 const addGiftShopItem = (res, body) => {
   const item = JSON.parse(body);
   
@@ -1868,7 +1886,6 @@ const addGiftShopItem = (res, body) => {
       return handleDBError(res, error);
     }
 
-    setCORSHeaders(res);
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ 
       message: 'Item added successfully',
@@ -1912,30 +1929,101 @@ const updateGiftShopItem = (res, itemId, body) => {
       return handleDBError(res, error);
     }
 
-    setCORSHeaders(res);
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ message: 'Item updated successfully' }));
   });
 };
 
-const toggleItemActive = (res, itemId, body) => {
-  const { is_active } = JSON.parse(body);
-  
-  const query = `
-    UPDATE Gift_Shop_Item
-    SET Is_Active = ?
-    WHERE Item_ID = ?
-  `;
+const purchaseGiftShopItem = (res, body) => {
+  const { email, itemId, quantity } = JSON.parse(body);
 
-  connection.query(query, [is_active, itemId], (error) => {
-    if (error) {
-      console.error('Database error:', error);
-      return handleDBError(res, error);
+  // First get customer ID
+  connection.query('SELECT ID FROM Customer WHERE email = ?', [email], (err, customerResults) => {
+    if (err || customerResults.length === 0) {
+      console.error('Customer not found or query error:', err);
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: 'Customer not found' }));
     }
 
-    setCORSHeaders(res);
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ message: 'Item status updated successfully' }));
+    const customerId = customerResults[0].ID;
+
+    // Check item and stock
+    connection.query(
+      'SELECT * FROM Gift_Shop_Item WHERE Item_ID = ? AND Is_Active = 1',
+      [itemId],
+      (err, itemResults) => {
+        if (err || itemResults.length === 0) {
+          console.error('Item not found or query error:', err);
+          res.writeHead(404, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'Item not found' }));
+        }
+
+        const item = itemResults[0];
+        
+        // Check stock level
+        if (item.Stock_Level < quantity) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'Insufficient stock' }));
+        }
+
+        // Begin transaction
+        connection.beginTransaction((err) => {
+          if (err) {
+            console.error('Transaction error:', err);
+            return handleDBError(res, err);
+          }
+
+          // 1. Create receipt
+          const totalAmount = item.Price * quantity;
+          connection.query(
+            'INSERT INTO Receipt (Customer_ID, Item_IDs, Total_Amount, Purchase_Date) VALUES (?, ?, ?, CURDATE())',
+            [customerId, itemId.toString(), totalAmount],
+            (err, receiptResult) => {
+              if (err) {
+                return connection.rollback(() => handleDBError(res, err));
+              }
+
+              const receiptId = receiptResult.insertId;
+
+              // 2. Record in GiftShop table
+              connection.query(
+                'INSERT INTO GiftShop (Customer_ID, Item_ID, Quantity, Price, Purchase_Date, Receipt_ID) VALUES (?, ?, ?, ?, CURDATE(), ?)',
+                [customerId, itemId, quantity, totalAmount, receiptId],
+                (err) => {
+                  if (err) {
+                    return connection.rollback(() => handleDBError(res, err));
+                  }
+
+                  // 3. Update stock level
+                  connection.query(
+                    'UPDATE Gift_Shop_Item SET Stock_Level = Stock_Level - ? WHERE Item_ID = ?',
+                    [quantity, itemId],
+                    (err) => {
+                      if (err) {
+                        return connection.rollback(() => handleDBError(res, err));
+                      }
+
+                      // Commit transaction
+                      connection.commit((err) => {
+                        if (err) {
+                          return connection.rollback(() => handleDBError(res, err));
+                        }
+
+                        res.writeHead(200, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({
+                          message: 'Purchase successful',
+                          receiptId: receiptId
+                        }));
+                      });
+                    }
+                  );
+                }
+              );
+            }
+          );
+        });
+      }
+    );
   });
 };
 
@@ -1970,48 +2058,13 @@ const fetchPurchaseHistory = (email, res) => {
   });
 };
 
-const changePassword = (email, currentPassword, newPassword, res) => {
-  // First verify the current password
-  connection.query(
-    'SELECT password FROM Passwords WHERE email = ? AND is_deleted = 0',
-    [email],
-    (err, results) => {
-      if (err) return handleDBError(res, err);
-
-      if (results.length === 0) {
-        res.writeHead(404, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ message: 'User not found' }));
-      }
-
-      if (results[0].password !== currentPassword) {
-        res.writeHead(401, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ message: 'Current password is incorrect' }));
-      }
-
-      // Update the password
-      connection.query(
-        'UPDATE Passwords SET password = ? WHERE email = ? AND is_deleted = 0',
-        [newPassword, email],
-        (err) => {
-          if (err) return handleDBError(res, err);
-
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ message: 'Password updated successfully' }));
-        }
-      );
-    }
-  );
-};
-
 // HTTP Server to handle both login, signup, and profile requests
 http.createServer((req, res) => {
   setCORSHeaders(res);
 
   if (req.method === 'OPTIONS') {
-    setCORSHeaders(res);
     res.writeHead(204);
-    res.end();
-    return;
+    return res.end();
   }
 
   if (req.method === 'POST' && req.url === '/login') {
@@ -2094,8 +2147,53 @@ http.createServer((req, res) => {
     }
   });
   }
+
+  //Event Section
   else if (req.method === 'GET' && req.url === '/events'){
     fetchEvents(res);
+  }
+  else if (req.method === 'POST' && req.url === '/add-event') {
+    let body = '';
+    req.on('data', (chunk) => {
+      body += chunk.toString();
+    });
+    req.on('end', () => {
+      try {
+        const eventData = JSON.parse(body);
+        addEvent(eventData, res);
+      } catch (error) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Invalid JSON' }));
+      }
+    });
+  }
+  else if (req.method === 'DELETE' && req.url.startsWith('/remove-event')) {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const eventId = url.searchParams.get('id');
+    if (eventId) {
+      removeEvent(eventId, res);
+    } else {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Event ID is required' }));
+    }
+  }
+  else if (req.method === 'PUT' && req.url.startsWith('/update-event')) {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const eventId = url.searchParams.get('id');
+    
+    if (eventId) {
+        let body = '';
+        req.on('data', (chunk) => {
+            body += chunk.toString();
+        });
+        req.on('end', () => {
+            const updateData = JSON.parse(body);
+            updateEvent(eventId, updateData, res); 
+        });
+    } else {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Event ID is required' }));
+    }
   }
   else if (req.method === 'GET' && req.url === '/animals') {
     fetchManageAnimals(res);
@@ -2249,8 +2347,13 @@ http.createServer((req, res) => {
 
 
   //Exhibit Section
+
   else if (req.method === 'GET' && req.url === '/exhibits'){
     fetchExhibits(res);
+  }
+
+  else if (req.method === 'GET' && req.url === '/public-exhibits') {
+    fetchPublicExhibits(res);
   }
 
   else if (req.method === 'POST' && req.url === '/add-exhibit') {
@@ -2351,6 +2454,50 @@ http.createServer((req, res) => {
     } else {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ message: 'Cage ID is required' }));
+    }
+  }
+
+  else if (req.method === 'GET' && req.url.startsWith('/ticket-report')){
+    console.log('Received ticket report request:', req.url);
+
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    let startDate = url.searchParams.get('startDate');
+    let endDate = url.searchParams.get('endDate');
+    const exhibits = url.searchParams.get('exhibits');
+    if (!startDate || !endDate) {
+      const today = new Date();
+      const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+      startDate = thirtyDaysAgo.toISOString().split('T')[0];
+      endDate = today.toISOString().split('T')[0];
+    }
+    const exhibitsList = exhibits ? exhibits.split(',').filter(Boolean) : [];
+    getTicketReport(startDate, endDate, exhibitsList, res);
+  }
+
+  else if (req.method === 'GET' && req.url === '/giftshop-items') {
+    return fetchGiftShopItems(res);
+  }
+
+  else if (req.method === 'POST' && req.url === '/purchase-giftshop-item') {
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+  
+    req.on('end', () => {
+      purchaseGiftShopItem(res, body);
+    });
+    return;
+  }
+  else if (req.method === 'GET' && req.url.startsWith('/giftshop-history')) {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const email = url.searchParams.get('email');
+    
+    if (email) {
+      return fetchPurchaseHistory(email, res);
+    } else {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Email is required' }));
     }
   }
 
@@ -2457,95 +2604,42 @@ http.createServer((req, res) => {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ message: 'Animal ID is required' }));
     }
-  }
-  
-  else if (req.method === 'GET' && req.url.startsWith('/ticket-report')) {
-    (async () => {  // Wrap in an async IIFE (Immediately Invoked Function Expression)
-      try {
-        const url = new URL(req.url, `http://${req.headers.host}`);
-        let startDate = url.searchParams.get('startDate');
-        let endDate = url.searchParams.get('endDate');
-        const exhibits = url.searchParams.get('exhibits');
-        
-        console.log('Received parameters:', { startDate, endDate, exhibits });
-      
-        if (!startDate || !endDate) {
-          const today = new Date();
-          const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
-          startDate = thirtyDaysAgo.toISOString().split('T')[0];
-          endDate = today.toISOString().split('T')[0];
-        }
-        
-        const exhibitsList = exhibits ? exhibits.split(',').filter(Boolean) : [];
-        console.log('Processed exhibits list:', exhibitsList);
-  
-        // Check connection state
-        if (connection.state === 'disconnected') {
-          console.log('Reconnecting to database...');
-          handleDisconnect();
-        }
-      
-        await getTicketReport(startDate, endDate, exhibitsList, res);
-      } catch (error) {
-        console.error('Error in ticket report endpoint:', error);
-        setCORSHeaders(res);
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ 
-          error: 'Failed to generate report',
-          details: error.message,
-          stack: error.stack 
-        }));
-      }
-    })();
-  }
+  } 
 
-  else if (req.method === 'GET' && req.url === '/giftshop-items') {
-    return fetchGiftShopItems(res);
-  }
-  else if (req.method === 'POST' && req.url === '/purchase-giftshop-item') {
-    let body = '';
-    req.on('data', chunk => {
-      body += chunk.toString();
-    });
-  
-    req.on('end', () => {
-      purchaseGiftShopItem(res, body);
-    });
-    return;
-  }
-  else if (req.method === 'GET' && req.url.startsWith('/giftshop-history')) {
+  //Membership Section
+  else if(req.method === 'GET' && req.url.startsWith('/membership-details')){
     const url = new URL(req.url, `http://${req.headers.host}`);
-    const email = url.searchParams.get('email');
-    
-    if (email) {
-      return fetchPurchaseHistory(email, res);
-    } else {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ message: 'Email is required' }));
+    const userId = url.searchParams.get('userId');
+
+    if (!userId) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: 'User ID is required' }));
     }
+    fetchMembershipDetails(userId, res);
   }
-  else if (req.method === 'GET' && req.url === '/giftshop-items-all') {
-    return fetchAllGiftShopItems(res);
-  }
-  else if (req.method === 'POST' && req.url === '/giftshop-items') {
-    let body = '';
-    req.on('data', chunk => { body += chunk.toString(); });
-    req.on('end', () => addGiftShopItem(res, body));
-    return;
-  }
-  else if (req.method === 'PUT' && req.url.match(/^\/giftshop-items\/\d+$/)) {
-    const itemId = req.url.split('/')[2];
-    let body = '';
-    req.on('data', chunk => { body += chunk.toString(); });
-    req.on('end', () => updateGiftShopItem(res, itemId, body));
-    return;
-  }
-  else if (req.method === 'PUT' && req.url.match(/^\/giftshop-items\/\d+\/toggle-active$/)) {
-    const itemId = req.url.split('/')[2];
-    let body = '';
-    req.on('data', chunk => { body += chunk.toString(); });
-    req.on('end', () => toggleItemActive(res, itemId, body));
-    return;
+  else if(req.method === 'POST' && req.url === '/upgrade-membership'){
+      let body = '';
+
+      req.on('data', chunk => {
+          body += chunk.toString();
+      });
+
+      req.on('end', () => {
+          try {
+              const { userId, membershipTier, durationType } = JSON.parse(body);
+              
+              if (!userId || !membershipTier || !durationType) {
+                  res.writeHead(400, { 'Content-Type': 'application/json' });
+                  return res.end(JSON.stringify({ error: 'Missing required fields' }));
+              }
+
+              upgradeMembership(userId, { membershipTier, durationType }, res);
+          } catch (error) {
+              console.error('Error processing membership upgrade:', error);
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Invalid request data' }));
+          }
+      });
   }
   else if (req.method === 'GET' && req.url.startsWith('/membership-report')) {
     const url = new URL(req.url, `http://${req.headers.host}`);
@@ -2564,88 +2658,28 @@ http.createServer((req, res) => {
     getMembershipReport(startDate, endDate, typesList, res);
 
   }
-  else if(req.method === 'POST' && req.url === '/upgrade-membership'){
-    let body = '';
-
-    req.on('data', chunk => {
-        body += chunk.toString();
-    });
-
-    req.on('end', () => {
-        try {
-            const { userId, membershipTier, durationType } = JSON.parse(body);
-            
-            if (!userId || !membershipTier || !durationType) {
-                res.writeHead(400, { 'Content-Type': 'application/json' });
-                return res.end(JSON.stringify({ error: 'Missing required fields' }));
-            }
-
-            upgradeMembership(userId, { membershipTier, durationType }, res);
-        } catch (error) {
-            console.error('Error processing membership upgrade:', error);
-            res.writeHead(400, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Invalid request data' }));
-        }
-    });
+  else if (req.method === 'GET' && req.url === '/giftshop-items') {
+    return fetchGiftShopItems(res);
   }
-  else if(req.method === 'GET' && req.url.startsWith('/membership-details')){
-    const url = new URL(req.url, `http://${req.headers.host}`);
-  const userId = url.searchParams.get('userId');
-
-  if (!userId) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      return res.end(JSON.stringify({ error: 'User ID is required' }));
-  }
-
-  fetchMembershipDetails(userId, res);
-  }else if(req.method === 'POST' && req.url === '/upgrade-membership'){
-    let body = '';
-
-    req.on('data', chunk => {
-        body += chunk.toString();
-    });
-
-    req.on('end', () => {
-        try {
-            const { userId, membershipTier, durationType } = JSON.parse(body);
-            
-            if (!userId || !membershipTier || !durationType) {
-                res.writeHead(400, { 'Content-Type': 'application/json' });
-                return res.end(JSON.stringify({ error: 'Missing required fields' }));
-            }
-
-            upgradeMembership(userId, { membershipTier, durationType }, res);
-        } catch (error) {
-            console.error('Error processing membership upgrade:', error);
-            res.writeHead(400, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Invalid request data' }));
-        }
-    });
-  }
-  else if (req.method === 'POST' && req.url === '/change-password') {
-    let body = '';
-    
-    req.on('data', chunk => {
-      body += chunk.toString();
-    });
-    
-    req.on('end', () => {
-      try {
-        const { email, currentPassword, newPassword } = JSON.parse(body);
-        
-        if (!email || !currentPassword || !newPassword) {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          return res.end(JSON.stringify({ message: 'All fields are required' }));
-        }
-        
-        changePassword(email, currentPassword, newPassword, res);
-      } catch (error) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: 'Invalid request data' }));
-      }
-    });
   
+  else if (req.method === 'GET' && req.url === '/giftshop-items-all') {
+    return fetchAllGiftShopItems(res);
   }
+  
+  else if (req.method === 'POST' && req.url === '/giftshop-items') {
+    let body = '';
+    req.on('data', chunk => { body += chunk.toString(); });
+    req.on('end', () => addGiftShopItem(res, body));
+    return;
+  }
+  else if (req.method === 'PUT' && req.url.match(/^\/giftshop-items\/\d+$/)) {
+    const itemId = req.url.split('/')[2];
+    let body = '';
+    req.on('data', chunk => { body += chunk.toString(); });
+    req.on('end', () => updateGiftShopItem(res, itemId, body));
+    return;
+  }
+  
   else {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ message: 'Route not found' }));

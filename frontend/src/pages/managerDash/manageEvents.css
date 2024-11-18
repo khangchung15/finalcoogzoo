@@ -1,27 +1,25 @@
-/* Manage Employees Styles */
-.manage-employees-container {
+/* Manage Events Styles */
+.manage-events-container {
     padding: 2%;
     transition: margin-left 0.3s ease;
-    margin-left: -8%;
+    margin-left: -9%;
     margin-top: -2%;
     width: 126%;
     display: flex;
     gap: 1%;
     max-width: 80%;
 }
-
-.manage-employees-container.sidebar-collapsed {
+.manage-events-container.sidebar-collapsed {
     margin-left: -27%;
     gap: 0.5%;
 }
-
-.manage-employees {
+.manage-events {
     position: relative;
     flex: 1;
+    max-width: 800px;
     width: 250px;
     height: 100%;
     max-height: 900px;
-    max-width: 800px;
     background-color: #f9f9f9;
     padding: 2%;
     border-radius: 8px;
@@ -29,45 +27,35 @@
     margin-bottom: 5%;
     left: 5%;
 }
-
-.employee-list {
+.event-list {
     flex: 2;
     padding: 1%;
     background-color: #f9f9f9;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    max-width: 125%;
+    width: 125%;
     margin-left: 1%;
 }
-
 /* Arrange forms side by side and ensure equal height */
-.form-sections-wrapper {
-    display: flex;
-    justify-content: space-between;
-    gap: 0px;
-}
-
 .form-sections-wrapper.sidebar-collapse {
     display: flex;
     justify-content: space-between;
     gap: 20px;
     align-items: stretch;
-
     position: relative;
     top:50px;
 }
-
 /* Ensure consistency for form containers */
 .update-form-section {
     flex: 1;
     width: 100%;
     box-sizing: border-box;
-    margin: 0; /* Avoid unintended spacing */
+    margin: 0;
+    z-index: 1000;
 }
-
 /* Input fields and select dropdown */
-.manage-employees input, 
-.manage-employees select, 
+.manage-events input, 
+.manage-events select, 
 .update-form-section input, 
 .update-form-section select {
     display: block;
@@ -79,9 +67,10 @@
     border-radius: 4px;
     box-sizing: border-box;
 }
-
+/* Checkbox and label styling */
+.manage-events label, 
 /* Button styling */
-.manage-employees button, 
+.manage-events button, 
 .update-form-section button, 
 .remove-button {
     padding: 10px 20px;
@@ -96,21 +85,18 @@
     box-sizing: border-box;
     margin-top: 10px; /* Add space between buttons */
 }
-
-.manage-employees button:hover, 
+.manage-events button:hover, 
 .update-form-section button:hover, 
 .remove-button:hover {
     background-color: #7C000F;
 }
-
 /* Section headers */
-.employee-list h2,
-.manage-employees h2, 
+.event-list h2,
+.manage-events h2, 
 .update-form-section h2 {
     margin-top: 10px;
     margin-bottom: 15px; /* Consistent spacing below headers */
 }
-
 /* Search bar styling */
 .search-input {
     display: block;
@@ -122,23 +108,20 @@
     border-radius: 4px;
     box-sizing: border-box;
 }
-
-/* Employee table */
-.employee-table {
+/* Event table */
+.event-table {
     width: 100%;
     border-collapse: collapse;
 }
-
-.employee-table td {
-    padding: 10px; /* Increased padding for a more spacious feel */
+.event-table td {
+    padding: 12px;
     text-align: center;
     border-bottom: 1px solid #ddd;
     font-size: 14px;
     border: 1px solid #ddd; 
 }
-
 /* Table header styling */
-.employee-table th {
+.event-table th {
     background-color: #C8102E;
     color: white;
     padding: 10px; /* Increased padding for a more spacious feel */
@@ -147,17 +130,14 @@
     font-size: 15px;
     border: 1px solid #ddd; 
 }
-
 /* Hover effect for table rows */
-.employee-table tr:hover {
+.event-table tr:hover {
     background-color: #f1f1f1;
 }
-
 /* Error message styling */
-.employee-table .error {
+.event-table .error {
     color: red;
 }
-
 /* Update Form Container */
 .update-form-section {
     padding: 20px;
@@ -165,7 +145,6 @@
     border-radius: 8px;
     margin-bottom: 20px; /* Adjusted to match other form styles */
 }
-
 /* Modal Styling */
 .modal {
     position: fixed;
@@ -179,7 +158,6 @@
     align-items: center;
     z-index: 1000;
 }
-
 .modal-content {
     background: #fff;
     padding: 20px 30px; /* Increased horizontal padding */
@@ -193,7 +171,6 @@
     box-sizing: border-box;
     text-align: left; /* Align text to the left */
 }
-
 .modal-message {
     white-space: pre-line; /* This preserves the line breaks */
     text-align: left;
@@ -203,14 +180,20 @@
     line-height: 1.6;
     font-size: 16px;
 }
-
+.modal button {
+    padding: 10px;
+    background-color: #C8102E;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
 .modal-content label {
     display: block;
     margin-bottom: 5px;
     font-weight: bold;
     text-align: left; /* Align labels to the left */
 }
-
 .modal-content .close-button {
     position: absolute;
     top: 10px;
@@ -229,11 +212,9 @@
     padding: 0; /* Remove any padding */
     line-height: 1;
 }
-
 .modal-content h2 {
     margin-bottom: 20px;
 }
-
 .modal-content input, 
 .modal-content select {
     width: 100%;
@@ -244,7 +225,6 @@
     border-radius: 4px;
     box-sizing: border-box;
 }
-
 .modal-content button {
     padding: 10px 20px;
     background-color: #C8102E;
@@ -255,25 +235,11 @@
     font-size: 16px;
     width: 100%;
 }
-
 .modal-content button:hover {
     background-color: #7C000F;
 }
-
-.modal button {
-    margin-top: 15px;
-    padding: 10px 20px;
-    width: 100%;
-    background-color: #C8102E;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-}
-
 /* General container height adjustments */
-.update-form-section {
+.manage-events, .update-form-section {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
