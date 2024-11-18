@@ -2521,6 +2521,16 @@ http.createServer((req, res) => {
     });
     return;
   }
+  else if (req.method === 'PUT' && req.url.match(/^\/giftshop-items\/\d+\/toggle-active$/)) {
+    const itemId = req.url.split('/')[2];
+    let body = '';
+    req.on('data', chunk => { body += chunk.toString(); });
+    req.on('end', () => toggleItemActive(res, itemId, body));
+    return;
+  
+  
+  }
+
   else if (req.method === 'GET' && req.url.startsWith('/giftshop-history')) {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const email = url.searchParams.get('email');
@@ -2531,6 +2541,7 @@ http.createServer((req, res) => {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ message: 'Email is required' }));
     }
+
   }
 
   else if (req.method === 'GET' && req.url === '/showcases') {
@@ -2693,11 +2704,23 @@ http.createServer((req, res) => {
   else if (req.method === 'GET' && req.url === '/giftshop-items') {
     return fetchGiftShopItems(res);
   }
+  else if (req.method === 'POST' && req.url === '/giftshop-items') {
+    let body = '';
+    req.on('data', chunk => { body += chunk.toString(); });
+    req.on('end', () => addGiftShopItem(res, body));
+    return;
+  }//test
   
   else if (req.method === 'GET' && req.url === '/giftshop-items-all') {
     return fetchAllGiftShopItems(res);
   }
-  
+  else if (req.method === 'PUT' && req.url.match(/^\/giftshop-items\/\d+$/)) {
+      const itemId = req.url.split('/')[2];
+      let body = '';
+      req.on('data', chunk => { body += chunk.toString(); });
+      req.on('end', () => updateGiftShopItem(res, itemId, body));
+      return;
+    }
   else if (req.method === 'POST' && req.url === '/giftshop-items') {
     let body = '';
     req.on('data', chunk => { body += chunk.toString(); });
