@@ -1,249 +1,117 @@
-import React, { useState, useEffect } from 'react';
-import './tickets.css';
-import { useAuth } from '../components/AuthContext';
+const purchaseTicket = async (ticketData, res) => {
+  // Start a transaction
+  connection.beginTransaction(async (err) => {
+    if (err) {
+      console.error('Error starting transaction:', err);
+      return handleDBError(res, err);
+    }
 
-const TicketsPage = () => {
-  const { userRole, userEmail } = useAuth();
-  const isCustomer = userRole === 'Customer';
-
-  const [selectedTicket, setSelectedTicket] = useState(null);
-  const [purchaseSuccess, setPurchaseSuccess] = useState(false);
-  const [purchasedTickets, setPurchasedTickets] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [exhibits, setExhibits] = useState([]);
-  const [selectedExhibit, setSelectedExhibit] = useState('');
-  const [exhibitsLoading, setExhibitsLoading] = useState(true);
-
-  const ticketOptions = [
-    { type: 'Child', price: 10, description: 'Ages 3-12' },
-    { type: 'Adult', price: 20, description: 'Ages 13-64' },
-    { type: 'Senior', price: 15, description: 'Ages 65+' },
-  ];
-
-  useEffect(() => {
-    const fetchData = async () => {
-      if (isCustomer && userEmail) {
-        try {
-          setLoading(true);
-          await fetchPurchasedTickets();
-          await fetchExhibits();
-        } catch (error) {
-          console.error('Error fetching data:', error);
-        } finally {
-          setLoading(false);
-        }
-      }
-    };
-    fetchData();
-  }, [isCustomer, userEmail, purchaseSuccess]);
-
-  const fetchExhibits = async () => {
     try {
-      setExhibitsLoading(true);
-      const response = await fetch('https://coogzoobackend.vercel.app/exhibits');
-      if (!response.ok) {
-        throw new Error('Failed to fetch exhibits');
+      // Get customer ID
+      const [customerResults] = await connection.promise().query(
+        'SELECT ID FROM Customer WHERE email = ?',
+        [ticketData.email]
+      );
+
+      if (customerResults.length === 0) {
+        throw new Error('Customer not found');
       }
-      const data = await response.json();
-      console.log('Fetched exhibits:', data); // Debug log
-      
-      // Ensure data is in the correct format
-      const formattedData = data.map(exhibit => ({
-        id: exhibit.id || exhibit.ID, // Handle both cases
-        name: exhibit.name || exhibit.Name, // Handle both cases
-        isClosed: exhibit.isClosed || exhibit.is_closed // Handle both cases
+
+      const customerId = customerResults[0].ID;
+      const purchaseDate = new Date().toISOString().split('T')[0];
+
+      // Verify exhibit exists and is open
+      const [exhibitResults] = await connection.promise().query(
+        'SELECT ID, is_closed FROM Exhibit WHERE ID = ? AND is_deleted = 0',
+        [ticketData.exhibitId]
+      );
+
+      if (exhibitResults.length === 0) {
+        throw new Error('Exhibit not found');
+      }
+
+      if (exhibitResults[0].is_closed) {
+        throw new Error('Exhibit is currently closed');
+      }
+
+      // Insert Receipt
+      const [receiptResult] = await connection.promise().query(
+        'INSERT INTO Receipt (Customer_ID, Item_IDs, Total_Amount, Purchase_Date) VALUES (?, ?, ?, ?)',
+        [customerId, ticketData.exhibitId.toString(), ticketData.price, purchaseDate]
+      );
+
+      const receiptId = receiptResult.insertId;
+
+      // Insert Ticket
+      await connection.promise().query(
+        'INSERT INTO Ticket (Customer_ID, Ticket_Type, Price, Purchase_Date, Receipt_ID, Exhibit_ID) VALUES (?, ?, ?, ?, ?, ?)',
+        [
+          customerId,
+          ticketData.ticketType,
+          ticketData.price,
+          purchaseDate,
+          receiptId,
+          ticketData.exhibitId
+        ]
+      );
+
+      // If everything succeeded, commit the transaction
+      await connection.promise().commit();
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: true,
+        message: 'Ticket purchased successfully',
+        receiptId: receiptId
       }));
+
+    } catch (error) {
+      // If anything fails, rollback the transaction
+      await connection.promise().rollback();
       
-      // Filter out closed exhibits
-      const openExhibits = formattedData.filter(exhibit => !exhibit.isClosed);
-      console.log('Formatted exhibits:', openExhibits); // Debug log
+      console.error('Error in ticket purchase:', error);
       
-      setExhibits(openExhibits);
-    } catch (error) {
-      console.error('Error fetching exhibits:', error);
-    } finally {
-      setExhibitsLoading(false);
-    }
-  };
-
-  const fetchPurchasedTickets = async () => {
-    try {
-      if (!userEmail) {
-        console.error('No user email provided');
-        return;
-      }
-      const response = await fetch(`https://coogzoobackend.vercel.app/purchased-tickets?email=${encodeURIComponent(userEmail)}`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch tickets: ${response.status} ${response.statusText}`);
-      }
-  
-      const data = await response.json();
-      if (Array.isArray(data)) {
-        setPurchasedTickets(data);
+      if (error.message === 'Customer not found' || error.message === 'Exhibit not found') {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, message: error.message }));
+      } else if (error.message === 'Exhibit is currently closed') {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, message: error.message }));
       } else {
-        console.error('Unexpected response format:', data);
-        setPurchasedTickets([]);
+        handleDBError(res, error);
       }
-    } catch (error) {
-      console.error('Error fetching purchased tickets:', error);
-      setPurchasedTickets([]);
     }
-  };
-
-  const handleTicketSelection = (ticketType) => {
-    setSelectedTicket(ticketType);
-    setSelectedExhibit(''); // Reset exhibit selection
-    console.log('Selected ticket:', ticketType); // Debug log
-  };
-
-  const handleExhibitSelection = (e) => {
-    const value = e.target.value;
-    console.log('Selected exhibit value:', value);
-    const selectedValue = value ? parseInt(value, 10) : '';
-    setSelectedExhibit(selectedValue);
-  };
-
-  const handlePurchase = async (e) => {
-    e.preventDefault();
-
-    if (!selectedTicket || !selectedExhibit) {
-      alert('Please select a ticket type and an exhibit.');
-      return;
-    }
-
-    try {
-      const response = await fetch('https://coogzoobackend.vercel.app/tickets', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: userEmail,
-          ticketType: selectedTicket.type,
-          price: selectedTicket.price,
-          exhibitId: selectedExhibit,
-        }),
-      });
-
-      if (response.ok) {
-        setSelectedTicket(null);
-        setSelectedExhibit('');
-        setPurchaseSuccess(true);
-        await fetchPurchasedTickets();
-        setTimeout(() => setPurchaseSuccess(false), 5000);
-      } else {
-        throw new Error('Purchase failed');
-      }
-    } catch (error) {
-      console.error('Error purchasing ticket:', error);
-      alert('Failed to purchase ticket. Please try again.');
-    }
-  };
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  
-  return (
-    <div className="tickets-container">
-      <h1>Purchase Tickets</h1>
-      {isCustomer ? (
-        <>
-          <div className="ticket-selection">
-            {ticketOptions.map((ticket) => (
-              <div key={ticket.type} className="ticket-card">
-                <h3>{ticket.type} Ticket</h3>
-                <p>Price: <span>${ticket.price}</span></p>
-                <p>{ticket.description}</p>
-                <button
-                  className="purchase-button"
-                  onClick={() => handleTicketSelection(ticket)}
-                >
-                  Select {ticket.type} Ticket
-                </button>
-              </div>
-            ))}
-          </div>
-
-          {selectedTicket && (
-            <form className="customer-info-form" onSubmit={handlePurchase}>
-              <h3>Anyday Access to the Zoo</h3>
-              <p>Selected Ticket: {selectedTicket.type} - ${selectedTicket.price}</p>
-
-              <div className="exhibit-selection">
-                <label htmlFor="exhibitSelect">Choose an Exhibit:</label>
-                {exhibitsLoading ? (
-                  <p>Loading exhibits...</p>
-                ) : exhibits.length > 0 ? (
-                  <select
-                    id="exhibitSelect"
-                    value={selectedExhibit || ''}
-                    onChange={handleExhibitSelection}
-                    required
-                  >
-                    <option value="">Select an Exhibit</option>
-                    {exhibits.map((exhibit) => (
-                      <option key={exhibit.id} value={exhibit.id}>
-                        {exhibit.name}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <p>No exhibits available</p>
-                )}
-              </div>
-
-              <button 
-                type="submit" 
-                className="purchase-button"
-                disabled={!selectedExhibit || exhibitsLoading}
-              >
-                Purchase Ticket
-              </button>
-            </form>
-          )}
-
-          {purchaseSuccess && (
-            <div className="purchase-success">
-              Ticket purchased successfully!
-            </div>
-          )}
-
-          <div className="purchased-tickets-section">
-            <h2>Your Purchased Tickets</h2>
-            {loading ? (
-              <p>Loading your tickets...</p>
-            ) : purchasedTickets.length > 0 ? (
-              <div className="tickets-grid">
-                {purchasedTickets.map((ticket) => (
-                  <div key={ticket.Ticket_ID} className="purchased-ticket-card">
-                    <h3>{ticket.Ticket_Type} Ticket</h3>
-                    <div className="ticket-details">
-                      <p><strong>Purchase Date:</strong> {formatDate(ticket.Purchase_Date)}</p>
-                      <p><strong>Price:</strong> ${ticket.Price}</p>
-                      <p><strong>Receipt ID:</strong> {ticket.Receipt_ID}</p>
-                      <p><strong>Exhibit:</strong> {ticket.Exhibit_Name || 'N/A'}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p>No tickets purchased yet.</p>
-            )}
-          </div>
-        </>
-      ) : (
-        <div className="no-access">
-          Please create a customer account to purchase tickets.
-        </div>
-      )}
-    </div>
-  );
+  });
 };
 
-export default TicketsPage;
+// Helper function to fetch purchased tickets with full details
+const fetchPurchasedTickets = async (email, res) => {
+  try {
+    const query = `
+      SELECT 
+        t.ID AS Ticket_ID,
+        t.Ticket_Type,
+        t.Price,
+        t.Purchase_Date,
+        t.Receipt_ID,
+        r.Total_Amount,
+        e.Name AS Exhibit_Name,
+        e.Location AS Exhibit_Location
+      FROM Ticket t
+      JOIN Receipt r ON t.Receipt_ID = r.ID
+      JOIN Customer c ON t.Customer_ID = c.ID
+      LEFT JOIN Exhibit e ON t.Exhibit_ID = e.ID
+      WHERE c.email = ? AND t.is_deleted = 0
+      ORDER BY t.Purchase_Date DESC
+    `;
+
+    const [tickets] = await connection.promise().query(query, [email]);
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(tickets));
+
+  } catch (error) {
+    console.error('Error fetching purchased tickets:', error);
+    handleDBError(res, error);
+  }
+};

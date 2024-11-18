@@ -360,7 +360,7 @@ function ManageEmployees({employeeId, setEmployeeId, showSidebar }) {
                   </option>
               ))}
           </select>
-          <label>Assign to Supervisor</label>
+          <label>Assign to Supervisor, Optional</label>
           <select
               value={employeeData.supervisorID}
               onChange={(e) => setEmployeeData({...employeeData, supervisorID: e.target.value })}
@@ -528,7 +528,7 @@ function ManageEmployees({employeeId, setEmployeeId, showSidebar }) {
               value={updateData.startDate}
               onChange={(e) => setUpdateData({ ...updateData, startDate: e.target.value })}
             />
-            <label>Assign to Exhibit</label>
+            <label>Assign to Exhibit, Optional</label>
               <select
                   value={updateData.exhibitID}
                   onChange={(e) => setUpdateData({...updateData, exhibitID: e.target.value })}
