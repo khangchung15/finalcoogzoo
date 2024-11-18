@@ -2753,6 +2753,11 @@ http.createServer((req, res) => {
     req.on('end', () => updateGiftShopItem(res, itemId, body));
     return;
   }
+  else if (req.method === 'DELETE' && req.url.match(/^\/giftshop-items\/\d+$/)) {
+    const itemId = req.url.split('/')[2];
+    deleteGiftShopItem(res, itemId);
+    return;
+  }
   else if (req.method === 'POST' && req.url === '/change-password') {
     let body = '';
     
