@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './manageEmployees.css';
 
-function ManageEmployees({employeeId, setEmployeeId, showSidebar }) {
+function ManageEmployees({ employeeId, setEmployeeId, showSidebar }) {
   const [employees, setEmployees] = useState([]);
   const [exhibits, setExhibits] = useState([]);
   const [employeeData, setEmployeeData] = useState({
@@ -26,15 +26,27 @@ function ManageEmployees({employeeId, setEmployeeId, showSidebar }) {
   const [showUpdateForm, setShowUpdateForm] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
 
-  // fetch employee information from the database
+  // Custom fetch function with retry logic
+  const fetchWithRetry = async (url, options = {}, retries = 3, delay = 1000) => {
+    for (let i = 0; i < retries; i++) {
+      try {
+        const response = await fetch(url, options);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+      } catch (error) {
+        if (i === retries - 1) throw error;
+        await new Promise(resolve => setTimeout(resolve, delay * (i + 1)));
+      }
+    }
+  };
+
+  // Fetch employees
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        const response = await fetch('https://coogzoobackend.vercel.app/employees');
-        if (!response.ok) {
-          throw new Error('Failed to fetch employees');
-        }
-        const data = await response.json();
+        const data = await fetchWithRetry('https://coogzoobackend.vercel.app/employees');
         setEmployees(data);
       } catch (err) {
         setError(err.message);
@@ -45,19 +57,14 @@ function ManageEmployees({employeeId, setEmployeeId, showSidebar }) {
     fetchEmployees();
   }, []);
 
+  // Fetch exhibits
   useEffect(() => {
     const fetchExhibits = async () => {
       try {
-        const response = await fetch('https://coogzoobackend.vercel.app/exhibits');
-        if (!response.ok) {
-          throw new Error('Failed to fetch exhibits');
-        }
-        const data = await response.json();
+        const data = await fetchWithRetry('https://coogzoobackend.vercel.app/exhibits');
         setExhibits(data);
       } catch (err) {
         setError(err.message);
-      } finally {
-        setLoading(false);
       }
     };
     fetchExhibits();
@@ -66,8 +73,6 @@ function ManageEmployees({employeeId, setEmployeeId, showSidebar }) {
   const handleEditClick = (employee) => {
     setUpdateData(employee);
     setShowUpdateForm(true);
-    console.log("Editing employee:", employee); // check if data is correct
-    console.log("Show Update Form:", showUpdateForm);
   };
 
   const updateEmployee = async () => {
@@ -76,46 +81,56 @@ function ManageEmployees({employeeId, setEmployeeId, showSidebar }) {
       setModalMessage(validationError);
       return;
     }
+
     try {
-      const response = await fetch(`https://coogzoobackend.vercel.app/update-employee?id=${updateData.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updateData),
-      });
+      const response = await fetchWithRetry(
+        `https://coogzoobackend.vercel.app/update-employee?id=${updateData.id}`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            firstName: updateData.firstName,
+            lastName: updateData.lastName,
+            birthDate: updateData.birthDate,
+            email: updateData.email,
+            password: updateData.password,
+            phone: updateData.phone,
+            department: updateData.department,
+            role: updateData.role,
+            startDate: updateData.startDate,
+            exhibitId: updateData.exhibitId || null,
+            supervisorId: updateData.supervisorId || null,
+            status: updateData.status,
+            endDate: updateData.endDate || null
+          })
+        }
+      );
+
       const data = await response.json();
-      if (response.ok) {
-        setModalMessage('Employee updated successfully.');
-        setEmployees(employees.map((emp) => (emp.id === updateData.id ? { ...emp, ...updateData } : emp)));
-        setShowUpdateForm(false); // close modal on success
-      } else {
-        setModalMessage(data.message || 'Error updating employee.');
-      }
+      setModalMessage('Employee updated successfully.');
+      setEmployees(employees.map((emp) => (emp.id === updateData.id ? { ...emp, ...updateData } : emp)));
+      setShowUpdateForm(false);
     } catch (error) {
       console.error('Error:', error);
-      setModalMessage('An error occurred while attempting to update the employee.');
+      setModalMessage('An error occurred while updating the employee.');
     }
   };
 
   const handleDeleteEmployee = async () => {
     try {
-      const response = await fetch(`https://coogzoobackend.vercel.app/remove-employee?id=${employeeId}`, {
-        method: 'DELETE',
-      });
-  
+      const response = await fetchWithRetry(
+        `https://coogzoobackend.vercel.app/remove-employee?id=${employeeId}`,
+        { method: 'DELETE' }
+      );
+
       const data = await response.json();
-      if (response.ok) {
-        setModalMessage('Employee soft-deleted successfully.');
-        setEmployees(employees.filter(emp => emp.id !== parseInt(employeeId, 10)));
-      } else {
-        setModalMessage(data.message || 'Error deleting employee.');
-      }
+      setModalMessage('Employee removed successfully.');
+      setEmployees(employees.filter(emp => emp.id !== parseInt(employeeId, 10)));
     } catch (error) {
       console.error('Error:', error);
-      setModalMessage('An error occurred while attempting to delete the employee.');
+      setModalMessage('An error occurred while removing the employee.');
     }
   };
-  
-
   // shared validation function for both entry and update forms
   const validateEmployeeData = (data) => {
     const phonePattern = /^\d{3}-\d{3}-\d{4}$/;
@@ -128,6 +143,13 @@ function ManageEmployees({employeeId, setEmployeeId, showSidebar }) {
     }
     if (data.firstName.length < 2 || data.firstName.length > 50) {
       return "First name must be between 2 and 50 characters.";
+    }
+
+    if (!namePattern.test(data.lastName)) {
+      return "Last name can only contain letters and hyphens.";
+    }
+    if (data.lastName.length < 2 || data.lastName.length > 50) {
+      return "Last name must be between 2 and 50 characters.";
     }
 
     if (!deptRolePattern.test(data.department)) {
@@ -166,12 +188,6 @@ function ManageEmployees({employeeId, setEmployeeId, showSidebar }) {
       return "Employee must be at least 18 years old.";
     }
 
-    if (!data.firstName || !data.lastName || !data.birthDate || !data.email || 
-        !data.phone || !data.department || !data.role || !data.startDate || 
-        !data.status) {
-      return "Please fill out all required fields.";
-    }
-    
     if (!phonePattern.test(data.phone)) {
       return "Please enter a valid phone number (xxx-xxx-xxxx).";
     }
@@ -195,8 +211,7 @@ function ManageEmployees({employeeId, setEmployeeId, showSidebar }) {
       }
     }
   
-    // Only validate password for new employees or if password is being changed
-    if (!data.id && !data.password) { // New employee
+    if (!data.id && !data.password) {
       return "Password is required for new employees.";
     }
     
@@ -277,6 +292,66 @@ function ManageEmployees({employeeId, setEmployeeId, showSidebar }) {
     }
   };
 
+  const addEmployee = async () => {
+    const validationError = validateEmployeeData(employeeData);
+    if (validationError) {
+      setModalMessage(validationError);
+      return;
+    }
+
+    try {
+      const response = await fetchWithRetry(
+        'https://coogzoobackend.vercel.app/add-employee',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            firstName: employeeData.firstName,
+            lastName: employeeData.lastName,
+            birthDate: employeeData.birthDate,
+            email: employeeData.email,
+            password: employeeData.password,
+            phone: employeeData.phone,
+            department: employeeData.department,
+            role: employeeData.role,
+            startDate: employeeData.startDate,
+            exhibitId: employeeData.exhibitId || null,
+            supervisorId: employeeData.supervisorId || null,
+            status: employeeData.status,
+            endDate: employeeData.endDate || null
+          })
+        }
+      );
+
+      const data = await response.json();
+      setModalMessage(data.message);
+      
+      // Reset form
+      setEmployeeData({
+        firstName: '',
+        lastName: '',
+        birthDate: '',
+        email: '',
+        password: '',
+        phone: '',
+        department: '',
+        role: '',
+        startDate: '',
+        exhibitId: '',
+        supervisorId: '',
+        status: 'active',
+        endDate: ''
+      });
+
+      // Refresh employee list
+      const updatedEmployees = await fetchWithRetry('https://coogzoobackend.vercel.app/employees');
+      setEmployees(updatedEmployees);
+    } catch (error) {
+      console.error('Error:', error);
+      setModalMessage('An error occurred while adding the employee.');
+    }
+  };
+
   return (
     <div className={`manage-employees-container ${showSidebar ? '' : 'sidebar-collapsed'}`}>
       <div className="form-sections-wrapper">
@@ -348,7 +423,7 @@ function ManageEmployees({employeeId, setEmployeeId, showSidebar }) {
             onChange={(e) => setEmployeeData({ ...employeeData, startDate: e.target.value })}
             required
           />
-          <label>Assign to Exhibit</label>
+          <label>Assign to Exhibit, Optional</label>
           <select
               value={employeeData.exhibitID}
               onChange={(e) => setEmployeeData({...employeeData, exhibitID: e.target.value })}
@@ -391,7 +466,7 @@ function ManageEmployees({employeeId, setEmployeeId, showSidebar }) {
             onChange={(e) => setEmployeeData({ ...employeeData, endDate: e.target.value })}
             required
           />
-          <button onClick={validateAndAddEmployee}>Add Employee</button>
+          <button onClick={addEmployee}>Add Employee</button>
         </div>
       </div>
 
@@ -528,7 +603,7 @@ function ManageEmployees({employeeId, setEmployeeId, showSidebar }) {
               value={updateData.startDate}
               onChange={(e) => setUpdateData({ ...updateData, startDate: e.target.value })}
             />
-            <label>Assign to Exhibit, Optional</label>
+            <label>Assign to Exhibit</label>
               <select
                   value={updateData.exhibitID}
                   onChange={(e) => setUpdateData({...updateData, exhibitID: e.target.value })}
