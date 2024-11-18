@@ -19,7 +19,7 @@ const TicketReport = () => {
   useEffect(() => {
     const fetchExhibits = async () => {
       try {
-        const response = await fetch('http://localhost:5000/exhibits');
+        const response = await fetch('https://coogzoobackend.vercel.app/exhibits');
         if (!response.ok) {
           throw new Error('Failed to fetch exhibits');
         }
@@ -52,7 +52,7 @@ const TicketReport = () => {
   
         console.log('Query params:', queryParams.toString());
   
-        const response = await fetch(`http://localhost:5000/ticket-report?${queryParams}`);
+        const response = await fetch(`https://coogzoobackend.vercel.app/ticket-report?${queryParams}`);
         console.log('Response status:', response.status);
         
         if (!response.ok) {

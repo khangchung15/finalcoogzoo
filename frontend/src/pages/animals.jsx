@@ -7,11 +7,11 @@ const Animal = () => {
   const [error, setError] = useState(null);
   const [exhibits, setExhibits] = useState([]);
   const [selectedExhibit, setSelectedExhibit] = useState('');
-
+//test
   useEffect(() => {
     const fetchShowcase = async () => {
       try {
-        const response = await fetch('http://localhost:5000/showcases');
+        const response = await fetch('https://coogzoobackend.vercel.app/showcases');
         if (!response.ok) {
           throw new Error('Failed to fetch animals');
         }

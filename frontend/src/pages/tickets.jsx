@@ -40,7 +40,7 @@ const TicketsPage = () => {
   const fetchExhibits = async () => {
     try {
       setExhibitsLoading(true);
-      const response = await fetch('http://localhost:5000/exhibits');
+      const response = await fetch('https://coogzoobackend.vercel.app/exhibits');
       if (!response.ok) {
         throw new Error('Failed to fetch exhibits');
       }
@@ -72,7 +72,7 @@ const TicketsPage = () => {
         console.error('No user email provided');
         return;
       }
-      const response = await fetch(`http://localhost:5000/purchased-tickets?email=${encodeURIComponent(userEmail)}`);
+      const response = await fetch(`https://coogzoobackend.vercel.app/purchased-tickets?email=${encodeURIComponent(userEmail)}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch tickets: ${response.status} ${response.statusText}`);
       }
@@ -112,7 +112,7 @@ const TicketsPage = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/tickets', {
+      const response = await fetch('https://coogzoobackend.vercel.app/tickets', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
