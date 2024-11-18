@@ -935,6 +935,38 @@ const updateAnimal = (animalId, animalData, res) => {
     }
   );
 };
+const changePassword = (email, currentPassword, newPassword, res) => {
+  // First verify the current password
+  connection.query(
+    'SELECT password FROM Passwords WHERE email = ? AND is_deleted = 0',
+    [email],
+    (err, results) => {
+      if (err) return handleDBError(res, err);
+
+      if (results.length === 0) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ message: 'User not found' }));
+      }
+
+      if (results[0].password !== currentPassword) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ message: 'Current password is incorrect' }));
+      }
+
+      // Update the password
+      connection.query(
+        'UPDATE Passwords SET password = ? WHERE email = ? AND is_deleted = 0',
+        [newPassword, email],
+        (err) => {
+          if (err) return handleDBError(res, err);
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ message: 'Password updated successfully' }));
+        }
+      );
+    }
+  );
+};
 
 const getCustomerIdByEmail = (email) => {
   return new Promise((resolve, reject) => {
@@ -2679,7 +2711,30 @@ http.createServer((req, res) => {
     req.on('end', () => updateGiftShopItem(res, itemId, body));
     return;
   }
+  else if (req.method === 'POST' && req.url === '/change-password') {
+    let body = '';
+    
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+    
+    req.on('end', () => {
+      try {
+        const { email, currentPassword, newPassword } = JSON.parse(body);
+        
+        if (!email || !currentPassword || !newPassword) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ message: 'All fields are required' }));
+        }
+        
+        changePassword(email, currentPassword, newPassword, res);
+      } catch (error) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Invalid request data' }));
+      }
+    });
   
+  }
   else {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ message: 'Route not found' }));
