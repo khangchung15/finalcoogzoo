@@ -71,23 +71,51 @@ const GiftManager = () => {
         ? `https://coogzoobackend.vercel.app/giftshop-items/${editingItem.Item_ID}` 
         : 'https://coogzoobackend.vercel.app/giftshop-items';
       
+      // Ensure price is a number
       const submissionData = {
         ...formData,
-        Price: parseFloat(formData.Price)
+        Price: parseFloat(formData.Price),
+        Stock_Level: parseInt(formData.Stock_Level),
+        Reorder_Level: parseInt(formData.Reorder_Level)
       };
-
+  
       const response = await fetch(endpoint, {
         method: editingItem ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(submissionData)
       });
-
-      if (!response.ok) throw new Error('Failed to save item');
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to save item');
+      }
       
-      await fetchItems();
+      await fetchItems(); // Refresh the list
       resetForm();
     } catch (err) {
-      setError('Failed to save item');
+      setError(err.message || 'Failed to save item');
+      console.error(err);
+    }
+  };
+
+  const handleDelete = async (itemId) => {
+    if (!window.confirm('Are you sure you want to delete this item?')) {
+      return;
+    }
+  
+    try {
+      const response = await fetch(`https://coogzoobackend.vercel.app/giftshop-items/${itemId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to delete item');
+      }
+  
+      await fetchItems(); // Refresh the list
+    } catch (err) {
+      setError('Failed to delete item');
       console.error(err);
     }
   };
@@ -291,22 +319,29 @@ const GiftManager = () => {
                   </span>
                 </td>
                 <td>
-                  <div className="action-buttons">
-                    <button
-                      onClick={() => startEdit(item)}
-                      className="edit-button"
-                      title="Edit Item"
-                    >
-                      ✏️
-                    </button>
-                    <button
-                      onClick={() => handleToggleActive(item.Item_ID, item.Is_Active)}
-                      className={`toggle-button ${item.Is_Active ? 'active' : 'inactive'}`}
-                      title={item.Is_Active ? 'Deactivate Item' : 'Activate Item'}
-                    >
-                      {item.Is_Active ? '❌' : '✔️'}
-                    </button>
-                  </div>
+                <div className="action-buttons">
+  <button
+    onClick={() => startEdit(item)}
+    className="edit-button"
+    title="Edit Item"
+  >
+    ✏️
+  </button>
+  <button
+    onClick={() => handleDelete(item.Item_ID)}
+    className="delete-button"
+    title="Delete Item"
+  >
+    🗑️
+  </button>
+  <button
+    onClick={() => handleToggleActive(item.Item_ID, item.Is_Active)}
+    className={`toggle-button ${item.Is_Active ? 'active' : 'inactive'}`}
+    title={item.Is_Active ? 'Deactivate Item' : 'Activate Item'}
+  >
+    {item.Is_Active ? '❌' : '✔️'}
+  </button>
+</div>
                 </td>
               </tr>
             ))}

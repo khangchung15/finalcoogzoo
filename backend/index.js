@@ -31,6 +31,25 @@ const handleDBError = (res, error) => {
   res.end(JSON.stringify({ error: 'Error processing the request' }));
 };
 
+const deleteGiftShopItem = (res, itemId) => {
+  const query = 'DELETE FROM Gift_Shop_Item WHERE Item_ID = ?';
+  
+  connection.query(query, [itemId], (error, results) => {
+    if (error) {
+      console.error('Database error:', error);
+      return handleDBError(res, error);
+    }
+
+    if (results.affectedRows === 0) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ message: 'Item not found' }));
+    }
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ message: 'Item deleted successfully' }));
+  });
+};
+
 const initializeDatabase = () => {
   return new Promise((resolve, reject) => {
     const queries = [
