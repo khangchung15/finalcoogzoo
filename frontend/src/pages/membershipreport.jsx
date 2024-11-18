@@ -37,7 +37,7 @@ const MembershipReport = () => {
         types: selectedTypes.join(',')
       });
       
-      const response = await fetch(`https://coogzoobackend.vercel.app/membership-report?${queryParams}`);
+      const response = await fetch(`https://finalcoogzoobackend.vercel.app/membership-report?${queryParams}`);
       
       if (!response.ok) {
         const errorData = await response.json();

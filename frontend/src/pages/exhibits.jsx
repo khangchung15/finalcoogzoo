@@ -10,7 +10,7 @@ const Exhibits = () => {
   useEffect(() => {
     const fetchExhibits = async () => {
       try {
-        const response = await fetch(`https://coogzoobackend.vercel.app/public-exhibits`);
+        const response = await fetch(`https://finalcoogzoobackend.vercel.app/public-exhibits`);
         if (!response.ok) throw new Error('Failed to fetch exhibits');
         const data = await response.json();
         const sortedExhibits = [...data].sort((a, b) => b.id - a.id);

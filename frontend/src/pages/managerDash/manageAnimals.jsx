@@ -14,7 +14,7 @@ function ManageAnimals({ animalData, setAnimalData, addAnimal, animalId, setAnim
   useEffect(() => {
     const fetchManageAnimals = async () => {
       try {
-        const response = await fetch('https://coogzoobackend.vercel.app/animals');
+        const response = await fetch('https://finalcoogzoobackend.vercel.app/animals');
         if (!response.ok) {
           throw new Error('Failed to fetch animals');
         }
@@ -43,7 +43,7 @@ function ManageAnimals({ animalData, setAnimalData, addAnimal, animalId, setAnim
       return;
     }
     try {
-      const response = await fetch(`https://coogzoobackend.vercel.app/update-animal?id=${updateData.id}`, {
+      const response = await fetch(`https://finalcoogzoobackend.vercel.app/update-animal?id=${updateData.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updateData),
@@ -64,7 +64,7 @@ function ManageAnimals({ animalData, setAnimalData, addAnimal, animalId, setAnim
 
   const handleDeleteAnimal = async () => {
     try {
-      const response = await fetch(`https://coogzoobackend.vercel.app/remove-animal?id=${animalId}`, {
+      const response = await fetch(`https://finalcoogzoobackend.vercel.app/remove-animal?id=${animalId}`, {
         method: 'DELETE',
       });
   

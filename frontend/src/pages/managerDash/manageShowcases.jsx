@@ -14,7 +14,7 @@
     useEffect(() => {
       const fetchShowcase = async () => {
         try {
-          const response = await fetch('https://coogzoobackend.vercel.app/showcases');
+          const response = await fetch('https://finalcoogzoobackend.vercel.app/showcases');
           if (!response.ok) {
             throw new Error('Failed to fetch showcases');
           }
@@ -44,7 +44,7 @@
         return;
       }
       try {
-        const response = await fetch(`https://coogzoobackend.vercel.app/update-showcase?id=${updateData.id}`, {
+        const response = await fetch(`https://finalcoogzoobackend.vercel.app/update-showcase?id=${updateData.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(updateData),
@@ -65,7 +65,7 @@
 
     const handleDeleteShowcase = async () => {
       try {
-        const response = await fetch(`https://coogzoobackend.vercel.app/remove-showcase?id=${showcaseId}`, {
+        const response = await fetch(`https://finalcoogzoobackend.vercel.app/remove-showcase?id=${showcaseId}`, {
           method: 'DELETE',
         });
 

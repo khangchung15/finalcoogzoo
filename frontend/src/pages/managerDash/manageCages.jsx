@@ -32,7 +32,7 @@ function ManageCages({ cageData, setCageData, addCage, cageId, setCageId }) {
     const fetchCages = async () => {
       setLoading(prev => ({ ...prev, cages: true }));
       try {
-        const data = await fetchWithRetry('https://coogzoobackend.vercel.app/cages');
+        const data = await fetchWithRetry('https://finalcoogzoobackend.vercel.app/cages');
         setCages(data);
         setError(prev => ({ ...prev, cages: null }));
       } catch (err) {
@@ -51,7 +51,7 @@ function ManageCages({ cageData, setCageData, addCage, cageId, setCageId }) {
     const fetchExhibits = async () => {
       setLoading(prev => ({ ...prev, exhibits: true }));
       try {
-        const data = await fetchWithRetry('https://coogzoobackend.vercel.app/exhibits');
+        const data = await fetchWithRetry('https://finalcoogzoobackend.vercel.app/exhibits');
         setExhibits(data);
         setError(prev => ({ ...prev, exhibits: null }));
       } catch (err) {
@@ -79,7 +79,7 @@ function ManageCages({ cageData, setCageData, addCage, cageId, setCageId }) {
 
     try {
       const response = await fetchWithRetry(
-        `https://coogzoobackend.vercel.app/update-cage?id=${updateData.id}`,
+        `https://finalcoogzoobackend.vercel.app/update-cage?id=${updateData.id}`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -99,7 +99,7 @@ function ManageCages({ cageData, setCageData, addCage, cageId, setCageId }) {
   const handleDeleteCage = async () => {
     try {
       await fetchWithRetry(
-        `https://coogzoobackend.vercel.app/remove-cage?id=${cageId}`,
+        `https://finalcoogzoobackend.vercel.app/remove-cage?id=${cageId}`,
         { method: 'DELETE' }
       );
 

@@ -11,7 +11,7 @@ const Animal = () => {
   useEffect(() => {
     const fetchShowcase = async () => {
       try {
-        const response = await fetch('https://coogzoobackend.vercel.app/showcases');
+        const response = await fetch('https://finalcoogzoobackend.vercel.app/showcases');
         if (!response.ok) {
           throw new Error('Failed to fetch animals');
         }

@@ -46,7 +46,7 @@ function ManageEmployees({ employeeId, setEmployeeId, showSidebar }) {
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        const data = await fetchWithRetry('https://coogzoobackend.vercel.app/employees');
+        const data = await fetchWithRetry('https://finalcoogzoobackend.vercel.app/employees');
         setEmployees(data);
       } catch (err) {
         setError(err.message);
@@ -61,7 +61,7 @@ function ManageEmployees({ employeeId, setEmployeeId, showSidebar }) {
   useEffect(() => {
     const fetchExhibits = async () => {
       try {
-        const data = await fetchWithRetry('https://coogzoobackend.vercel.app/exhibits');
+        const data = await fetchWithRetry('https://finalcoogzoobackend.vercel.app/exhibits');
         setExhibits(data);
       } catch (err) {
         setError(err.message);
@@ -84,7 +84,7 @@ function ManageEmployees({ employeeId, setEmployeeId, showSidebar }) {
 
     try {
       const response = await fetchWithRetry(
-        `https://coogzoobackend.vercel.app/update-employee?id=${updateData.id}`,
+        `https://finalcoogzoobackend.vercel.app/update-employee?id=${updateData.id}`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -119,7 +119,7 @@ function ManageEmployees({ employeeId, setEmployeeId, showSidebar }) {
   const handleDeleteEmployee = async () => {
     try {
       const response = await fetchWithRetry(
-        `https://coogzoobackend.vercel.app/remove-employee?id=${employeeId}`,
+        `https://finalcoogzoobackend.vercel.app/remove-employee?id=${employeeId}`,
         { method: 'DELETE' }
       );
 
@@ -243,7 +243,7 @@ function ManageEmployees({ employeeId, setEmployeeId, showSidebar }) {
     }
   
     try {
-      const response = await fetch('https://coogzoobackend.vercel.app/add-employee', {
+      const response = await fetch('https://finalcoogzoobackend.vercel.app/add-employee', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -280,7 +280,7 @@ function ManageEmployees({ employeeId, setEmployeeId, showSidebar }) {
           endDate: ''
         });
         // Refresh the employee list
-        const updatedResponse = await fetch('https://coogzoobackend.vercel.app/employees');
+        const updatedResponse = await fetch('https://finalcoogzoobackend.vercel.app/employees');
         const updatedData = await updatedResponse.json();
         setEmployees(updatedData);
       } else {
@@ -300,7 +300,7 @@ function ManageEmployees({ employeeId, setEmployeeId, showSidebar }) {
     }
   
     try {
-      const response = await fetch('https://coogzoobackend.vercel.app/add-employee', {
+      const response = await fetch('https://finalcoogzoobackend.vercel.app/add-employee', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -362,7 +362,7 @@ function ManageEmployees({ employeeId, setEmployeeId, showSidebar }) {
       });
   
       // Refresh employee list
-      const updatedResponse = await fetch('https://coogzoobackend.vercel.app/employees');
+      const updatedResponse = await fetch('https://finalcoogzoobackend.vercel.app/employees');
       if (!updatedResponse.ok) {
         throw new Error('Failed to fetch updated employee list');
       }

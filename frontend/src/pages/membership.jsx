@@ -31,12 +31,12 @@ const Membership = () => {
     if (isCustomer && userEmail) {
       const fetchMembershipDetails = async () => {
         try {
-          const customerResponse = await fetch(`https://coogzoobackend.vercel.app/profile?email=${userEmail}&type=customer`);
+          const customerResponse = await fetch(`https://finalcoogzoobackend.vercel.app/profile?email=${userEmail}&type=customer`);
           if (!customerResponse.ok) throw new Error('Failed to fetch user profile');
           const customerData = await customerResponse.json();
           const userId = customerData.profile.ID;
 
-          const response = await fetch(`https://coogzoobackend.vercel.app/membership-details?userId=${userId}`);
+          const response = await fetch(`https://finalcoogzoobackend.vercel.app/membership-details?userId=${userId}`);
           if (!response.ok) throw new Error('Failed to fetch membership details');
           
           const data = await response.json();
@@ -69,12 +69,12 @@ const Membership = () => {
   const handleUpgrade = async (tier) => {
     setLoading(true);
     try {
-      const customerResponse = await fetch(`https://coogzoobackend.vercel.app/profile?email=${userEmail}&type=customer`);
+      const customerResponse = await fetch(`https://finalcoogzoobackend.vercel.app/profile?email=${userEmail}&type=customer`);
       if (!customerResponse.ok) throw new Error('Failed to fetch user profile');
       const customerData = await customerResponse.json();
       const userId = customerData.profile.ID;
 
-      const response = await fetch('https://coogzoobackend.vercel.app/upgrade-membership', {
+      const response = await fetch('https://finalcoogzoobackend.vercel.app/upgrade-membership', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -90,7 +90,7 @@ const Membership = () => {
         throw new Error('Upgrade failed');
       }
 
-      const updatedResponse = await fetch(`https://coogzoobackend.vercel.app/membership-details?userId=${userId}`);
+      const updatedResponse = await fetch(`https://finalcoogzoobackend.vercel.app/membership-details?userId=${userId}`);
       if (updatedResponse.ok) {
         const updatedData = await updatedResponse.json();
         setMembershipDetails(updatedData);

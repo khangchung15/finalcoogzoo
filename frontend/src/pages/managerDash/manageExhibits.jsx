@@ -14,7 +14,7 @@ function ManageExhibits({ exhibitData, setExhibitData, addExhibit, exhibitId, se
   useEffect(() => {
     const fetchExhibits = async () => {
       try {
-        const response = await fetch('https://coogzoobackend.vercel.app/exhibits');
+        const response = await fetch('https://finalcoogzoobackend.vercel.app/exhibits');
         if (!response.ok) {
           throw new Error('Failed to fetch exhibits');
         }
@@ -44,7 +44,7 @@ function ManageExhibits({ exhibitData, setExhibitData, addExhibit, exhibitId, se
       return;
     }
     try {
-      const response = await fetch(`https://coogzoobackend.vercel.app/update-exhibit?id=${updateData.id}`, {
+      const response = await fetch(`https://finalcoogzoobackend.vercel.app/update-exhibit?id=${updateData.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updateData),
@@ -65,7 +65,7 @@ function ManageExhibits({ exhibitData, setExhibitData, addExhibit, exhibitId, se
 
   const handleDeleteExhibit = async () => {
     try {
-      const response = await fetch(`https://coogzoobackend.vercel.app/remove-exhibit?id=${exhibitId}`, {
+      const response = await fetch(`https://finalcoogzoobackend.vercel.app/remove-exhibit?id=${exhibitId}`, {
         method: 'DELETE',
       });
 

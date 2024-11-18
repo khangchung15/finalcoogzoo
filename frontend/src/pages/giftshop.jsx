@@ -44,7 +44,7 @@ const GiftShopPage = (showSidebar) => {
 
   const fetchGiftShopItems = async () => {
     try {
-      const response = await fetch('https://coogzoobackend.vercel.app/giftshop-items');
+      const response = await fetch('https://finalcoogzoobackend.vercel.app/giftshop-items');
       if (!response.ok) {
         throw new Error(`Failed to fetch items: ${response.status} ${response.statusText}`);
       }
@@ -62,7 +62,7 @@ const GiftShopPage = (showSidebar) => {
 
   const fetchPurchaseHistory = async () => {
     try {
-      const response = await fetch(`https://coogzoobackend.vercel.app/giftshop-history?email=${encodeURIComponent(userEmail)}`);
+      const response = await fetch(`https://finalcoogzoobackend.vercel.app/giftshop-history?email=${encodeURIComponent(userEmail)}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch history: ${response.status} ${response.statusText}`);
       }
@@ -87,7 +87,7 @@ const GiftShopPage = (showSidebar) => {
 
     try {
       setError(null);
-      const response = await fetch('https://coogzoobackend.vercel.app/purchase-giftshop-item', {
+      const response = await fetch('https://finalcoogzoobackend.vercel.app/purchase-giftshop-item', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
