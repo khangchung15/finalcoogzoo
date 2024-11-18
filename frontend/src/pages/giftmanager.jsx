@@ -66,18 +66,25 @@ const GiftManager = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const validationError = validateForm(formData);
+  if (validationError) {
+    setError(validationError);
+    return;
+  }
     try {
       const endpoint = editingItem 
         ? `https://coogzoobackend.vercel.app/giftshop-items/${editingItem.Item_ID}` 
         : 'https://coogzoobackend.vercel.app/giftshop-items';
       
-      // Ensure price is a number
       const submissionData = {
         ...formData,
-        Price: parseFloat(formData.Price),
-        Stock_Level: parseInt(formData.Stock_Level),
-        Reorder_Level: parseInt(formData.Reorder_Level)
+        Price: parseFloat(formData.Price || 0),
+        Stock_Level: parseInt(formData.Stock_Level || 0),
+        Reorder_Level: parseInt(formData.Reorder_Level || 0),
+        Is_Active: true // Set default value
       };
+  
+      console.log('Submitting data:', submissionData); // Debug log
   
       const response = await fetch(endpoint, {
         method: editingItem ? 'PUT' : 'POST',
@@ -85,19 +92,39 @@ const GiftManager = () => {
         body: JSON.stringify(submissionData)
       });
   
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to save item');
-      }
+      const data = await response.json();
       
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to save item');
+      }
+  
       await fetchItems(); // Refresh the list
       resetForm();
+      // Show success message
+      setError(null);
     } catch (err) {
+      console.error('Error details:', err);
       setError(err.message || 'Failed to save item');
-      console.error(err);
     }
   };
-
+  const validateForm = (data) => {
+    if (!data.Name || data.Name.trim() === '') {
+      return 'Name is required';
+    }
+    if (!data.Category || data.Category.trim() === '') {
+      return 'Category is required';
+    }
+    if (isNaN(parseFloat(data.Price)) || parseFloat(data.Price) < 0) {
+      return 'Please enter a valid price';
+    }
+    if (isNaN(parseInt(data.Stock_Level)) || parseInt(data.Stock_Level) < 0) {
+      return 'Please enter a valid stock level';
+    }
+    if (isNaN(parseInt(data.Reorder_Level)) || parseInt(data.Reorder_Level) < 0) {
+      return 'Please enter a valid reorder level';
+    }
+    return null;
+  };
   const handleDelete = async (itemId) => {
     if (!window.confirm('Are you sure you want to delete this item?')) {
       return;

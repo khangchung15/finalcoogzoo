@@ -1905,44 +1905,58 @@ const fetchAllGiftShopItems = (res) => {
   });
 };
 const addGiftShopItem = (res, body) => {
-  const item = JSON.parse(body);
-  
-  const query = `
-    INSERT INTO Gift_Shop_Item (
-      Name,
-      Item_Description,
-      Category,
-      Price,
-      Stock_Level,
-      Reorder_Level,
-      Image_URL,
-      Is_Active
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `;
+  try {
+    const item = JSON.parse(body);
+    console.log('Processing item:', item); // Debug log
+    
+    const query = `
+      INSERT INTO Gift_Shop_Item (
+        Name,
+        Item_Description,
+        Category,
+        Price,
+        Stock_Level,
+        Reorder_Level,
+        Image_URL,
+        Is_Active
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `;
 
-  const values = [
-    item.Name,
-    item.Item_Description,
-    item.Category,
-    item.Price,
-    item.Stock_Level,
-    item.Reorder_Level,
-    item.Image_URL,
-    item.Is_Active
-  ];
+    const values = [
+      item.Name,
+      item.Item_Description,
+      item.Category,
+      parseFloat(item.Price),
+      parseInt(item.Stock_Level),
+      parseInt(item.Reorder_Level),
+      item.Image_URL || '',
+      item.Is_Active || true
+    ];
 
-  connection.query(query, values, (error, results) => {
-    if (error) {
-      console.error('Database error:', error);
-      return handleDBError(res, error);
-    }
+    connection.query(query, values, (error, results) => {
+      if (error) {
+        console.error('Database error:', error);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ 
+          message: 'Failed to add item',
+          error: error.message 
+        }));
+      }
 
-    res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.writeHead(201, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ 
+        message: 'Item added successfully',
+        itemId: results.insertId 
+      }));
+    });
+  } catch (error) {
+    console.error('Error processing item:', error);
+    res.writeHead(500, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ 
-      message: 'Item added successfully',
-      itemId: results.insertId 
+      message: 'Internal server error',
+      error: error.message 
     }));
-  });
+  }
 };
 
 const updateGiftShopItem = (res, itemId, body) => {
@@ -2740,11 +2754,22 @@ http.createServer((req, res) => {
       req.on('end', () => updateGiftShopItem(res, itemId, body));
       return;
     }
-  else if (req.method === 'POST' && req.url === '/giftshop-items') {
-    let body = '';
-    req.on('data', chunk => { body += chunk.toString(); });
-    req.on('end', () => addGiftShopItem(res, body));
-    return;
+    else if (req.method === 'POST' && req.url === '/giftshop-items') {
+      let body = '';
+      req.on('data', chunk => { body += chunk.toString(); });
+      req.on('end', () => {
+          try {
+              const itemData = JSON.parse(body);
+              // Log the received data for debugging
+              console.log('Received item data:', itemData);
+              addGiftShopItem(res, body);
+          } catch (error) {
+              console.error('Error parsing JSON:', error);
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ message: 'Invalid JSON format' }));
+          }
+      });
+      return;
   }
   else if (req.method === 'PUT' && req.url.match(/^\/giftshop-items\/\d+$/)) {
     const itemId = req.url.split('/')[2];
