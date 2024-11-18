@@ -64,43 +64,71 @@ const GiftManager = () => {
     }));
   };
 
+  const checkGiftShopItemTable = async () => {
+    try {
+      await connection.promise().query(`
+        CREATE TABLE IF NOT EXISTS Gift_Shop_Item (
+          Item_ID INT PRIMARY KEY AUTO_INCREMENT,
+          Name VARCHAR(255) NOT NULL,
+          Item_Description TEXT,
+          Category VARCHAR(100) NOT NULL,
+          Price DECIMAL(10,2) NOT NULL,
+          Stock_Level INT NOT NULL,
+          Reorder_Level INT NOT NULL,
+          Image_URL TEXT,
+          Is_Active BOOLEAN DEFAULT TRUE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('Gift_Shop_Item table verified');
+    } catch (error) {
+      console.error('Error checking/creating Gift_Shop_Item table:', error);
+      throw error;
+    }
+  };
+  
+  // Call this when your server starts up
+  checkGiftShopItemTable();
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     const validationError = validateForm(formData);
-  if (validationError) {
-    setError(validationError);
-    return;
-  }
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+    
     try {
-      const endpoint = editingItem 
-        ? `https://coogzoobackend.vercel.app/giftshop-items/${editingItem.Item_ID}` 
-        : 'https://coogzoobackend.vercel.app/giftshop-items';
-      //test
       const submissionData = {
-        ...formData,
-        Price: parseFloat(formData.Price || 0),
-        Stock_Level: parseInt(formData.Stock_Level || 0),
-        Reorder_Level: parseInt(formData.Reorder_Level || 0),
-        Is_Active: true // Set default value
+        Name: formData.Name,
+        Item_Description: formData.Item_Description,
+        Category: formData.Category,
+        Price: parseFloat(formData.Price),
+        Stock_Level: parseInt(formData.Stock_Level),
+        Reorder_Level: parseInt(formData.Reorder_Level),
+        Image_URL: formData.Image_URL || '',
+        Is_Active: true
       };
   
       console.log('Submitting data:', submissionData); // Debug log
   
-      const response = await fetch(endpoint, {
-        method: editingItem ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch('https://coogzoobackend.vercel.app/giftshop-items', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify(submissionData)
       });
   
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to save item');
+        throw new Error(data.error || data.message || 'Failed to save item');
       }
   
       await fetchItems(); // Refresh the list
       resetForm();
-      // Show success message
       setError(null);
     } catch (err) {
       console.error('Error details:', err);

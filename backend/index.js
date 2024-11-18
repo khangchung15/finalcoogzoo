@@ -2737,13 +2737,6 @@ http.createServer((req, res) => {
   else if (req.method === 'GET' && req.url === '/giftshop-items') {
     return fetchGiftShopItems(res);
   }
-  else if (req.method === 'POST' && req.url === '/giftshop-items') {
-    let body = '';
-    req.on('data', chunk => { body += chunk.toString(); });
-    req.on('end', () => addGiftShopItem(res, body));
-    return;
-  }//test
-  
   else if (req.method === 'GET' && req.url === '/giftshop-items-all') {
     return fetchAllGiftShopItems(res);
   }
@@ -2759,14 +2752,69 @@ http.createServer((req, res) => {
       req.on('data', chunk => { body += chunk.toString(); });
       req.on('end', () => {
           try {
-              const itemData = JSON.parse(body);
-              // Log the received data for debugging
-              console.log('Received item data:', itemData);
-              addGiftShopItem(res, body);
+              const data = JSON.parse(body);
+              console.log('Received item data:', data); // Debugging
+  
+              // Check for required fields
+              if (!data.Name || !data.Category || !data.Price || !data.Stock_Level || !data.Reorder_Level) {
+                  res.writeHead(400, { 'Content-Type': 'application/json' });
+                  return res.end(JSON.stringify({ 
+                      message: 'Missing required fields',
+                      error: 'All fields except Image_URL must be provided' 
+                  }));
+              }
+  
+              const query = `
+                  INSERT INTO Gift_Shop_Item (
+                      Name,
+                      Item_Description,
+                      Category,
+                      Price,
+                      Stock_Level,
+                      Reorder_Level,
+                      Image_URL,
+                      Is_Active
+                  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+              `;
+  
+              const values = [
+                  data.Name,
+                  data.Item_Description || '',
+                  data.Category,
+                  parseFloat(data.Price),
+                  parseInt(data.Stock_Level),
+                  parseInt(data.Reorder_Level),
+                  data.Image_URL || '',
+                  true
+              ];
+  
+              console.log('Executing query with values:', values); // Debugging
+  
+              connection.query(query, values, (error, results) => {
+                  if (error) {
+                      console.error('Database error:', error);
+                      res.writeHead(500, { 'Content-Type': 'application/json' });
+                      return res.end(JSON.stringify({ 
+                          message: 'Failed to add item',
+                          error: error.message 
+                      }));
+                  }
+  
+                  console.log('Item added successfully:', results); // Debugging
+  
+                  res.writeHead(201, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify({ 
+                      message: 'Item added successfully',
+                      itemId: results.insertId 
+                  }));
+              });
           } catch (error) {
-              console.error('Error parsing JSON:', error);
+              console.error('Error processing request:', error);
               res.writeHead(400, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ message: 'Invalid JSON format' }));
+              res.end(JSON.stringify({ 
+                  message: 'Invalid request format',
+                  error: error.message 
+              }));
           }
       });
       return;
