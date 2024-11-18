@@ -14,8 +14,8 @@ function ManageEmployees({ employeeId, setEmployeeId, showSidebar }) {
     department: '',
     role: '',
     startDate: '',
-    exhibitId: '',
-    supervisorId: '',
+    exhibitID: '', // Changed from exhibitId
+    supervisorID: '', // Changed from supervisorId
     status: 'active',
     endDate: ''
   });
@@ -298,34 +298,52 @@ function ManageEmployees({ employeeId, setEmployeeId, showSidebar }) {
       setModalMessage(validationError);
       return;
     }
-
+  
     try {
-      const response = await fetchWithRetry(
-        'https://coogzoobackend.vercel.app/add-employee',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            firstName: employeeData.firstName,
-            lastName: employeeData.lastName,
-            birthDate: employeeData.birthDate,
-            email: employeeData.email,
-            password: employeeData.password,
-            phone: employeeData.phone,
-            department: employeeData.department,
-            role: employeeData.role,
-            startDate: employeeData.startDate,
-            exhibitId: employeeData.exhibitId || null,
-            supervisorId: employeeData.supervisorId || null,
-            status: employeeData.status,
-            endDate: employeeData.endDate || null
-          })
-        }
-      );
-
+      const response = await fetch('https://coogzoobackend.vercel.app/add-employee', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          firstName: employeeData.firstName,
+          lastName: employeeData.lastName,
+          birthDate: employeeData.birthDate,
+          email: employeeData.email,
+          password: employeeData.password,
+          phone: employeeData.phone,
+          department: employeeData.department,
+          role: employeeData.role,
+          startDate: employeeData.startDate,
+          exhibitID: employeeData.exhibitID || null,
+          supervisorID: employeeData.supervisorID || null,
+          status: employeeData.status,
+          endDate: employeeData.endDate || null
+        })
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to add employee');
+      }
+  
       const data = await response.json();
-      setModalMessage(data.message);
       
+      if (data.loginCredentials) {
+        const credentialsMessage = `Employee added successfully!
+      
+        LOGIN CREDENTIALS:
+        Email: ${data.loginCredentials.email}
+        Password: ${data.loginCredentials.password}
+        
+        Please provide these credentials to the employee.
+        The employee should change their password upon first login.`;
+        
+        setModalMessage(credentialsMessage);
+      } else {
+        setModalMessage('Employee added successfully');
+      }
+  
       // Reset form
       setEmployeeData({
         firstName: '',
@@ -337,18 +355,22 @@ function ManageEmployees({ employeeId, setEmployeeId, showSidebar }) {
         department: '',
         role: '',
         startDate: '',
-        exhibitId: '',
-        supervisorId: '',
+        exhibitID: '',
+        supervisorID: '',
         status: 'active',
         endDate: ''
       });
-
+  
       // Refresh employee list
-      const updatedEmployees = await fetchWithRetry('https://coogzoobackend.vercel.app/employees');
-      setEmployees(updatedEmployees);
+      const updatedResponse = await fetch('https://coogzoobackend.vercel.app/employees');
+      if (!updatedResponse.ok) {
+        throw new Error('Failed to fetch updated employee list');
+      }
+      const updatedData = await updatedResponse.json();
+      setEmployees(updatedData);
     } catch (error) {
       console.error('Error:', error);
-      setModalMessage('An error occurred while adding the employee.');
+      setModalMessage(error.message || 'An error occurred while adding the employee');
     }
   };
 
@@ -424,31 +446,32 @@ function ManageEmployees({ employeeId, setEmployeeId, showSidebar }) {
             required
           />
           <label>Assign to Exhibit, Optional</label>
-          <select
-              value={employeeData.exhibitID}
-              onChange={(e) => setEmployeeData({...employeeData, exhibitID: e.target.value })}
-          >
-              <option value="">Select Exhibit</option>
-              {exhibits.map((exhibit) => (
-                  <option key={exhibit.id} value={exhibit.id}>
-                      {exhibit.name}
-                  </option>
-              ))}
-          </select>
-          <label>Assign to Supervisor, Optional</label>
-          <select
-              value={employeeData.supervisorID}
-              onChange={(e) => setEmployeeData({...employeeData, supervisorID: e.target.value })}
-          >
-              <option value="">Select Supervisor</option>
-              {employees
-                .filter(emp => emp.role.toLowerCase() === "manager")
-                .map((manager) => (
-                  <option key={manager.id} value={manager.id}>
-                    ID: {manager.id}, {manager.lastName}
-                  </option>
+            <select
+                value={employeeData.exhibitID || ''}
+                onChange={(e) => setEmployeeData({...employeeData, exhibitID: e.target.value })}
+            >
+                <option value="">Select Exhibit</option>
+                {exhibits.map((exhibit) => (
+                    <option key={exhibit.id} value={exhibit.id}>
+                        {exhibit.name}
+                    </option>
                 ))}
-          </select>
+            </select>
+
+            <label>Assign to Supervisor, Optional</label>
+            <select
+                value={employeeData.supervisorID || ''}
+                onChange={(e) => setEmployeeData({...employeeData, supervisorID: e.target.value })}
+            >
+                <option value="">Select Supervisor</option>
+                {employees
+                  .filter(emp => emp.role.toLowerCase() === "manager")
+                  .map((manager) => (
+                    <option key={manager.id} value={manager.id}>
+                      ID: {manager.id}, {manager.lastName}
+                    </option>
+                  ))}
+            </select>
           <select
             value={employeeData.status}
             onChange={(e) => setEmployeeData({ ...employeeData, status: e.target.value })}
