@@ -64,113 +64,30 @@ const GiftManager = () => {
     }));
   };
 
-  const checkGiftShopItemTable = async () => {
-    try {
-      await connection.promise().query(`
-        CREATE TABLE IF NOT EXISTS Gift_Shop_Item (
-          Item_ID INT PRIMARY KEY AUTO_INCREMENT,
-          Name VARCHAR(255) NOT NULL,
-          Item_Description TEXT,
-          Category VARCHAR(100) NOT NULL,
-          Price DECIMAL(10,2) NOT NULL,
-          Stock_Level INT NOT NULL,
-          Reorder_Level INT NOT NULL,
-          Image_URL TEXT,
-          Is_Active BOOLEAN DEFAULT TRUE,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
-      console.log('Gift_Shop_Item table verified');
-    } catch (error) {
-      console.error('Error checking/creating Gift_Shop_Item table:', error);
-      throw error;
-    }
-  };
-  
-  // Call this when your server starts up
-  checkGiftShopItemTable();
-  
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const validationError = validateForm(formData);
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-    
     try {
+      const endpoint = editingItem 
+        ? `https://coogzoobackend.vercel.app/giftshop-items/${editingItem.Item_ID}` 
+        : 'https://coogzoobackend.vercel.app/giftshop-items';
+      
       const submissionData = {
-        Name: formData.Name,
-        Item_Description: formData.Item_Description,
-        Category: formData.Category,
-        Price: parseFloat(formData.Price),
-        Stock_Level: parseInt(formData.Stock_Level),
-        Reorder_Level: parseInt(formData.Reorder_Level),
-        Image_URL: formData.Image_URL || '',
-        Is_Active: true
+        ...formData,
+        Price: parseFloat(formData.Price)
       };
-  
-      console.log('Submitting data:', submissionData); // Debug log
-  
-      const response = await fetch('https://coogzoobackend.vercel.app/giftshop-items', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
+
+      const response = await fetch(endpoint, {
+        method: editingItem ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(submissionData)
       });
-  
-      const data = await response.json();
+
+      if (!response.ok) throw new Error('Failed to save item');
       
-      if (!response.ok) {
-        throw new Error(data.error || data.message || 'Failed to save item');
-      }
-  
-      await fetchItems(); // Refresh the list
+      await fetchItems();
       resetForm();
-      setError(null);
     } catch (err) {
-      console.error('Error details:', err);
-      setError(err.message || 'Failed to save item');
-    }
-  };
-  const validateForm = (data) => {
-    if (!data.Name || data.Name.trim() === '') {
-      return 'Name is required';
-    }
-    if (!data.Category || data.Category.trim() === '') {
-      return 'Category is required';
-    }
-    if (isNaN(parseFloat(data.Price)) || parseFloat(data.Price) < 0) {
-      return 'Please enter a valid price';
-    }
-    if (isNaN(parseInt(data.Stock_Level)) || parseInt(data.Stock_Level) < 0) {
-      return 'Please enter a valid stock level';
-    }
-    if (isNaN(parseInt(data.Reorder_Level)) || parseInt(data.Reorder_Level) < 0) {
-      return 'Please enter a valid reorder level';
-    }
-    return null;
-  };
-  const handleDelete = async (itemId) => {
-    if (!window.confirm('Are you sure you want to delete this item?')) {
-      return;
-    }
-  
-    try {
-      const response = await fetch(`https://coogzoobackend.vercel.app/giftshop-items/${itemId}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' }
-      });
-  
-      if (!response.ok) {
-        throw new Error('Failed to delete item');
-      }
-  
-      await fetchItems(); // Refresh the list
-    } catch (err) {
-      setError('Failed to delete item');
+      setError('Failed to save item');
       console.error(err);
     }
   };
@@ -374,29 +291,22 @@ const GiftManager = () => {
                   </span>
                 </td>
                 <td>
-                <div className="action-buttons">
-  <button
-    onClick={() => startEdit(item)}
-    className="edit-button"
-    title="Edit Item"
-  >
-    ✏️
-  </button>
-  <button
-    onClick={() => handleDelete(item.Item_ID)}
-    className="delete-button"
-    title="Delete Item"
-  >
-    🗑️
-  </button>
-  <button
-    onClick={() => handleToggleActive(item.Item_ID, item.Is_Active)}
-    className={`toggle-button ${item.Is_Active ? 'active' : 'inactive'}`}
-    title={item.Is_Active ? 'Deactivate Item' : 'Activate Item'}
-  >
-    {item.Is_Active ? '❌' : '✔️'}
-  </button>
-</div>
+                  <div className="action-buttons">
+                    <button
+                      onClick={() => startEdit(item)}
+                      className="edit-button"
+                      title="Edit Item"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      onClick={() => handleToggleActive(item.Item_ID, item.Is_Active)}
+                      className={`toggle-button ${item.Is_Active ? 'active' : 'inactive'}`}
+                      title={item.Is_Active ? 'Deactivate Item' : 'Activate Item'}
+                    >
+                      {item.Is_Active ? '❌' : '✔️'}
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

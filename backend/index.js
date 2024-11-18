@@ -2740,22 +2740,11 @@ http.createServer((req, res) => {
       req.on('end', () => updateGiftShopItem(res, itemId, body));
       return;
     }
-    else if (req.method === 'POST' && req.url === '/giftshop-items') {
-      let body = '';
-      req.on('data', chunk => { body += chunk.toString(); });
-      req.on('end', () => {
-          try {
-              const itemData = JSON.parse(body);
-              // Log the received data for debugging
-              console.log('Received item data:', itemData);
-              addGiftShopItem(res, body);
-          } catch (error) {
-              console.error('Error parsing JSON:', error);
-              res.writeHead(400, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ message: 'Invalid JSON format' }));
-          }
-      });
-      return;
+  else if (req.method === 'POST' && req.url === '/giftshop-items') {
+    let body = '';
+    req.on('data', chunk => { body += chunk.toString(); });
+    req.on('end', () => addGiftShopItem(res, body));
+    return;
   }
   else if (req.method === 'PUT' && req.url.match(/^\/giftshop-items\/\d+$/)) {
     const itemId = req.url.split('/')[2];
@@ -2765,10 +2754,10 @@ http.createServer((req, res) => {
     return;
   }
   else if (req.method === 'DELETE' && req.url.match(/^\/giftshop-items\/\d+$/)) {
-    const itemId = req.url.split('/')[2];
-    deleteGiftShopItem(res, itemId);
-    return;
-  }
+  const itemId = req.url.split('/')[2];
+  deleteGiftShopItem(res, itemId);
+  return;
+}
   else if (req.method === 'POST' && req.url === '/change-password') {
     let body = '';
     
